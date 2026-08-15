@@ -1,0 +1,154 @@
+import {
+  getBusinessConfigs,
+  getCategoryTemplate,
+} from './businessService.js';
+import { supabase } from '../config/supabase.js';
+import { Business } from '../types/index.js';
+
+/**
+ * Builds a category-aware system prompt dynamically by merging
+ * category_templates with business_config rows for the tenant.
+ */
+export async function buildSystemPrompt(businessId: string): Promise<string> {
+  console.log(`[PromptBuilder] Building system prompt for business_id: ${businessId}`);
+
+  // 1. Fetch business row
+  const { data: businessData, error: businessErr } = await supabase
+    .from('businesses')
+    .select('*')
+    .eq('id', businessId)
+    .single();
+
+  if (businessErr || !businessData) {
+    throw new Error(`[PromptBuilder Error] Business not found for ID: ${businessId}`);
+  }
+
+  const business = businessData as Business;
+
+  // 2. Fetch category template
+  const templateObj = await getCategoryTemplate(business.category);
+  if (!templateObj) {
+    throw new Error(`[PromptBuilder Error] Template not found for category: ${business.category}`);
+  }
+
+  let prompt = templateObj.prompt_template;
+
+  // 3. Fetch business configs
+  const configs = await getBusinessConfigs(businessId);
+
+  // Map configs to dictionary with human-friendly formatting
+  const configMap: Record<string, string> = {
+    business_name: business.name,
+  };
+
+  for (const item of configs) {
+    const val = item.config_value;
+    let formattedVal = '';
+
+    if (item.config_key === 'menu_items' && Array.isArray(val)) {
+      formattedVal = val
+        .map((m: any) => `🍰 *${m.name}* — ₹${m.price}${m.unit ? ` _(per ${m.unit})_` : ''}`)
+        .join('\n');
+      console.log('[PromptBuilder] 📋 Live Menu Catalog Injected:\n' + formattedVal);
+    } else if (item.config_key === 'cafe_menu' && Array.isArray(val)) {
+      formattedVal = val
+        .map((c: any) => `☕ *${c.name}* — ₹${c.price}${c.category ? ` _(${c.category})_` : ''}`)
+        .join('\n');
+      console.log('[PromptBuilder] 📋 Live Cafe Menu Injected:\n' + formattedVal);
+    } else if (item.config_key === 'services' && Array.isArray(val)) {
+      formattedVal = val
+        .map((s: any) => `✂️ *${s.name}* — ₹${s.price}${s.duration ? ` _(${s.duration})_` : ''}`)
+        .join('\n');
+    } else if (item.config_key === 'gym_plans' && Array.isArray(val)) {
+      formattedVal = val
+        .map((g: any) => `🏋️ *${g.name}* — ₹${g.price}${g.duration ? ` _(${g.duration})_` : ''}`)
+        .join('\n');
+      console.log('[PromptBuilder] 📋 Live Gym Plans Injected:\n' + formattedVal);
+    } else if (item.config_key === 'staff' && Array.isArray(val)) {
+      formattedVal = val
+        .map((st: any) => `👤 *${st.name}*${st.specialty ? ` _(${st.specialty})_` : ''}`)
+        .join('\n');
+    } else if ((item.config_key === 'course_list' || item.config_key === 'courses') && Array.isArray(val)) {
+      formattedVal = val
+        .map((c: any) => `📚 *${c.name}* — Fee: ₹${c.fee}${c.batch_timing ? ` _(Timing: ${c.batch_timing})_` : ''}`)
+        .join('\n');
+    } else if (item.config_key === 'faqs' && Array.isArray(val)) {
+      formattedVal = val.map((f: any) => `*Q: ${f.question}*\n_${f.answer}_`).join('\n\n');
+    } else if (typeof val === 'string') {
+      formattedVal = val;
+    } else {
+      formattedVal = JSON.stringify(val, null, 2);
+    }
+
+    configMap[item.config_key] = formattedVal;
+  }
+
+  console.log(`[PromptBuilder] Merging ${Object.keys(configMap).length} dynamic placeholders...`);
+
+  // Replace placeholders in prompt template e.g. {business_name}, {menu_items}, {hours}, {faqs}
+  prompt = prompt.replace(/\{(\w+)\}/g, (match, key) => {
+    if (configMap[key] !== undefined) {
+      return configMap[key];
+    }
+    console.warn(`[PromptBuilder Warning] Missing config value for key: ${key}. Defaulting to empty.`);
+    return `[Not provided]`;
+  });
+
+  prompt = `### CRITICAL INSTRUCTION - LIVE MENU OVERRIDE:
+The items and pricing listed below represent the LIVE, UP-TO-DATE catalog for ${business.name}. 
+Even if past messages in the conversation history claimed an item was unavailable, ALWAYS check the current catalog below. If an item is listed below, IT IS IN STOCK AND FULLY AVAILABLE. Never claim an item is unavailable if it is in the list below.
+
+` + prompt;
+
+  const captureType = business.category === 'salon' ? 'booking' : business.category === 'tuition' ? 'lead' : 'order';
+
+  prompt += `\n\n### CRITICAL ORDER & BOOKING CAPTURE INSTRUCTION:
+Whenever the customer expresses intent to order, book a slot, or confirms items/details:
+1. Provide a warm, highly aesthetic confirmation in your response.
+2. YOU MUST ALWAYS append a JSON block at the very end of your response in this exact format:
+\`\`\`json
+{
+  "capture": {
+    "type": "${captureType}",
+    "details": {
+      "items": [{"name": "Item Name", "quantity": 1, "price": 100}],
+      "total": 100,
+      "fulfillment": "delivery or pickup",
+      "delivery_address": "Address if mentioned or Not specified",
+      "notes": "Order or customer notes"
+    }
+  }
+}
+\`\`\`
+Do not forget the JSON block whenever an order, booking, or student lead is mentioned or confirmed.
+
+### CANCELLATION RULES:
+- If a customer asks to cancel their order, booking, or appointment, politely confirm that their order has been cancelled and express that you look forward to serving them next time.
+- Append {"capture": {"action": "cancel"}} at the end.
+
+### STRICT SCOPE & OFF-TOPIC GUARDRAIL:
+- You are EXCLUSIVELY the virtual customer support assistant for ${business.name}.
+- You MUST NEVER write code (e.g. Python, Java, JavaScript, C++), solve math problems, write essays, answer general knowledge/trivia, or act as an open-ended AI assistant.
+- If the user asks for programming code, homework help, politics, trivia, or anything outside of ${business.name}'s menu, products, pricing, orders, and store timings, POLITELY DECLINE and redirect them:
+  "I am the virtual assistant for ${business.name} and can only assist with our products, menu, orders, and store services. How may I help you today?"
+
+### ✨ AESTHETIC & PROFESSIONAL WHATSAPP FORMATTING GUIDELINES:
+- **Tone**: Warm, elegant, polished, and attentive like a 5-star concierge.
+- **NEVER** sound robotic or literal (NEVER say "I see you're saying hello", "Perhaps you'd like to", "I need to correct you", "As for delivery").
+- **Greetings**: Start with a stylish, inviting banner header:
+  ✨ *Welcome to ${business.name}!* ✨
+- **Listings**: Always format items cleanly with emojis and bold headers:
+  • *Item Name* — ₹Price _(details)_
+- **Order Confirmations**: Format with structured bold labels:
+  🎉 *ORDER CONFIRMATION* 🎉
+  
+  • *2 x Item Name* (₹100 each) = ₹200
+  • *1 x Item Name* = ₹90
+
+  💰 *Total Amount:* ₹290
+  📍 *Delivery Address:* [Address]
+- Keep spacing spacious and clean with double line breaks between sections. Never use ugly asterisks without bolding.`;
+
+  console.log(`[PromptBuilder] System prompt built successfully (${prompt.length} chars)`);
+  return prompt;
+}

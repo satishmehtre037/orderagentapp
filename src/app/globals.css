@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Public+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-paper: #FBFAF7;
+  --text-ink: #1C2321;
+  --primary-teal: #0F3D3E;
+  --accent-marigold: #E8A33D;
+  --secondary-sage: #7A9B76;
+  --border-warm: #E4E0D6;
+}
+
+body {
+  background-color: var(--bg-paper);
+  color: var(--text-ink);
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+/* Tabular figures for ledger aligned pricing */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Physical Passbook/Ledger Border Lines */
+.ledger-hairline {
+  border-color: #E4E0D6;
+}
+
+.ledger-ruled-rows > div:not(:last-child) {
+  border-bottom: 1px dashed #E4E0D6;
+}
+
+/* Smooth Focus states */
+*:focus-visible {
+  outline: 2px solid #0F3D3E;
+  outline-offset: 2px;
+}
