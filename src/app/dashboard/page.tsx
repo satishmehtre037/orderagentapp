@@ -28,6 +28,30 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('orders');
 
+  const [isBotPaused, setIsBotPaused] = useState(false);
+  const [pauseLoading, setPauseLoading] = useState(false);
+
+  const toggleBotPause = async () => {
+    if (!business?.id) return;
+    try {
+      setPauseLoading(true);
+      const nextPausedState = !isBotPaused;
+      setIsBotPaused(nextPausedState);
+      await fetch('/api/business', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: business.id,
+          configs: [{ config_key: 'bot_paused', config_value: nextPausedState }],
+        }),
+      });
+    } catch (e) {
+      console.error('Error toggling bot pause status:', e);
+    } finally {
+      setPauseLoading(false);
+    }
+  };
+
   const loadDashboardData = async () => {
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -39,6 +63,7 @@ export default function DashboardPage() {
 
       if (resData.business) {
         setBusiness(resData.business as Business);
+        setIsBotPaused(resData.configs?.bot_paused === true || resData.configs?.bot_paused === 'true');
       } else {
         console.warn('[Dashboard] No business found for email:', userEmail);
         // Only show fallback if truly no data
@@ -130,6 +155,25 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center space-x-3">
+            {/* AI Agent Pause/Live Toggle Switch */}
+            <button
+              onClick={toggleBotPause}
+              disabled={pauseLoading}
+              title={isBotPaused ? 'Click to Resume AI Bot' : 'Click to Pause AI Bot'}
+              className={`inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border transition-all ${
+                isBotPaused
+                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isBotPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
+                }`}
+              />
+              <span>{pauseLoading ? 'Updating...' : isBotPaused ? 'AI Paused (Paused)' : 'AI Live 🟢'}</span>
+            </button>
+
             <div className="hidden sm:flex items-center space-x-2 text-xs font-mono text-ink-muted bg-warm-card px-3 py-1.5 rounded border border-warm-border">
               <PhoneCall className="w-3.5 h-3.5 text-teal" />
               <span>{business?.whatsapp_number}</span>
@@ -205,20 +249,36 @@ export default function DashboardPage() {
               <div className="flex items-center space-x-1.5">
                 <span
                   className={`w-2.5 h-2.5 rounded-full ${
-                    isTrialExpired ? 'bg-red-500' : 'bg-sage animate-pulse'
+                    isBotPaused
+                      ? 'bg-amber-500'
+                      : isTrialExpired
+                      ? 'bg-red-500'
+                      : 'bg-sage animate-pulse'
                   }`}
                 />
                 <span className="font-serif text-base font-bold text-ink">
-                  {isTrialExpired ? 'Paused (Expired)' : 'Live & Listening'}
+                  {isBotPaused
+                    ? 'Paused by Owner'
+                    : isTrialExpired
+                    ? 'Paused (Expired)'
+                    : 'Live & Listening'}
                 </span>
               </div>
               <p className="text-[11px] font-mono text-teal font-semibold mt-0.5">
                 {business?.whatsapp_number}
               </p>
             </div>
-            <div className="p-2.5 bg-sage-light text-sage rounded-full">
-              <PhoneCall className="w-5 h-5" />
-            </div>
+            <button
+              onClick={toggleBotPause}
+              disabled={pauseLoading}
+              className={`p-2 rounded-lg border text-xs font-bold transition-all ${
+                isBotPaused
+                  ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200'
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
+              }`}
+            >
+              {isBotPaused ? '▶ Resume' : '⏸ Pause'}
+            </button>
           </div>
 
           {/* System Prompt */}

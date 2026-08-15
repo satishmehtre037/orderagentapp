@@ -99,12 +99,15 @@ export async function PUT(req: Request) {
     console.log(`[API Business PUT] Updating business ID: ${targetBizId}`);
 
     // 1. Update business table
+    const updatePayload: Record<string, any> = {};
+    if (name) updatePayload.name = name;
+    if (whatsapp_number) updatePayload.whatsapp_number = whatsapp_number;
+    if (category) updatePayload.category = category;
+    if (body.subscription_status) updatePayload.subscription_status = body.subscription_status;
+
     const { data: updatedBiz, error: bizErr } = await adminSupabase
       .from('businesses')
-      .update({
-        name,
-        whatsapp_number,
-      })
+      .update(updatePayload)
       .eq('id', targetBizId)
       .select()
       .maybeSingle();

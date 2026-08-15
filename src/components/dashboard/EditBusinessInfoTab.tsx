@@ -75,7 +75,15 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
             services: configMap.services || [
               { name: 'Deluxe Haircut & Blowdry', price: 450, duration: '45 mins' },
             ],
-            staff: configMap.staff || [{ name: 'Ankita (Senior Stylist)' }],
+            gym_plans: configMap.gym_plans || [
+              { name: 'Monthly Membership', price: 1000, duration: '1 Month' },
+              { name: 'Yearly Membership', price: 8000, duration: '1 Year' },
+            ],
+            cafe_menu: configMap.cafe_menu || [
+              { name: 'Cold Brew Coffee', price: 150, category: 'Beverage' },
+              { name: 'Avocado Toast', price: 220, category: 'Food' },
+            ],
+            staff: configMap.staff || [{ name: 'Trainer/Stylist' }],
             courses: configMap.course_list || [
               { name: 'Class 10th CBSE Mathematics', fee: '₹2,500/month', batch_timing: 'Mon-Fri 5:00 PM' },
             ],
@@ -115,6 +123,11 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
       } else if (category === 'salon') {
         updates.push({ config_key: 'services', config_value: formData.services || [] });
         updates.push({ config_key: 'staff', config_value: formData.staff || [] });
+      } else if (category === 'gym') {
+        updates.push({ config_key: 'gym_plans', config_value: formData.gym_plans || [] });
+        updates.push({ config_key: 'staff', config_value: formData.staff || [] });
+      } else if (category === 'cafe') {
+        updates.push({ config_key: 'cafe_menu', config_value: formData.cafe_menu || [] });
       } else if (category === 'tuition') {
         updates.push({ config_key: 'course_list', config_value: formData.courses || [] });
         updates.push({ config_key: 'admission_process', config_value: formData.admission_process || '' });

@@ -83,7 +83,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     console.log(`[Webhook Pipeline] ✅ Using business: "${business.name}" (${business.id})`);
 
-    // 2. CHECK SUBSCRIPTION STATUS GUARD (Expired trial bypass check)
+    // 2. CHECK SUBSCRIPTION & PAUSE STATUS GUARD
+    const configs = await getBusinessConfigs(business.id);
+    const isBotPaused = configs.some(
+      (c) => c.config_key === 'bot_paused' && (c.config_value === true || c.config_value === 'true')
+    );
+
+    if (isBotPaused) {
+      console.log(
+        `[Webhook Pipeline] ⏸️ Business "${business.name}" AI Agent is PAUSED by store owner. Saving message to ledger and skipping AI processing.`
+      );
+      // Save inbound customer message so owner can view and reply manually
+      await saveConversationMessage(business.id, customerNumber, 'inbound', messageText);
+      return;
+    }
+
     const isTrialExpired =
       business.subscription_status === 'expired' ||
       (business.subscription_status === 'trial' &&
