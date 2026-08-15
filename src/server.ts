@@ -28,7 +28,6 @@ app.use('/', paymentRouter);
 // Start periodic trial expiration checker (every 1 hour)
 setInterval(async () => {
   try {
-    const fetch = (await import('node-fetch')).default;
     await fetch(`http://localhost:${ENV.PORT}/billing/check-trials`, { method: 'POST' });
   } catch (err: any) {
     console.error('[Periodic Trial Check Error]:', err.message);
