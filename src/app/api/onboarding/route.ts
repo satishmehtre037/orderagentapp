@@ -116,6 +116,23 @@ export async function POST(req: Request) {
         config_key: 'admission_process',
         config_value: data.admission_process || '',
       });
+    } else if (data.category === 'gym') {
+      configRows.push({
+        business_id: businessId,
+        config_key: 'gym_plans',
+        config_value: data.gym_plans || [],
+      });
+      configRows.push({
+        business_id: businessId,
+        config_key: 'staff',
+        config_value: data.staff || [],
+      });
+    } else if (data.category === 'cafe') {
+      configRows.push({
+        business_id: businessId,
+        config_key: 'cafe_menu',
+        config_value: data.cafe_menu || [],
+      });
     }
 
     // 3. Upsert config rows using admin client (update if config_key already exists for this business)
