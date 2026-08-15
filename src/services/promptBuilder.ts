@@ -103,24 +103,25 @@ Even if past messages in the conversation history claimed an item was unavailabl
   const captureType = business.category === 'salon' ? 'booking' : business.category === 'tuition' ? 'lead' : 'order';
 
   prompt += `\n\n### CRITICAL ORDER & BOOKING CAPTURE INSTRUCTION:
-Whenever the customer expresses intent to order, book a slot, or confirms items/details:
-1. Provide a warm, highly aesthetic confirmation in your response.
-2. YOU MUST ALWAYS append a JSON block at the very end of your response in this exact format:
+- DO NOT output a JSON capture block for greetings ('hi', 'hello', 'hey'), casual talk, general questions, or menu inquiries.
+- ONLY output a JSON capture block at the very end of your message when the customer EXPLICITLY CONFIRMS a specific item/service order with quantity or books a specific appointment date/time.
+
+When an order/booking is confirmed, append this JSON block at the very end:
 \`\`\`json
 {
   "capture": {
     "type": "${captureType}",
     "details": {
-      "items": [{"name": "Item Name", "quantity": 1, "price": 100}],
+      "items": [{"name": "Specific Service or Item Name", "quantity": 1, "price": 100}],
       "total": 100,
-      "fulfillment": "delivery or pickup",
-      "delivery_address": "Address if mentioned or Not specified",
-      "notes": "Order or customer notes"
+      "fulfillment": "delivery or pickup or in-salon",
+      "delivery_address": "Address or Not specified",
+      "appointment_time": "Time if booked",
+      "notes": "Order or booking notes"
     }
   }
 }
 \`\`\`
-Do not forget the JSON block whenever an order, booking, or student lead is mentioned or confirmed.
 
 ### CANCELLATION RULES:
 - If a customer asks to cancel their order, booking, or appointment, politely confirm that their order has been cancelled and express that you look forward to serving them next time.

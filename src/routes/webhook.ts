@@ -193,19 +193,55 @@ router.post('/webhook', async (req: Request, res: Response) => {
       console.log(`[Webhook Pipeline] ❌ Cancellation intent (all: ${isCancelAll}) detected for customer ${customerNumber}`);
       await cancelOrdersForCustomer(business.id, customerNumber, isCancelAll);
     } else if (capturedData) {
-      // 7. If structured JSON capture payload extracted, save to orders_bookings_leads table
-      console.log(`[Webhook Pipeline] 📦 Captured payload extracted from conversation:`);
-      console.log(JSON.stringify(capturedData, null, 2));
+      // 7. Validate that this is an ACTUAL confirmed order/booking with real items/services
+      const details = capturedData.details || capturedData;
+      const items = Array.isArray(details?.items)
+        ? details.items
+        : typeof details?.items === 'string'
+        ? [{ name: details.items }]
+        : [];
 
-      const defaultType = business.category === 'salon' ? 'booking' : business.category === 'tuition' ? 'lead' : 'order';
-      const captureType = capturedData.type || defaultType;
+      // Check if items contain real service/product names (rejecting greetings, inquiries, placeholders)
+      const hasValidItems = items.some((it: any) => {
+        const name = (typeof it === 'string' ? it : it?.name || '').toLowerCase().trim();
+        return (
+          name.length > 1 &&
+          !name.includes('greeting') &&
+          !name.includes('hello') &&
+          !name.includes('hi') &&
+          !name.includes('inquiry') &&
+          !name.includes('not specified') &&
+          !name.includes('none')
+        );
+      });
 
-      await saveCapturedRecord(
-        business.id,
-        captureType,
-        customerNumber,
-        capturedData.details || capturedData
-      );
+      const hasAppointmentDetails = Boolean(details?.appointment_time || details?.slot || details?.date || details?.time);
+      const isValidCapture =
+        (hasValidItems || hasAppointmentDetails) &&
+        details?.confirmed !== false &&
+        details?.action !== 'none';
+
+      if (isValidCapture) {
+        console.log(`[Webhook Pipeline] 📦 Confirmed order/booking payload extracted:`);
+        console.log(JSON.stringify(capturedData, null, 2));
+
+        const defaultType =
+          business.category === 'salon'
+            ? 'booking'
+            : business.category === 'tuition'
+            ? 'lead'
+            : 'order';
+        const captureType = capturedData.type || defaultType;
+
+        await saveCapturedRecord(
+          business.id,
+          captureType,
+          customerNumber,
+          details
+        );
+      } else {
+        console.log(`[Webhook Pipeline] ℹ️ Casual greeting or general inquiry from customer. Not creating a ledger order.`);
+      }
     }
 
     // 8. Send response message back to customer via WhatsApp Cloud API
