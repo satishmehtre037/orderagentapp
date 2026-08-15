@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'BizBot OS',
   webDir: 'out',
   server: {
-    url: 'https://orderagentapp.vercel.app',
+    url: 'https://orderagentapp.webcorestudio.dev',
     cleartext: false,
   },
   android: {
