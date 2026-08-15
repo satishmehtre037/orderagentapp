@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.businesses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    category TEXT NOT NULL CHECK (category IN ('bakery', 'salon', 'tuition')),
+    category TEXT NOT NULL CHECK (category IN ('bakery', 'salon', 'tuition', 'gym', 'cafe', 'other')),
     whatsapp_number TEXT UNIQUE NOT NULL,
     owner_email TEXT NOT NULL,
     trial_end_date TIMESTAMPTZ DEFAULT (now() + INTERVAL '30 days'),
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.businesses (
 -- 2. CATEGORY TEMPLATES TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS public.category_templates (
-    category TEXT PRIMARY KEY CHECK (category IN ('bakery', 'salon', 'tuition')),
+    category TEXT PRIMARY KEY CHECK (category IN ('bakery', 'salon', 'tuition', 'gym', 'cafe', 'other')),
     prompt_template TEXT NOT NULL,
     form_schema JSONB DEFAULT '{}'::jsonb
 );
