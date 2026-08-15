@@ -11,6 +11,7 @@
     "build:backend": "tsc",
     "build": "next build",
     "start": "next start",
+    "server": "npx tsx src/server.ts",
     "start:backend": "node dist/server.js",
     "android:sync": "cap sync android",
     "android:open": "cap open android",
