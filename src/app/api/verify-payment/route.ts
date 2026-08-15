@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const adminSupabase = createClient(supabaseUrl, serviceKey);
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, business_id, plan, amount } = body;
 
     // Validate required fields
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -43,9 +49,42 @@ export async function POST(req: NextRequest) {
 
     if (isSignatureValid) {
       console.log(`[Verify Payment] ✅ Signature match! Payment verified for ID: ${razorpay_payment_id}`);
+
+      // If business_id is provided, activate subscription securely on the server
+      if (business_id) {
+        const chosenPlan = plan || 'monthly_1';
+        const isAnnual = chosenPlan.includes('annual');
+        const nextEndDate = new Date(Date.now() + (isAnnual ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
+
+        // 1. Update business subscription status to 'active'
+        const { error: updateError } = await adminSupabase
+          .from('businesses')
+          .update({
+            subscription_status: 'active',
+            plan: chosenPlan,
+            trial_end_date: nextEndDate,
+          })
+          .eq('id', business_id);
+
+        if (updateError) {
+          console.error('[Verify Payment] Error updating business status:', updateError);
+        } else {
+          console.log(`[Verify Payment] ✅ Successfully updated business ${business_id} to ACTIVE (${chosenPlan}) until ${nextEndDate}`);
+        }
+
+        // 2. Insert verified payment ledger record
+        await adminSupabase.from('payment_events').insert({
+          business_id,
+          razorpay_payment_id,
+          razorpay_order_id,
+          amount: amount || (isAnnual ? 1000 : 100),
+          status: 'success',
+        });
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Payment verified successfully',
+        message: 'Payment verified successfully and subscription activated',
         order_id: razorpay_order_id,
         payment_id: razorpay_payment_id,
       });

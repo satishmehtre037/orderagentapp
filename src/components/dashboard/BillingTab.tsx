@@ -260,6 +260,9 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+                business_id: businessId,
+                plan: selectedBillingCycle === 'annual' ? 'annual_10' : 'monthly_1',
+                amount: currentPlanAmountPaise,
               }),
             });
 
