@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { ENV } from '../config/env.js';
 import {
   getBusinessByWhatsappNumber,
+  getBusinessConfigs,
   saveConversationMessage,
   getRecentConversations,
   saveCapturedRecord,
