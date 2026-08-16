@@ -151,14 +151,20 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         }),
       });
 
-      const orderData = await orderRes.json();
+      let orderData: any = {};
+      try {
+        orderData = await orderRes.json();
+      } catch (jsonErr) {
+        throw new Error('Payment service temporarily unavailable. Please try again.');
+      }
+
       if (!orderRes.ok) {
         throw new Error(orderData.error || 'Failed to initialize Razorpay payment order');
       }
 
       const options = {
-        key: orderData.keyId,
-        amount: orderData.amount,
+        key: orderData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+        amount: orderData.amount || amountPaise,
         currency: 'INR',
         name: 'BizBot OS',
         description: `Pro Plan (${selectedBillingCycle === 'annual' ? '1 Year' : '1 Month'})`,
@@ -178,7 +184,13 @@ export const BillingTab: React.FC<BillingTabProps> = ({
               }),
             });
 
-            const verifyData = await verifyRes.json();
+            let verifyData: any = {};
+            try {
+              verifyData = await verifyRes.json();
+            } catch (jsonErr) {
+              verifyData = {};
+            }
+
             if (!verifyRes.ok) {
               throw new Error(verifyData.error || 'Payment signature verification failed.');
             }
