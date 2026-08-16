@@ -4,6 +4,7 @@ import { ENV } from './config/env';
 import healthRouter from './routes/health';
 import webhookRouter from './routes/webhook';
 import billingRouter from './routes/billing';
+import invoiceRouter from './routes/invoice';
 import paymentRouter from './routes/payment';
 
 const app = express();
@@ -22,6 +23,7 @@ app.use((req, _res, next) => {
 // Routes Registration
 app.use('/', healthRouter);
 app.use('/', webhookRouter);
+app.use('/', invoiceRouter);
 app.use('/billing', billingRouter);
 app.use('/', paymentRouter);
 
