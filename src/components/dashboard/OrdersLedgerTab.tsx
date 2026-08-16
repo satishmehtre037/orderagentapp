@@ -30,6 +30,7 @@ import {
   FileText,
   QrCode,
   CreditCard,
+  BellRing,
 } from 'lucide-react';
 
 interface OrdersLedgerTabProps {
@@ -178,6 +179,44 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
       console.error('Failed to update payment status:', err);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+
+  // 1-Tap Send WhatsApp Re-Engagement & Renewal Reminder
+  const handleSendReEngagementNudge = async (customerNumber: string, lastItem?: string) => {
+    if (!customerNumber) return;
+    setSendingReminder(customerNumber);
+    try {
+      let msg = '';
+      if (category === 'gym') {
+        msg = `🏋️ *Membership Renewal Reminder*\n\nHi! Your membership with *${businessName}* is up for renewal soon. Would you like to renew today and keep your fitness streak going?`;
+      } else if (category === 'salon') {
+        msg = `✂️ *Time for your Monthly Refresh!*\n\nHi! Time for your regular trim or grooming at *${businessName}*? We have open appointment slots available this week!`;
+      } else {
+        msg = `🥐 *Craving your Favorites?*\n\nHi from *${businessName}*! We are serving fresh specials today. Would you like to place a quick order for delivery or pickup?`;
+      }
+
+      const res = await fetch('/api/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId,
+          customerNumber,
+          message: msg,
+        }),
+      });
+
+      if (res.ok) {
+        alert(`✅ Re-engagement reminder successfully sent to ${customerNumber}!`);
+      } else {
+        alert('Failed to dispatch reminder.');
+      }
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setSendingReminder(null);
     }
   };
 
@@ -549,7 +588,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end space-x-4">
+                    <div className="flex items-center justify-between sm:justify-end space-x-3">
                       {totalAmount !== undefined && (
                         <div className="text-right">
                           <span className="font-mono text-sm font-bold text-teal">₹{totalAmount}</span>
@@ -557,9 +596,21 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                         </div>
                       )}
 
-                      <div className="text-right">
+                      <div className="text-right hidden sm:block">
                         <span className="font-mono text-xs text-ink-light">{dateFormatted}</span>
                       </div>
+
+                      <a
+                        href={`/api/invoice/${order.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Download / View Official PDF Invoice"
+                        className="px-2 py-1 rounded bg-warm-card border border-warm-border text-teal hover:bg-teal-light hover:border-teal/40 transition-colors flex items-center space-x-1 text-[11px] font-mono font-bold shadow-sm"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">PDF Bill</span>
+                      </a>
 
                       <div className="p-1 rounded bg-warm-card text-ink-light">
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -685,6 +736,29 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                             <span>Send WhatsApp update</span>
                           </label>
                         </div>
+                      </div>
+
+                      {/* Quick Action Footer: PDF Bill & Smart Re-Engagement Nudge */}
+                      <div className="pt-3 border-t border-warm-border flex flex-wrap items-center justify-between gap-2">
+                        <a
+                          href={`/api/invoice/${order.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-paper border border-warm-border text-teal hover:bg-teal-light text-xs font-mono font-bold shadow-sm transition-colors"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>📄 View / Print Official PDF Bill</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          disabled={sendingReminder === order.customer_number}
+                          onClick={() => handleSendReEngagementNudge(order.customer_number, items[0]?.name || details.service)}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 text-xs font-serif font-bold shadow-sm transition-colors disabled:opacity-50"
+                        >
+                          <BellRing className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{sendingReminder === order.customer_number ? 'Sending Nudge...' : '🔄 Send WhatsApp Refill / Renewal Nudge'}</span>
+                        </button>
                       </div>
                     </div>
                   )}

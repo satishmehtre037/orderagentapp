@@ -72,6 +72,13 @@ export const onboardingWizardSchema = z.object({
   upi_id: z.string().optional(),
   auto_send_payment_link: z.boolean().optional(),
   payment_note: z.string().optional(),
+  gst_number: z.string().optional(),
+  store_address: z.string().optional(),
+
+  // Smart Re-Engagement & Renewal Reminders
+  enable_reminders: z.boolean().optional(),
+  reminder_days: z.coerce.number().optional(),
+  reminder_template: z.string().optional(),
 
   // Step 3
   whatsapp_number: z

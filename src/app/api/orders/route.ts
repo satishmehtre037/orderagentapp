@@ -13,21 +13,23 @@ async function sendWhatsAppStatusNotification(
   status: string,
   businessName: string,
   details: any,
-  businessId?: string
+  businessId?: string,
+  orderId?: string
 ) {
   if (!customerNumber) return;
 
   let text = '';
   const totalAmount = details?.total ? ` of *₹${details.total}*` : '';
+  const invoiceLink = orderId ? `\n\n📄 *Official Bill & Receipt PDF:*\n👉 https://orderagentapp.onrender.com/api/invoice/${orderId}` : '';
 
   if (status === 'confirmed') {
-    text = `🎉 *Order Confirmed!*\n\nYour order with *${businessName || 'our store'}* has been accepted and is currently being prepared!`;
+    text = `🎉 *Order Confirmed!*\n\nYour order with *${businessName || 'our store'}* has been accepted and is currently being prepared!${invoiceLink}`;
   } else if (status === 'completed') {
-    text = `✅ *Order Completed!*\n\nYour order has been completed / out for delivery. Thank you for choosing *${businessName || 'us'}*!`;
+    text = `✅ *Order Completed!*\n\nYour order has been completed / out for delivery.${invoiceLink}\n\nThank you for choosing *${businessName || 'us'}*!`;
   } else if (status === 'cancelled') {
     text = `❌ *Order Cancelled*\n\nYour order has been marked as cancelled. Please feel free to reach out if you need any further assistance!`;
   } else if (status === 'paid') {
-    text = `💳 *Payment Verified & Received!* 🎉\n\nYour UPI payment${totalAmount} for your order with *${businessName || 'our store'}* has been successfully received and verified!\n\nThank you for choosing us!`;
+    text = `💳 *Payment Verified & Received!* 🎉\n\nYour UPI payment${totalAmount} for your order with *${businessName || 'our store'}* has been successfully received and verified!${invoiceLink}\n\nThank you for choosing us!`;
   }
 
   if (!text) return;
@@ -155,7 +157,8 @@ export async function PATCH(req: Request) {
         notifyType,
         businessName,
         data.details,
-        data.business_id
+        data.business_id,
+        data.id
       );
     }
 

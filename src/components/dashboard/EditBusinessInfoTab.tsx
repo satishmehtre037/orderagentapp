@@ -13,7 +13,7 @@ import { SalonForm } from '../ledger/SalonForm';
 import { GymForm } from '../ledger/GymForm';
 import { TuitionForm } from '../ledger/TuitionForm';
 import { FormSkeleton } from './SkeletonLoaders';
-import { Save, CheckCircle2, AlertCircle, Sparkles, Trash2, AlertTriangle, QrCode, IndianRupee } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Sparkles, Trash2, AlertTriangle, QrCode, IndianRupee, BellRing, FileText, RefreshCw, Clock } from 'lucide-react';
 
 interface EditBusinessInfoTabProps {
   businessId: string;
@@ -94,6 +94,11 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
             upi_id: configMap.upi_id || '',
             auto_send_payment_link: configMap.auto_send_payment_link !== false,
             payment_note: configMap.payment_note || 'Please pay via GPay, PhonePe, or Paytm.',
+            gst_number: configMap.gst_number || '',
+            store_address: configMap.store_address || '',
+            enable_reminders: configMap.enable_reminders !== false,
+            reminder_days: configMap.reminder_days || (category === 'salon' ? 25 : category === 'gym' ? 27 : 7),
+            reminder_template: configMap.reminder_template || '',
           });
         }
       } catch (err) {
@@ -122,6 +127,11 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
         { config_key: 'upi_id', config_value: formData.upi_id || '' },
         { config_key: 'auto_send_payment_link', config_value: formData.auto_send_payment_link ?? true },
         { config_key: 'payment_note', config_value: formData.payment_note || '' },
+        { config_key: 'gst_number', config_value: formData.gst_number || '' },
+        { config_key: 'store_address', config_value: formData.store_address || '' },
+        { config_key: 'enable_reminders', config_value: formData.enable_reminders ?? true },
+        { config_key: 'reminder_days', config_value: formData.reminder_days || 27 },
+        { config_key: 'reminder_template', config_value: formData.reminder_template || '' },
       ];
 
       if (category === 'bakery') {
@@ -253,7 +263,7 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
               })}
               className="space-y-6"
             >
-              {/* Core Info */}
+              {/* Core Info & Tax Invoicing */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-warm-card p-4 rounded-md border border-warm-border">
                 <div>
                   <label className="block text-xs font-mono text-ink-light uppercase mb-1">
@@ -271,6 +281,26 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
                   <input
                     {...methods.register('whatsapp_number')}
                     className="w-full text-sm font-mono font-bold px-3 py-2 bg-paper border border-warm-border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-ink-light uppercase mb-1">
+                    Store Address / Location (For Invoices)
+                  </label>
+                  <input
+                    {...methods.register('store_address')}
+                    placeholder="e.g. Shop 4, Station Road, Thane West, Mumbai"
+                    className="w-full text-xs px-3 py-2 bg-paper border border-warm-border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-ink-light uppercase mb-1">
+                    GSTIN / Tax ID (Optional for Invoices)
+                  </label>
+                  <input
+                    {...methods.register('gst_number')}
+                    placeholder="e.g. 27AAAAA0000A1Z5"
+                    className="w-full text-xs font-mono px-3 py-2 bg-paper border border-warm-border rounded"
                   />
                 </div>
               </div>
@@ -328,6 +358,61 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
                   />
                   <label htmlFor="auto_send_payment_link" className="text-xs text-ink font-medium cursor-pointer">
                     Automatically generate clickable UPI pay link with exact order total in WhatsApp
+                  </label>
+                </div>
+              </div>
+
+              {/* Smart Customer Re-Engagement & Renewal Reminders */}
+              <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 pb-3 border-b border-warm-border">
+                  <div className="p-1.5 bg-marigold-light text-ink rounded">
+                    <BellRing className="w-4 h-4 text-marigold" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-sm font-bold text-ink">Smart Customer Re-Engagement & Refill Reminders</h3>
+                    <p className="text-[11px] text-ink-muted">
+                      Automatically nudge past customers on WhatsApp before memberships expire or when they are due for their next salon/bakery order.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
+                      Reminder Interval (Days after last visit/order)
+                    </label>
+                    <input
+                      type="number"
+                      {...methods.register('reminder_days')}
+                      placeholder={category === 'salon' ? '25' : category === 'gym' ? '27' : '7'}
+                      className="w-full px-3 py-2 text-xs font-mono bg-warm-card/40 border border-warm-border rounded focus:border-teal"
+                    />
+                    <span className="text-[10px] text-ink-muted mt-1 block">
+                      e.g. 27 days for monthly gym renewal, 25 days for salon trim, 7 days for cafe/bakery refill.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
+                      Custom Reminder Message Template (Optional)
+                    </label>
+                    <input
+                      {...methods.register('reminder_template')}
+                      placeholder="e.g. Hi! Your gym pass expires in 3 days. Would you like to renew?"
+                      className="w-full px-3 py-2 text-xs bg-warm-card/40 border border-warm-border rounded focus:border-teal"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="enable_reminders"
+                    {...methods.register('enable_reminders')}
+                    className="rounded border-warm-border text-teal focus:ring-teal"
+                  />
+                  <label htmlFor="enable_reminders" className="text-xs text-ink font-medium cursor-pointer">
+                    Enable automated smart re-engagement reminders for inactive customers
                   </label>
                 </div>
               </div>

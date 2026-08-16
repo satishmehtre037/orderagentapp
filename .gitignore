@@ -31,3 +31,4 @@ android/.idea/
 *.apk
 *.aab
 *.tsbuildinfo
+*.pdf
