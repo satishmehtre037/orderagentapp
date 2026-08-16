@@ -12,6 +12,7 @@ import {
 import { buildSystemPrompt } from '../services/promptBuilder.js';
 import { getResponse, extractStructuredCapture } from '../services/groqService.js';
 import { sendMessage } from '../services/whatsappService.js';
+import { downloadWhatsAppMedia, transcribeAudioWithGroq } from '../services/whisperService.js';
 
 const router = Router();
 
@@ -59,19 +60,54 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const value = change?.value;
     const message = value?.messages?.[0];
 
-    if (!message || message.type !== 'text') {
+    if (!message) {
       return;
     }
 
     const businessNumber = value.metadata?.display_phone_number || '';
     const customerNumber = message.from;
-    const messageText = message.text?.body || '';
+    let messageText = '';
+    let isVoiceNote = false;
+
+    // Handle Text Messages vs WhatsApp Voice Notes (Audio)
+    if (message.type === 'text') {
+      messageText = message.text?.body || '';
+    } else if (message.type === 'audio' || message.type === 'voice') {
+      const audioObj = message.audio || message.voice;
+      const mediaId = audioObj?.id;
+
+      if (!mediaId) {
+        console.warn('[Webhook] ⚠️ Audio message missing media ID. Skipping.');
+        return;
+      }
+
+      console.log(`\n[Webhook] 🎙️ Processing incoming WhatsApp Voice Note (Media ID: ${mediaId})...`);
+      try {
+        const { buffer } = await downloadWhatsAppMedia(mediaId);
+        const transcribedText = await transcribeAudioWithGroq(buffer, 'voicenote.ogg');
+        messageText = transcribedText;
+        isVoiceNote = true;
+        console.log(`[Webhook] 🎙️ Transcribed Voice Note: "${messageText}"`);
+      } catch (voiceErr: any) {
+        console.error('[Webhook Voice Error] Failed to transcribe voice note:', voiceErr);
+        const failText = "🙏 Sorry, I couldn't clearly hear your voice note. Could you please send it again or type your message?";
+        await sendMessage(customerNumber, businessNumber, failText);
+        return;
+      }
+    } else {
+      console.log(`[Webhook] Ignored non-text/non-audio message type: ${message.type}`);
+      return;
+    }
+
+    if (!messageText.trim()) {
+      return;
+    }
 
     console.log(`\n======================================================`);
-    console.log(`[Webhook] 📥 INCOMING MESSAGE RECEIVED`);
+    console.log(`[Webhook] 📥 INCOMING MESSAGE RECEIVED ${isVoiceNote ? '(🎙️ Voice Note)' : '(💬 Text)'}`);
     console.log(`[Webhook] Business Number: ${businessNumber}`);
     console.log(`[Webhook] Customer Number: ${customerNumber}`);
-    console.log(`[Webhook] Message Text   : "${messageText}"`);
+    console.log(`[Webhook] Message Content: "${messageText}"`);
     console.log(`======================================================`);
 
     // 1. Business lookup by WhatsApp Phone Number (with guaranteed fallback)
@@ -124,7 +160,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
     }
 
     // 3. Save incoming message to database
-    await saveConversationMessage(business.id, customerNumber, 'inbound', messageText);
+    const messageToSave = isVoiceNote ? `🎙️ [Voice Note]: ${messageText}` : messageText;
+    await saveConversationMessage(business.id, customerNumber, 'inbound', messageToSave);
 
     // 4. Fetch past conversation history (last 4 messages to avoid stale context loops)
     const history = await getRecentConversations(business.id, customerNumber, 4);
