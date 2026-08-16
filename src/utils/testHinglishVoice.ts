@@ -8,28 +8,27 @@ async function testHinglishVoiceNote() {
   const prompt = await buildSystemPrompt(bizId);
 
   console.log('================================================================');
-  console.log('🧪 TEST 1: Transcribed Voice Note (Hinglish Order with Delivery):');
-  console.log('Customer Spoke: "Bhaiya 2 paneer tikka sandwich ready rakhna, delivery Lokmanya Nagar Thane West me chahiye kal sham 5 baje"');
+  console.log('🧪 MESSAGE 1 (First Greeting): "Hi"');
   console.log('================================================================');
-  
-  const reply1 = await getResponse(
-    prompt,
-    [],
-    'Bhaiya 2 paneer tikka sandwich ready rakhna, delivery Lokmanya Nagar Thane West me chahiye kal sham 5 baje'
-  );
-  console.log('\n🤖 BOT REPLY:\n' + reply1);
+  const reply1 = await getResponse(prompt, [], 'Hi');
+  console.log('\n🤖 BOT REPLY 1:\n' + reply1);
 
   console.log('\n================================================================');
-  console.log('🧪 TEST 2: Casual Hinglish Inquiry:');
-  console.log('Customer Asked: "Bhaiya sandwich ka kitna time lagega aur rate kya hai?"');
+  console.log('🧪 MESSAGE 2 (Follow-up Order in ongoing chat):');
+  console.log('Customer says: "1 paneer tikka sandwich deliver to Lokmanya Nagar Thane West"');
   console.log('================================================================');
   
+  const history = [
+    { sender: 'customer', message: 'Hi' },
+    { sender: 'assistant', message: reply1 }
+  ] as any;
+
   const reply2 = await getResponse(
     prompt,
-    [],
-    'Bhaiya sandwich ka kitna time lagega aur rate kya hai?'
+    history,
+    '1 paneer tikka sandwich deliver to Lokmanya Nagar Thane West'
   );
-  console.log('\n🤖 BOT REPLY:\n' + reply2);
+  console.log('\n🤖 BOT REPLY 2:\n' + reply2);
 }
 
 testHinglishVoiceNote();
