@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendMessage } from '../../../services/whatsappService.js';
+import { saveConversationMessage } from '../../../services/businessService.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -10,11 +12,10 @@ async function sendWhatsAppStatusNotification(
   customerNumber: string,
   status: string,
   businessName: string,
-  details: any
+  details: any,
+  businessId?: string
 ) {
-  const token = process.env.WHATSAPP_CLOUD_API_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  if (!token || !phoneNumberId || !customerNumber) return;
+  if (!customerNumber) return;
 
   let text = '';
   const totalAmount = details?.total ? ` of *₹${details.total}*` : '';
@@ -32,23 +33,13 @@ async function sendWhatsAppStatusNotification(
   if (!text) return;
 
   try {
-    const cleanToNumber = customerNumber.replace(/\D/g, '');
-    await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: cleanToNumber,
-        type: 'text',
-        text: { preview_url: false, body: text },
-      }),
-    });
+    console.log(`[API Orders] 📲 Dispatching WhatsApp status notification (${status}) to ${customerNumber}...`);
+    await sendMessage(customerNumber, '', text);
+    if (businessId) {
+      await saveConversationMessage(businessId, customerNumber, 'outbound', text);
+    }
   } catch (err) {
-    console.error('[WhatsApp Status Notification Error]:', err);
+    console.error('[API Orders WhatsApp Notification Error]:', err);
   }
 }
 
@@ -159,7 +150,13 @@ export async function PATCH(req: Request) {
     // If requested, notify customer on WhatsApp
     if (notifyCustomer && data?.customer_number) {
       const notifyType = payment_status === 'paid' ? 'paid' : status;
-      sendWhatsAppStatusNotification(data.customer_number, notifyType, businessName, data.details);
+      await sendWhatsAppStatusNotification(
+        data.customer_number,
+        notifyType,
+        businessName,
+        data.details,
+        data.business_id
+      );
     }
 
     return NextResponse.json({ order: data });

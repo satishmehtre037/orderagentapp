@@ -30,11 +30,11 @@ export async function sendMessage(
   const formattedMessage = formatWhatsAppMessage(message);
   console.log(`[WhatsApp Service] Sending reply to ${toNumber} (Business: ${businessWhatsappNumber})`);
 
-  const token = ENV.WHATSAPP_CLOUD_API_TOKEN;
-  const phoneNumberId = ENV.WHATSAPP_PHONE_NUMBER_ID;
+  const token = ENV.WHATSAPP_CLOUD_API_TOKEN || process.env.WHATSAPP_CLOUD_API_TOKEN;
+  const phoneNumberId = ENV.WHATSAPP_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID;
 
   if (!token || !phoneNumberId) {
-    console.warn(`[WhatsApp Service Warning] WHATSAPP_CLOUD_API_TOKEN or WHATSAPP_PHONE_NUMBER_ID missing in .env.`);
+    console.warn(`[WhatsApp Service Warning] WHATSAPP_CLOUD_API_TOKEN or WHATSAPP_PHONE_NUMBER_ID missing in environment.`);
     console.log(`[WhatsApp Service Mock] Would send to ${toNumber}:\n${formattedMessage}`);
     return;
   }
