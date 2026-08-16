@@ -289,10 +289,29 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
                     <label className="block text-xs font-medium text-slate-700 mb-1">
                       WhatsApp Connected Number *
                     </label>
-                    <input
-                      {...methods.register('whatsapp_number')}
-                      className="w-full text-xs font-mono font-medium px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
-                    />
+                    <div className="flex rounded-lg border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-900 shadow-sm">
+                      <div className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100/90 border-r border-slate-200 text-slate-700 select-none">
+                        <span className="text-sm leading-none">🇮🇳</span>
+                        <span className="text-xs font-mono font-semibold text-slate-800">+91</span>
+                      </div>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={10}
+                        autoComplete="tel-national"
+                        value={(() => {
+                          const raw = (methods.watch('whatsapp_number') || '').replace(/\D/g, '');
+                          return raw.startsWith('91') && raw.length > 10 ? raw.slice(2, 12) : raw.slice(0, 10);
+                        })()}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          methods.setValue('whatsapp_number', digits ? `+91${digits}` : '', { shouldValidate: true });
+                        }}
+                        placeholder="9876543210"
+                        className="flex-1 px-3 py-2 text-xs font-mono font-semibold text-slate-900 bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:font-normal"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">

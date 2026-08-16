@@ -80,10 +80,22 @@ export const onboardingWizardSchema = z.object({
   reminder_days: z.coerce.number().optional(),
   reminder_template: z.string().optional(),
 
-  // Step 3
+  // Step 3: Fixed +91 Indian Phone Number (Exactly 10 digits)
   whatsapp_number: z
     .string()
-    .min(10, 'Enter a valid 10-12 digit WhatsApp number with country code'),
+    .min(1, 'Please enter your 10-digit WhatsApp number')
+    .refine(
+      (val) => {
+        const digits = val.replace(/\D/g, '');
+        if (digits.length === 12 && digits.startsWith('91')) {
+          return true;
+        }
+        return digits.length === 10;
+      },
+      {
+        message: 'Please enter a valid 10-digit mobile number',
+      }
+    ),
 });
 
 export type OnboardingWizardFormData = z.infer<typeof onboardingWizardSchema>;
