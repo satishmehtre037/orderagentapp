@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabaseClient } from '../../lib/supabase/client';
 import { Conversation, ConversationThread } from '../../types';
 import { ConversationThreadSkeleton } from './SkeletonLoaders';
@@ -29,7 +29,10 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
   const [manualReplyText, setManualReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const isAtBottomRef = useRef<boolean>(true);
+  const prevMessagesLengthRef = useRef<number>(0);
+  const prevSelectedThreadRef = useRef<string | null>(null);
 
   // Fetch all conversations from server API
   const fetchConversations = useCallback(
@@ -88,45 +91,49 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
     };
   }, [businessId, fetchConversations]);
 
-  // Group conversations by customer_number
-  const threadsMap = new Map<string, ConversationThread>();
-  conversations.forEach((rawMsg: any) => {
-    const text = rawMsg.message_text || rawMsg.message || '';
-    const sender =
-      rawMsg.message_direction === 'inbound' || rawMsg.sender === 'customer' || rawMsg.sender === 'inbound'
-        ? 'customer'
-        : 'agent';
-    const msg: Conversation = {
-      ...rawMsg,
-      message: text,
-      sender: sender,
-    };
+  // Memoize grouped threads by customer_number so parent re-renders don't trigger effects
+  const threads = useMemo(() => {
+    const threadsMap = new Map<string, ConversationThread>();
+    conversations.forEach((rawMsg: any) => {
+      const text = rawMsg.message_text || rawMsg.message || '';
+      const sender =
+        rawMsg.message_direction === 'inbound' || rawMsg.sender === 'customer' || rawMsg.sender === 'inbound'
+          ? 'customer'
+          : 'agent';
+      const msg: Conversation = {
+        ...rawMsg,
+        message: text,
+        sender: sender,
+      };
 
-    const existing = threadsMap.get(msg.customer_number);
-    if (!existing) {
-      threadsMap.set(msg.customer_number, {
-        customer_number: msg.customer_number,
-        last_message: msg.message,
-        last_timestamp: msg.created_at,
-        messages: [msg],
-      });
-    } else {
-      existing.messages.push(msg);
-      existing.last_message = msg.message;
-      existing.last_timestamp = msg.created_at;
-    }
-  });
+      const existing = threadsMap.get(msg.customer_number);
+      if (!existing) {
+        threadsMap.set(msg.customer_number, {
+          customer_number: msg.customer_number,
+          last_message: msg.message,
+          last_timestamp: msg.created_at,
+          messages: [msg],
+        });
+      } else {
+        existing.messages.push(msg);
+        existing.last_message = msg.message;
+        existing.last_timestamp = msg.created_at;
+      }
+    });
 
-  const threads = Array.from(threadsMap.values()).sort(
-    (a, b) => new Date(b.last_timestamp).getTime() - new Date(a.last_timestamp).getTime()
-  );
+    return Array.from(threadsMap.values()).sort(
+      (a, b) => new Date(b.last_timestamp).getTime() - new Date(a.last_timestamp).getTime()
+    );
+  }, [conversations]);
 
   // Filter threads by search query
-  const filteredThreads = threads.filter(
-    (t) =>
-      t.customer_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.last_message.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredThreads = useMemo(() => {
+    if (!searchQuery.trim()) return threads;
+    const q = searchQuery.toLowerCase();
+    return threads.filter(
+      (t) => t.customer_number.toLowerCase().includes(q) || t.last_message.toLowerCase().includes(q)
+    );
+  }, [threads, searchQuery]);
 
   // Set default selected thread if none selected
   useEffect(() => {
@@ -135,12 +142,35 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
     }
   }, [threads, selectedCustomerNumber]);
 
-  const activeThread = threads.find((t) => t.customer_number === selectedCustomerNumber);
+  const activeThread = useMemo(() => {
+    return threads.find((t) => t.customer_number === selectedCustomerNumber);
+  }, [threads, selectedCustomerNumber]);
 
-  // Auto-scroll chat to bottom
+  // Track if user is scrolling manually inside chat container
+  const handleChatScroll = () => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const threshold = 60; // px from bottom
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+  };
+
+  // Safe internal container scroll: only scroll when switching thread or if already at bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeThread?.messages]);
+    const el = chatContainerRef.current;
+    if (!el || !activeThread) return;
+
+    const threadChanged = prevSelectedThreadRef.current !== selectedCustomerNumber;
+    const msgCount = activeThread.messages.length;
+    const hasNewMessages = msgCount > prevMessagesLengthRef.current;
+
+    prevSelectedThreadRef.current = selectedCustomerNumber;
+    prevMessagesLengthRef.current = msgCount;
+
+    // Only scroll if thread changed or if user was already at the bottom
+    if (threadChanged || isAtBottomRef.current || hasNewMessages) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [selectedCustomerNumber, activeThread?.messages.length]);
 
   // Send Manual Reply (Human Takeover)
   const handleSendManualReply = async (e: React.FormEvent) => {
@@ -291,7 +321,11 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
               </div>
 
               {/* Chat Messages Stream */}
-              <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[460px]">
+              <div
+                ref={chatContainerRef}
+                onScroll={handleChatScroll}
+                className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[460px]"
+              >
                 {activeThread.messages.map((msg, index) => {
                   const isCustomer = msg.sender === 'customer';
                   return (
@@ -333,7 +367,6 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
                     </div>
                   );
                 })}
-                <div ref={messagesEndRef} />
               </div>
 
               {/* Live Takeover / Manual WhatsApp Reply Bar */}
