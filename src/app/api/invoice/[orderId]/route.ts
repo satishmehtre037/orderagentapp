@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { generateInvoicePdfBuffer, InvoiceData } from '@/services/invoiceService';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const adminSupabase = createClient(supabaseUrl, serviceKey);
@@ -16,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    // 1. Fetch order record
+    // 1. Fetch order record (always fresh from database)
     const { data: order, error: orderErr } = await adminSupabase
       .from('orders_bookings_leads')
       .select('*')
@@ -48,6 +51,8 @@ export async function GET(
     const items = details.items || (details.service ? [{ name: details.service, quantity: 1, price: details.price }] : []);
     const totalAmount = details.total || details.price || 0;
 
+    const isPaid = details.payment_status === 'paid' || order.status === 'completed';
+
     const invoicePayload: InvoiceData = {
       orderId: order.id,
       businessName: business?.name || 'Store',
@@ -60,7 +65,7 @@ export async function GET(
       createdAt: order.created_at,
       type: order.type,
       status: order.status,
-      paymentStatus: details.payment_status || (order.status === 'completed' ? 'paid' : 'pending'),
+      paymentStatus: isPaid ? 'paid' : 'pending',
       paidAt: details.paid_at,
       items,
       totalAmount,
@@ -75,7 +80,9 @@ export async function GET(
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="Invoice-${orderId.slice(0, 8)}.pdf"`,
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (err: any) {

@@ -194,6 +194,26 @@ export async function generateInvoicePdfBuffer(data: InvoiceData): Promise<Buffe
   const calcBoxX = margin + contentWidth - calcBoxWidth;
   const calcBoxY = tableY;
 
+  // Paid Stamp on Left of Summary Box
+  if (isPaid) {
+    doc.setFillColor(236, 253, 245); // emerald light
+    doc.setDrawColor(167, 243, 208); // emerald border
+    doc.roundedRect(margin, calcBoxY, 160, 54, 3, 3, 'FD');
+
+    doc.setTextColor(5, 150, 105);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('PAYMENT VERIFIED', margin + 12, calcBoxY + 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(4, 120, 87);
+    doc.text('Received & settled via UPI', margin + 12, calcBoxY + 36);
+    if (data.paidAt) {
+      doc.text(`On: ${new Date(data.paidAt).toLocaleDateString('en-IN')}`, margin + 12, calcBoxY + 46);
+    }
+  }
+
   doc.setFillColor(tealLight[0], tealLight[1], tealLight[2]);
   doc.setDrawColor(tealBorder[0], tealBorder[1], tealBorder[2]);
   doc.roundedRect(calcBoxX, calcBoxY, calcBoxWidth, 54, 3, 3, 'FD');
