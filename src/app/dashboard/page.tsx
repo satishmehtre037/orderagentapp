@@ -95,14 +95,14 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  // 1-Hour Countdown state synced with live UTC timestamp
+  // 1-Day (24-Hour) Countdown state synced with live UTC timestamp
   const [countdownStr, setCountdownStr] = useState('');
   const [isTrialEnded, setIsTrialEnded] = useState(false);
 
   useEffect(() => {
     const updateCountdown = () => {
       if (!business?.trial_end_date) {
-        setCountdownStr('60m 00s left');
+        setCountdownStr('24h 00m left');
         return;
       }
       const end = new Date(business.trial_end_date).getTime();
@@ -113,9 +113,14 @@ export default function DashboardPage() {
         setCountdownStr('Trial Expired');
       } else {
         setIsTrialEnded(false);
-        const mins = Math.floor(diffMs / (1000 * 60));
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
-        setCountdownStr(`${mins}m ${secs < 10 ? '0' : ''}${secs}s left`);
+        if (hours > 0) {
+          setCountdownStr(`${hours}h ${mins}m ${secs < 10 ? '0' : ''}${secs}s left`);
+        } else {
+          setCountdownStr(`${mins}m ${secs < 10 ? '0' : ''}${secs}s left`);
+        }
       }
     };
 
@@ -195,7 +200,7 @@ export default function DashboardPage() {
         <div className="bg-red-100 border-b border-red-300 py-3 px-4 text-center text-xs font-medium text-red-900 flex items-center justify-center space-x-2">
           <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
           <span>
-            Your 1-hour free trial has ended — WhatsApp AI assistant is paused. Upgrade for ₹1 to keep receiving automated orders.
+            Your 1-day free trial has ended — WhatsApp AI assistant is paused. Upgrade for ₹1 to keep receiving automated orders.
           </span>
           <button
             onClick={() => setActiveTab('billing')}
@@ -232,7 +237,7 @@ export default function DashboardPage() {
                   ? '₹1/mo Plan Active'
                   : isTrialExpired
                   ? 'AI Replies Paused'
-                  : '1-Hour Free Trial Window'}
+                  : '1-Day Free Trial Window'}
               </p>
             </div>
             <div className="p-2.5 bg-teal-light text-teal rounded-full">

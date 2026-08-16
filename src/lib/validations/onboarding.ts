@@ -68,6 +68,11 @@ export const onboardingWizardSchema = z.object({
   hours: z.string().optional(),
   faqs: z.array(faqItemSchema).optional(),
 
+  // UPI & Payment Settings
+  upi_id: z.string().optional(),
+  auto_send_payment_link: z.boolean().optional(),
+  payment_note: z.string().optional(),
+
   // Step 3
   whatsapp_number: z
     .string()

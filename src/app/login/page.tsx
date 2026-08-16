@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { supabaseClient } from '../../lib/supabase/client';
 import { Bot, ArrowRight } from 'lucide-react';
 
+import { loginSchema } from '../../lib/validations/auth';
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -19,9 +21,17 @@ export default function LoginPage() {
     setErrorMsg(null);
 
     try {
+      const parseResult = loginSchema.safeParse({ email, password });
+      if (!parseResult.success) {
+        throw new Error(parseResult.error.errors[0]?.message || 'Please enter valid login credentials.');
+      }
+
+      const cleanEmail = parseResult.data.email;
+      const cleanPassword = parseResult.data.password;
+
       const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
+        email: cleanEmail,
+        password: cleanPassword,
       });
 
       if (error) {
@@ -31,7 +41,7 @@ export default function LoginPage() {
       console.log('Login successful:', data.user);
 
       // Check if business exists for this user via server API route (bypasses client RLS)
-      const res = await fetch(`/api/business?email=${encodeURIComponent(email.trim())}`);
+      const res = await fetch(`/api/business?email=${encodeURIComponent(cleanEmail)}`);
       const bizData = await res.json();
 
       if (bizData?.business?.id) {

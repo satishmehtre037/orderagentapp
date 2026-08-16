@@ -28,6 +28,8 @@ import {
   Phone,
   MapPin,
   FileText,
+  QrCode,
+  CreditCard,
 } from 'lucide-react';
 
 interface OrdersLedgerTabProps {
@@ -137,6 +139,43 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
       }
     } catch (err) {
       console.error('Failed to update status:', err);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // 1-Tap Mark as Paid via UPI & WhatsApp confirmation
+  const handlePaymentStatusChange = async (orderId: string, paymentStatus: 'paid' | 'pending') => {
+    setUpdatingId(orderId);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderId,
+          payment_status: paymentStatus,
+          notifyCustomer: true,
+          businessName,
+        }),
+      });
+
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((item) => {
+            if (item.id === orderId) {
+              const updatedDetails = {
+                ...(item.details || {}),
+                payment_status: paymentStatus,
+                paid_at: paymentStatus === 'paid' ? new Date().toISOString() : undefined,
+              };
+              return { ...item, details: updatedDetails };
+            }
+            return item;
+          })
+        );
+      }
+    } catch (err) {
+      console.error('Failed to update payment status:', err);
     } finally {
       setUpdatingId(null);
     }
@@ -487,9 +526,20 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                         {order.type === 'booking' ? 'BK' : order.type === 'lead' ? 'LD' : 'OR'}
                       </div>
                       <div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                           <span className="font-mono text-xs font-bold text-ink">{order.customer_number}</span>
                           {getStatusBadge(order.status)}
+                          {details.payment_status === 'paid' ? (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span>UPI Paid</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                              <Clock className="w-3 h-3 text-amber-600" />
+                              <span>Payment Pending</span>
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-ink-muted line-clamp-1 mt-0.5">
                           {items.length > 0
@@ -520,7 +570,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                   {/* Expanded Ledger Item Details Drawer */}
                   {isExpanded && (
                     <div className="p-4 sm:p-6 bg-warm-card border-t border-dashed border-warm-border space-y-4 animate-fade-in">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                         {/* Items Breakdown */}
                         <div className="p-3.5 bg-paper rounded border border-warm-border space-y-2">
                           <span className="text-[10px] font-mono text-ink-light uppercase block font-semibold">
@@ -560,10 +610,53 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                           </div>
                         </div>
 
+                        {/* UPI Payment Verification */}
+                        <div className="p-3.5 bg-paper rounded border border-warm-border space-y-2">
+                          <span className="text-[10px] font-mono text-ink-light uppercase block font-semibold">
+                            UPI PAYMENT STATUS
+                          </span>
+                          {details.payment_status === 'paid' ? (
+                            <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded text-emerald-900 space-y-1">
+                              <div className="flex items-center space-x-1.5 font-bold text-xs">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <span>Payment Verified</span>
+                              </div>
+                              <p className="text-[10px] text-emerald-700 font-mono">
+                                {details.paid_at ? new Date(details.paid_at).toLocaleString() : 'Marked Paid'}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => handlePaymentStatusChange(order.id, 'pending')}
+                                className="text-[10px] text-red-600 hover:underline pt-1 block"
+                              >
+                                Mark as Unpaid
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 text-xs">
+                                <p className="text-[10px] font-medium">Awaiting customer payment via UPI</p>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={updatingId === order.id}
+                                onClick={() => handlePaymentStatusChange(order.id, 'paid')}
+                                className="w-full py-1.5 px-2 rounded bg-emerald-600 text-white font-serif font-bold text-xs hover:bg-emerald-700 shadow-sm transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Mark Paid via UPI</span>
+                              </button>
+                              <span className="text-[9px] text-ink-muted block text-center">
+                                Sends receipt notification to WhatsApp
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
                         {/* Status Controls */}
                         <div className="p-3.5 bg-paper rounded border border-warm-border space-y-2">
                           <span className="text-[10px] font-mono text-ink-light uppercase block font-semibold">
-                            UPDATE ORDER STATUS
+                            ORDER FULFILLMENT
                           </span>
                           <div className="grid grid-cols-2 gap-1.5">
                             {(['new', 'confirmed', 'completed', 'cancelled'] as OrderStatus[]).map((st) => (
@@ -589,7 +682,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                               onChange={(e) => setNotifyCustomerOnStatus(e.target.checked)}
                               className="rounded text-teal focus:ring-0"
                             />
-                            <span>Send WhatsApp update to customer</span>
+                            <span>Send WhatsApp update</span>
                           </label>
                         </div>
                       </div>

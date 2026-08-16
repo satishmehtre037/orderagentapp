@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { supabaseClient } from '../../lib/supabase/client';
 import { Bot, ArrowRight, ShieldCheck } from 'lucide-react';
 
+import { signupSchema } from '../../lib/validations/auth';
+
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
@@ -20,11 +22,20 @@ export default function SignupPage() {
     setErrorMsg(null);
 
     try {
+      const parseResult = signupSchema.safeParse({ fullName, email, password });
+      if (!parseResult.success) {
+        throw new Error(parseResult.error.errors[0]?.message || 'Please provide valid signup details.');
+      }
+
+      const cleanFullName = parseResult.data.fullName;
+      const cleanEmail = parseResult.data.email;
+      const cleanPassword = parseResult.data.password;
+
       // 1. Create user via Server Admin API (bypasses Supabase email rate limits & auto-confirms)
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName }),
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword, fullName: cleanFullName }),
       });
 
       const resData = await res.json();
@@ -34,8 +45,8 @@ export default function SignupPage() {
 
       // 2. Sign in to establish client session
       const { error: loginErr } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
+        email: cleanEmail,
+        password: cleanPassword,
       });
 
       if (loginErr) {

@@ -13,7 +13,7 @@ import { SalonForm } from '../ledger/SalonForm';
 import { GymForm } from '../ledger/GymForm';
 import { TuitionForm } from '../ledger/TuitionForm';
 import { FormSkeleton } from './SkeletonLoaders';
-import { Save, CheckCircle2, AlertCircle, Sparkles, Trash2, AlertTriangle } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Sparkles, Trash2, AlertTriangle, QrCode, IndianRupee } from 'lucide-react';
 
 interface EditBusinessInfoTabProps {
   businessId: string;
@@ -91,6 +91,9 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
             faqs: configMap.faqs || [
               { question: 'What are your working hours?', answer: '9:00 AM to 9:00 PM.' },
             ],
+            upi_id: configMap.upi_id || '',
+            auto_send_payment_link: configMap.auto_send_payment_link !== false,
+            payment_note: configMap.payment_note || 'Please pay via GPay, PhonePe, or Paytm.',
           });
         }
       } catch (err) {
@@ -116,6 +119,9 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
       const updates: Array<{ config_key: string; config_value: any }> = [
         { config_key: 'hours', config_value: formData.hours || '' },
         { config_key: 'faqs', config_value: formData.faqs || [] },
+        { config_key: 'upi_id', config_value: formData.upi_id || '' },
+        { config_key: 'auto_send_payment_link', config_value: formData.auto_send_payment_link ?? true },
+        { config_key: 'payment_note', config_value: formData.payment_note || '' },
       ];
 
       if (category === 'bakery') {
@@ -266,6 +272,63 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
                     {...methods.register('whatsapp_number')}
                     className="w-full text-sm font-mono font-bold px-3 py-2 bg-paper border border-warm-border rounded"
                   />
+                </div>
+              </div>
+
+              {/* UPI & In-Chat Payment Settings */}
+              <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 pb-3 border-b border-warm-border">
+                  <div className="p-1.5 bg-teal-light text-teal rounded">
+                    <QrCode className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-sm font-bold text-ink">In-Chat UPI & Payment Automation</h3>
+                    <p className="text-[11px] text-ink-muted">
+                      When customers confirm orders or bookings, the AI automatically sends them your direct UPI pay link.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
+                      Store UPI ID / VPA
+                    </label>
+                    <div className="relative">
+                      <IndianRupee className="w-3.5 h-3.5 text-ink-light absolute left-3 top-3" />
+                      <input
+                        {...methods.register('upi_id')}
+                        placeholder="e.g. yourstore@okhdfcbank or 9876543210@paytm"
+                        className="w-full pl-8 pr-3 py-2 text-xs font-mono bg-warm-card/40 border border-warm-border rounded focus:border-teal"
+                      />
+                    </div>
+                    <span className="text-[10px] text-ink-muted mt-1 block">
+                      Leave blank if you accept cash/counter payments only.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
+                      Payment Note / Instructions
+                    </label>
+                    <input
+                      {...methods.register('payment_note')}
+                      placeholder="e.g. Please share screenshot of UPI payment"
+                      className="w-full px-3 py-2 text-xs bg-warm-card/40 border border-warm-border rounded focus:border-teal"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="auto_send_payment_link"
+                    {...methods.register('auto_send_payment_link')}
+                    className="rounded border-warm-border text-teal focus:ring-teal"
+                  />
+                  <label htmlFor="auto_send_payment_link" className="text-xs text-ink font-medium cursor-pointer">
+                    Automatically generate clickable UPI pay link with exact order total in WhatsApp
+                  </label>
                 </div>
               </div>
 

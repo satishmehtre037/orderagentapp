@@ -19,24 +19,13 @@ export async function GET(req: Request) {
     } else if (email) {
       query = query.ilike('owner_email', email.trim());
     } else {
-      // Fallback to most recent business
-      query = query.order('created_at', { ascending: false }).limit(1);
+      // Require either email or id to prevent leaking other accounts
+      return NextResponse.json({ business: null, configs: {} });
     }
 
     let { data: business, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
 
-    if (!business) {
-      // Fallback to most recent active business in DB
-      const { data: latestBiz } = await adminSupabase
-        .from('businesses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      business = latestBiz;
-    }
-
-    if (error && !business) {
+    if (error) {
       console.error('[API Business] Error fetching business:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -45,11 +34,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ business: null, configs: {} });
     }
 
-    // Auto-normalize old 30-day trial dates (> 2 hours in future) to 1-hour test trial
+    // Set 1-day (24-hour) trial window if missing
     if (business.subscription_status === 'trial') {
       const trialEndMs = business.trial_end_date ? new Date(business.trial_end_date).getTime() : 0;
-      if (!trialEndMs || trialEndMs > Date.now() + 2 * 60 * 60 * 1000) {
-        const normalizedTrialEnd = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      if (!trialEndMs) {
+        const normalizedTrialEnd = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         business.trial_end_date = normalizedTrialEnd;
         // Persist update in DB
         await adminSupabase.from('businesses').update({ trial_end_date: normalizedTrialEnd }).eq('id', business.id);

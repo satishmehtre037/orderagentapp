@@ -17,12 +17,16 @@ async function sendWhatsAppStatusNotification(
   if (!token || !phoneNumberId || !customerNumber) return;
 
   let text = '';
+  const totalAmount = details?.total ? ` of *₹${details.total}*` : '';
+
   if (status === 'confirmed') {
     text = `🎉 *Order Confirmed!*\n\nYour order with *${businessName || 'our store'}* has been accepted and is currently being prepared!`;
   } else if (status === 'completed') {
     text = `✅ *Order Completed!*\n\nYour order has been completed / out for delivery. Thank you for choosing *${businessName || 'us'}*!`;
   } else if (status === 'cancelled') {
     text = `❌ *Order Cancelled*\n\nYour order has been marked as cancelled. Please feel free to reach out if you need any further assistance!`;
+  } else if (status === 'paid') {
+    text = `💳 *Payment Verified & Received!* 🎉\n\nYour UPI payment${totalAmount} for your order with *${businessName || 'our store'}* has been successfully received and verified!\n\nThank you for choosing us!`;
   }
 
   if (!text) return;
@@ -116,15 +120,34 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, status, notifyCustomer, businessName } = body;
+    const { id, status, payment_status, notifyCustomer, businessName } = body;
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'Missing id or status' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'Missing order id' }, { status: 400 });
+    }
+
+    // Fetch existing order to merge details
+    const { data: existingOrder } = await adminSupabase
+      .from('orders_bookings_leads')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    const updatePayload: Record<string, any> = {};
+    if (status) updatePayload.status = status;
+
+    if (payment_status && existingOrder) {
+      const mergedDetails = {
+        ...(existingOrder.details || {}),
+        payment_status: payment_status,
+        paid_at: payment_status === 'paid' ? new Date().toISOString() : undefined,
+      };
+      updatePayload.details = mergedDetails;
     }
 
     const { data, error } = await adminSupabase
       .from('orders_bookings_leads')
-      .update({ status })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
@@ -135,7 +158,8 @@ export async function PATCH(req: Request) {
 
     // If requested, notify customer on WhatsApp
     if (notifyCustomer && data?.customer_number) {
-      sendWhatsAppStatusNotification(data.customer_number, status, businessName, data.details);
+      const notifyType = payment_status === 'paid' ? 'paid' : status;
+      sendWhatsAppStatusNotification(data.customer_number, notifyType, businessName, data.details);
     }
 
     return NextResponse.json({ order: data });

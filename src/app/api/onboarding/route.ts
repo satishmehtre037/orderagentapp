@@ -25,46 +25,46 @@ export async function POST(req: Request) {
 
     let businessId: string;
 
-      // 1-hour test trial window
-      const oneHourFromNow = new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString();
+    // 1-day (24-hour) free trial window
+    const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-      if (existingBusiness) {
-        // Owner already has a business — UPDATE it
-        console.log('[API Onboarding] Existing business found, updating:', existingBusiness.id);
-        const { data: updatedBiz, error: updateErr } = await adminSupabase
-          .from('businesses')
-          .update({
-            name: data.business_name,
-            category: data.category,
-            whatsapp_number: data.whatsapp_number,
-            subscription_status: 'trial',
-            trial_end_date: oneHourFromNow,
-          })
-          .eq('id', existingBusiness.id)
-          .select('id')
-          .single();
+    if (existingBusiness) {
+      // Owner already has a business — UPDATE it
+      console.log('[API Onboarding] Existing business found, updating:', existingBusiness.id);
+      const { data: updatedBiz, error: updateErr } = await adminSupabase
+        .from('businesses')
+        .update({
+          name: data.business_name,
+          category: data.category,
+          whatsapp_number: data.whatsapp_number,
+          subscription_status: 'trial',
+          trial_end_date: oneDayFromNow,
+        })
+        .eq('id', existingBusiness.id)
+        .select('id')
+        .single();
 
-        if (updateErr) {
-          console.error('[API Onboarding Error] Business update error:', updateErr);
-          return NextResponse.json({ error: updateErr.message }, { status: 400 });
-        }
-        businessId = updatedBiz.id;
-        console.log('[API Onboarding] Business updated successfully. ID:', businessId);
-      } else {
-        // New owner — INSERT fresh business row
-        console.log('[API Onboarding] No existing business found, inserting new...');
-        const { data: newBiz, error: insertErr } = await adminSupabase
-          .from('businesses')
-          .insert([{
-            name: data.business_name,
-            category: data.category,
-            whatsapp_number: data.whatsapp_number,
-            owner_email: resolvedEmail,
-            subscription_status: 'trial',
-            trial_end_date: oneHourFromNow,
-          }])
-          .select('id')
-          .single();
+      if (updateErr) {
+        console.error('[API Onboarding Error] Business update error:', updateErr);
+        return NextResponse.json({ error: updateErr.message }, { status: 400 });
+      }
+      businessId = updatedBiz.id;
+      console.log('[API Onboarding] Business updated successfully. ID:', businessId);
+    } else {
+      // New owner — INSERT fresh business row
+      console.log('[API Onboarding] No existing business found, inserting new...');
+      const { data: newBiz, error: insertErr } = await adminSupabase
+        .from('businesses')
+        .insert([{
+          name: data.business_name,
+          category: data.category,
+          whatsapp_number: data.whatsapp_number,
+          owner_email: resolvedEmail,
+          subscription_status: 'trial',
+          trial_end_date: oneDayFromNow,
+        }])
+        .select('id')
+        .single();
 
       if (insertErr) {
         console.error('[API Onboarding Error] Business insert error:', insertErr);

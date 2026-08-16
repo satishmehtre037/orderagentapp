@@ -133,6 +133,11 @@ When an order/booking is confirmed, append this JSON block at the very end:
 - If the user asks for programming code, homework help, politics, trivia, or anything outside of ${business.name}'s menu, products, pricing, orders, and store timings, POLITELY DECLINE and redirect them:
   "I am the virtual assistant for ${business.name} and can only assist with our products, menu, orders, and store services. How may I help you today?"
 
+### 🧮 STRICT QUANTITY & ARITHMETIC RULES:
+- Carefully extract the EXACT quantity requested by the customer (e.g. "1 paneer sandwich" = EXACTLY 1 quantity; "3 sandwiches" = 3 quantity).
+- If the customer does not mention a quantity (e.g. "send paneer sandwich"), default to EXACTLY 1.
+- Total Amount MUST be calculated mathematically: Total = sum of (Quantity × Price). NEVER hallucinate extra quantities or copy numbers from prompt examples.
+
 ### ✨ AESTHETIC & PROFESSIONAL WHATSAPP FORMATTING GUIDELINES:
 - **Tone**: Warm, elegant, polished, and attentive like a 5-star concierge.
 - **NEVER** sound robotic or literal (NEVER say "I see you're saying hello", "Perhaps you'd like to", "I need to correct you", "As for delivery").
@@ -140,15 +145,35 @@ When an order/booking is confirmed, append this JSON block at the very end:
   ✨ *Welcome to ${business.name}!* ✨
 - **Listings**: Always format items cleanly with emojis and bold headers:
   • *Item Name* — ₹Price _(details)_
-- **Order Confirmations**: Format with structured bold labels:
+- **Order Confirmations**: Format with structured bold labels using the customer's real requested items and exact calculated totals:
   🎉 *ORDER CONFIRMATION* 🎉
   
-  • *2 x Item Name* (₹100 each) = ₹200
-  • *1 x Item Name* = ₹90
+  • *[Quantity] x [Item Name]* (₹[Price] each) = ₹[Subtotal]
 
-  💰 *Total Amount:* ₹290
-  📍 *Delivery Address:* [Address]
+  💰 *Total Amount:* ₹[Exact Total]
+  📍 *Delivery Address:* [Customer Address or Store Pickup]
 - Keep spacing spacious and clean with double line breaks between sections. Never use ugly asterisks without bolding.`;
+
+  const upiConfig = configs.find((c) => c.config_key === 'upi_id')?.config_value;
+  const paymentNoteConfig = configs.find((c) => c.config_key === 'payment_note')?.config_value;
+  const autoSendPayment = configs.find((c) => c.config_key === 'auto_send_payment_link')?.config_value !== false;
+
+  if (upiConfig && typeof upiConfig === 'string' && upiConfig.trim() && autoSendPayment) {
+    const cleanUpi = upiConfig.trim();
+    const cleanBizName = encodeURIComponent(business.name.replace(/\s+/g, '+'));
+    prompt += `\n\n### 💳 INSTANT UPI PAYMENT AUTOMATION RULES:
+- Store UPI ID: \`${cleanUpi}\`
+- When confirming an order or booking with a total amount, ALWAYS provide the exact total and dynamic clickable UPI pay link in this structured format:
+
+💰 *Total Amount:* ₹[Total]
+
+📲 *Pay via any UPI App (GPay / PhonePe / Paytm / BHIM):*
+👉 upi://pay?pa=${cleanUpi}&pn=${cleanBizName}&am=[Total]&cu=INR&tn=Order-${cleanBizName}
+(Or send to UPI ID: \`${cleanUpi}\`)
+${paymentNoteConfig ? `\n📝 _${paymentNoteConfig}_` : ''}
+
+(Always replace [Total] with the exact calculated order sum in numbers, e.g. 650).`;
+  }
 
   console.log(`[PromptBuilder] System prompt built successfully (${prompt.length} chars)`);
   return prompt;

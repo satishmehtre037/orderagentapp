@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { signupSchema } from '@/lib/validations/auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -9,15 +10,19 @@ const adminSupabase = createClient(supabaseUrl, serviceKey);
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password, fullName } = body;
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    // 1. Validate payload with Zod schema
+    const parseResult = signupSchema.safeParse(body);
+    if (!parseResult.success) {
+      const errorMsg = parseResult.error.errors[0]?.message || 'Invalid input data';
+      return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
+
+    const { email, password, fullName } = parseResult.data;
 
     console.log(`[Admin Auth API] Creating confirmed user for: ${email}`);
 
-    // Create user via Admin API - automatically confirmed, no email rate limits!
+    // 2. Create user via Admin API - automatically confirmed, no email rate limits!
     const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
       email,
       password,

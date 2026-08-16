@@ -53,14 +53,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Live 1-Second Ticking Countdown Timer for 1-Hour Test Trial
+  // Live 1-Second Ticking Countdown Timer for 1-Day Free Trial
   const [countdownText, setCountdownText] = useState('Calculating...');
   const [isTrialEnded, setIsTrialEnded] = useState(false);
 
   useEffect(() => {
     const updateCountdown = () => {
       if (!trialEndDateStr) {
-        setCountdownText('60m 00s left');
+        setCountdownText('24h 00m left');
         return;
       }
 
@@ -72,9 +72,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         setCountdownText('Trial Expired');
       } else {
         setIsTrialEnded(false);
-        const mins = Math.floor(diffMs / (1000 * 60));
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
-        setCountdownText(`${mins}m ${secs < 10 ? '0' : ''}${secs}s left`);
+        if (hours > 0) {
+          setCountdownText(`${hours}h ${mins}m ${secs < 10 ? '0' : ''}${secs}s left`);
+        } else {
+          setCountdownText(`${mins}m ${secs < 10 ? '0' : ''}${secs}s left`);
+        }
       }
     };
 
@@ -391,7 +396,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           <div className="flex items-center space-x-3">
             <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0" />
             <div>
-              <h4 className="font-serif font-bold text-sm text-red-900">⚠️ 1-Hour Free Trial Expired — AI Agent Paused</h4>
+              <h4 className="font-serif font-bold text-sm text-red-900">⚠️ 1-Day Free Trial Expired — AI Agent Paused</h4>
               <p className="text-xs text-red-700">
                 Your WhatsApp AI assistant is currently paused. Upgrade to the ₹1/month plan below to immediately resume instant automated customer orders and replies!
               </p>
@@ -471,7 +476,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                 )}
               </div>
               <p className="text-[11px] text-ink-muted">
-                {isActive ? '24/7 Live AI Active' : isExpired ? 'AI Replies Paused' : '1-Hour Test Trial Window'}
+                {isActive ? '24/7 Live AI Active' : isExpired ? 'AI Replies Paused' : '1-Day Free Trial Window'}
               </p>
             </div>
 
@@ -649,27 +654,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                 </>
               )}
             </button>
-
-            {/* Quick Test / Demo Mode Bypass */}
-            <div className="flex items-center justify-between p-3 bg-paper border border-dashed border-teal/40 rounded-lg text-xs">
-              <div className="flex items-center space-x-2">
-                <Zap className="w-4 h-4 text-marigold fill-marigold" />
-                <div>
-                  <span className="font-bold text-ink">Developer & Testing Sandbox:</span>
-                  <p className="text-[11px] text-ink-muted">
-                    Simulate an instant verified payment for ₹{currentPlanAmountRupees} without opening Razorpay.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={handleSimulateTestPayment}
-                className="px-3 py-1.5 rounded bg-warm-card border border-teal text-teal text-xs font-serif font-bold hover:bg-teal hover:text-white transition-colors"
-              >
-                Instant Test Activate
-              </button>
-            </div>
           </div>
 
           {/* Frequently Asked Questions: What Happens If You Don't Buy? */}
@@ -686,7 +670,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                   <span>1. WhatsApp AI Auto-Replies Pause</span>
                 </span>
                 <p className="text-ink-muted leading-relaxed">
-                  When the 1-hour trial expires, the AI agent stops auto-replying to menu queries or taking bookings. Customers receive a courteous notice asking them to contact the business directly.
+                  When the 1-day trial expires, the AI agent stops auto-replying to menu queries or taking bookings. Customers receive a courteous notice asking them to contact the business directly.
                 </p>
               </div>
 
@@ -745,7 +729,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           <div className="p-8 text-center text-xs text-ink-muted space-y-2">
             <Receipt className="w-8 h-8 mx-auto text-warm-border" />
             <p className="font-serif text-sm font-bold text-ink">No Payment Transactions Recorded</p>
-            <p>Your 1-hour free trial is currently running. Receipts will appear here once you upgrade.</p>
+            <p>Your 1-day free trial is currently running. Receipts will appear here once you upgrade.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
