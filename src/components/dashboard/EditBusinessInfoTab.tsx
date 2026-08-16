@@ -13,7 +13,20 @@ import { SalonForm } from '../ledger/SalonForm';
 import { GymForm } from '../ledger/GymForm';
 import { TuitionForm } from '../ledger/TuitionForm';
 import { FormSkeleton } from './SkeletonLoaders';
-import { Save, CheckCircle2, AlertCircle, Sparkles, Trash2, AlertTriangle, QrCode, IndianRupee, BellRing, FileText, RefreshCw, Clock } from 'lucide-react';
+import {
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Trash2,
+  AlertTriangle,
+  QrCode,
+  IndianRupee,
+  BellRing,
+  FileText,
+  Building2,
+  ShieldAlert,
+} from 'lucide-react';
 
 interface EditBusinessInfoTabProps {
   businessId: string;
@@ -28,9 +41,9 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
 }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const methods = useForm<OnboardingWizardFormData>({
     resolver: zodResolver(onboardingWizardSchema),
@@ -118,9 +131,6 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
     setShowSuccessToast(false);
 
     try {
-      console.log('Updating business_config for ID:', businessId);
-
-      // Prepare config updates array
       const updates: Array<{ config_key: string; config_value: any }> = [
         { config_key: 'hours', config_value: formData.hours || '' },
         { config_key: 'faqs', config_value: formData.faqs || [] },
@@ -171,86 +181,82 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
       if (onUpdated) onUpdated();
       setTimeout(() => setShowSuccessToast(false), 5000);
     } catch (err: any) {
-      console.error('Failed to save configuration:', err);
-      setErrorMessage(err.message || 'Failed to update business configuration.');
+      console.error('Update config error:', err);
+      setErrorMessage(err.message || 'Failed to save changes. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Handle Delete Business Account
   const handleDeleteBusiness = async () => {
     const confirmed = window.confirm(
-      '⚠️ PERMANENT ACCOUNT DELETION\n\nAre you sure you want to delete this business account?\n\nThis will permanently delete:\n• All WhatsApp conversations & chat logs\n• All orders, bookings, and lead ledger entries\n• All business catalog configurations and pricing\n• Payment records and subscription data\n\nThis action cannot be undone.'
+      'Are you absolutely sure? This will permanently wipe all orders, catalog items, and customer conversations.'
     );
-
     if (!confirmed) return;
 
     try {
       setDeleting(true);
-      const res = await fetch(`/api/business?businessId=${encodeURIComponent(businessId)}`, {
+      const res = await fetch(`/api/business?id=${encodeURIComponent(businessId)}`, {
         method: 'DELETE',
       });
-      const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to delete business account');
+        throw new Error('Failed to delete business');
       }
 
-      alert('✅ Your business account and all records have been completely deleted.');
-      window.location.href = '/onboarding';
+      await supabaseClient.auth.signOut();
+      window.location.href = '/signup';
     } catch (err: any) {
-      console.error('Delete business error:', err);
-      alert(`Error deleting business: ${err.message}`);
-    } finally {
+      alert(`Delete failed: ${err.message}`);
       setDeleting(false);
     }
   };
 
   if (loading) {
-    return <FormSkeleton />;
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+        <FormSkeleton />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* Sage Green Success Toast Banner */}
+      {/* Toast Notifications */}
       {showSuccessToast && (
-        <div className="p-4 bg-sage-light border-2 border-sage text-ink rounded-lg shadow-sm flex items-center justify-between animate-fade-in">
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-5 h-5 text-sage fill-sage text-paper" />
-            <div>
-              <h4 className="font-serif font-bold text-sm text-teal">Settings Saved Successfully!</h4>
-              <p className="text-xs text-ink-muted">
-                Your AI agent system prompt has been updated with your latest prices and hours.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-mono px-2.5 py-1 bg-paper border border-sage/40 rounded text-sage font-bold">
-            PROMPT RE-HYDRATED
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl shadow-sm flex items-center space-x-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span className="font-medium">
+            Store configuration saved! Your WhatsApp AI assistant is updated with your latest changes.
           </span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 text-red-600" />
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center space-x-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
-      <div className="bg-paper border-2 border-warm-border rounded-lg shadow-ledger overflow-hidden">
-        {/* Passbook Stub Header */}
-        <div className="bg-warm-stub px-6 py-4 border-b border-warm-border flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-mono tracking-widest text-ink-light uppercase block">
-              CONFIG EDITOR
-            </span>
-            <h2 className="font-serif text-lg font-bold text-ink">
-              Edit Business Catalog & Agent Configuration
-            </h2>
+      <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+        {/* Header Toolbar */}
+        <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-700">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">
+                Store Catalog & AI Knowledge Base
+              </h2>
+              <p className="text-xs text-slate-500">
+                Update prices, items, UPI IDs, address, and automated follow-up rules
+              </p>
+            </div>
           </div>
-          <span className="text-xs font-mono px-2.5 py-1 bg-paper border border-warm-border rounded text-teal font-semibold">
-            {category.toUpperCase()} MODE
+          <span className="text-xs font-medium px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-md text-slate-700 capitalize">
+            {category} Mode
           </span>
         </div>
 
@@ -259,180 +265,180 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
             <form
               onSubmit={handleSubmit(onSaveConfig, (validationErrors) => {
                 console.error('Validation errors:', validationErrors);
-                setErrorMessage('Please ensure all item names, prices, and units are filled in.');
+                setErrorMessage('Please check your form entries and ensure required fields are filled.');
               })}
               className="space-y-6"
             >
-              {/* Core Info & Tax Invoicing */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-warm-card p-4 rounded-md border border-warm-border">
-                <div>
-                  <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                    Business Name
-                  </label>
-                  <input
-                    {...methods.register('business_name')}
-                    className="w-full text-sm font-serif font-bold px-3 py-2 bg-paper border border-warm-border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                    WhatsApp Agent Number
-                  </label>
-                  <input
-                    {...methods.register('whatsapp_number')}
-                    className="w-full text-sm font-mono font-bold px-3 py-2 bg-paper border border-warm-border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                    Store Address / Location (For Invoices)
-                  </label>
-                  <input
-                    {...methods.register('store_address')}
-                    placeholder="e.g. Shop 4, Station Road, Thane West, Mumbai"
-                    className="w-full text-xs px-3 py-2 bg-paper border border-warm-border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                    GSTIN / Tax ID (Optional for Invoices)
-                  </label>
-                  <input
-                    {...methods.register('gst_number')}
-                    placeholder="e.g. 27AAAAA0000A1Z5"
-                    className="w-full text-xs font-mono px-3 py-2 bg-paper border border-warm-border rounded"
-                  />
+              {/* Core Business Information */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                  1. Business & Contact Profile
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/70 p-4 rounded-xl border border-slate-200/80">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Business Name *
+                    </label>
+                    <input
+                      {...methods.register('business_name')}
+                      className="w-full text-xs font-medium px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      WhatsApp Connected Number *
+                    </label>
+                    <input
+                      {...methods.register('whatsapp_number')}
+                      className="w-full text-xs font-mono font-medium px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Store Address / Pickup Location (For Invoices)
+                    </label>
+                    <input
+                      {...methods.register('store_address')}
+                      placeholder="e.g. Shop 4, Station Road, Thane West, Mumbai"
+                      className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      GSTIN / Tax ID (Optional for Invoices)
+                    </label>
+                    <input
+                      {...methods.register('gst_number')}
+                      placeholder="e.g. 27AAAAA0000A1Z5"
+                      className="w-full text-xs font-mono px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* UPI & In-Chat Payment Settings */}
-              <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm space-y-4">
-                <div className="flex items-center space-x-2 pb-3 border-b border-warm-border">
-                  <div className="p-1.5 bg-teal-light text-teal rounded">
-                    <QrCode className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-serif text-sm font-bold text-ink">In-Chat UPI & Payment Automation</h3>
-                    <p className="text-[11px] text-ink-muted">
-                      When customers confirm orders or bookings, the AI automatically sends them your direct UPI pay link.
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-4">
+                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                  2. In-Chat UPI & Payment Automation
+                </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                      Store UPI ID / VPA
-                    </label>
-                    <div className="relative">
-                      <IndianRupee className="w-3.5 h-3.5 text-ink-light absolute left-3 top-3" />
+                <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-5 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Store UPI ID / VPA
+                      </label>
+                      <div className="relative">
+                        <IndianRupee className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                        <input
+                          {...methods.register('upi_id')}
+                          placeholder="e.g. yourstore@okhdfcbank or 9876543210@paytm"
+                          className="w-full pl-8 pr-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                        />
+                      </div>
+                      <span className="text-[11px] text-slate-400 mt-1 block">
+                        Leave blank if accepting counter / cash only.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Payment Note / Instructions
+                      </label>
                       <input
-                        {...methods.register('upi_id')}
-                        placeholder="e.g. yourstore@okhdfcbank or 9876543210@paytm"
-                        className="w-full pl-8 pr-3 py-2 text-xs font-mono bg-warm-card/40 border border-warm-border rounded focus:border-teal"
+                        {...methods.register('payment_note')}
+                        placeholder="e.g. Please share screenshot of UPI payment"
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
                       />
                     </div>
-                    <span className="text-[10px] text-ink-muted mt-1 block">
-                      Leave blank if you accept cash/counter payments only.
-                    </span>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                      Payment Note / Instructions
-                    </label>
+                  <div className="flex items-center space-x-2 pt-1">
                     <input
-                      {...methods.register('payment_note')}
-                      placeholder="e.g. Please share screenshot of UPI payment"
-                      className="w-full px-3 py-2 text-xs bg-warm-card/40 border border-warm-border rounded focus:border-teal"
+                      type="checkbox"
+                      id="auto_send_payment_link"
+                      {...methods.register('auto_send_payment_link')}
+                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                     />
+                    <label htmlFor="auto_send_payment_link" className="text-xs text-slate-700 font-medium cursor-pointer">
+                      Automatically generate clickable UPI pay link for exact order total in WhatsApp
+                    </label>
                   </div>
-                </div>
-
-                <div className="flex items-center space-x-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="auto_send_payment_link"
-                    {...methods.register('auto_send_payment_link')}
-                    className="rounded border-warm-border text-teal focus:ring-teal"
-                  />
-                  <label htmlFor="auto_send_payment_link" className="text-xs text-ink font-medium cursor-pointer">
-                    Automatically generate clickable UPI pay link with exact order total in WhatsApp
-                  </label>
                 </div>
               </div>
 
               {/* Smart Customer Re-Engagement & Renewal Reminders */}
-              <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm space-y-4">
-                <div className="flex items-center space-x-2 pb-3 border-b border-warm-border">
-                  <div className="p-1.5 bg-marigold-light text-ink rounded">
-                    <BellRing className="w-4 h-4 text-marigold" />
-                  </div>
-                  <div>
-                    <h3 className="font-serif text-sm font-bold text-ink">Smart Customer Re-Engagement & Refill Reminders</h3>
-                    <p className="text-[11px] text-ink-muted">
-                      Automatically nudge past customers on WhatsApp before memberships expire or when they are due for their next salon/bakery order.
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-4">
+                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                  3. Automated Re-Engagement & Refill Reminders
+                </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                      Reminder Interval (Days after last visit/order)
-                    </label>
+                <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-5 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Reminder Interval (Days after last visit)
+                      </label>
+                      <input
+                        type="number"
+                        {...methods.register('reminder_days')}
+                        placeholder={category === 'salon' ? '25' : category === 'gym' ? '27' : '7'}
+                        className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">
+                        e.g. 27 days for monthly gym pass, 25 days for salon trim, 7 days for cafe/bakery refill.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Custom Reminder Template (Optional)
+                      </label>
+                      <input
+                        {...methods.register('reminder_template')}
+                        placeholder="e.g. Hi! Time for your regular visit? We have slots available this week!"
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-1">
                     <input
-                      type="number"
-                      {...methods.register('reminder_days')}
-                      placeholder={category === 'salon' ? '25' : category === 'gym' ? '27' : '7'}
-                      className="w-full px-3 py-2 text-xs font-mono bg-warm-card/40 border border-warm-border rounded focus:border-teal"
+                      type="checkbox"
+                      id="enable_reminders"
+                      {...methods.register('enable_reminders')}
+                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                     />
-                    <span className="text-[10px] text-ink-muted mt-1 block">
-                      e.g. 27 days for monthly gym renewal, 25 days for salon trim, 7 days for cafe/bakery refill.
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono text-ink-light uppercase mb-1">
-                      Custom Reminder Message Template (Optional)
+                    <label htmlFor="enable_reminders" className="text-xs text-slate-700 font-medium cursor-pointer">
+                      Enable automated smart re-engagement reminders for returning customers
                     </label>
-                    <input
-                      {...methods.register('reminder_template')}
-                      placeholder="e.g. Hi! Your gym pass expires in 3 days. Would you like to renew?"
-                      className="w-full px-3 py-2 text-xs bg-warm-card/40 border border-warm-border rounded focus:border-teal"
-                    />
                   </div>
-                </div>
-
-                <div className="flex items-center space-x-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="enable_reminders"
-                    {...methods.register('enable_reminders')}
-                    className="rounded border-warm-border text-teal focus:ring-teal"
-                  />
-                  <label htmlFor="enable_reminders" className="text-xs text-ink font-medium cursor-pointer">
-                    Enable automated smart re-engagement reminders for inactive customers
-                  </label>
                 </div>
               </div>
 
-              {/* Dynamic Category Forms */}
-              {category === 'bakery' && <BakeryForm />}
-              {category === 'cafe' && <CafeForm />}
-              {category === 'salon' && <SalonForm />}
-              {category === 'gym' && <GymForm />}
-              {category === 'tuition' && <TuitionForm />}
+              {/* Dynamic Category Catalog Forms */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                  4. Menu, Pricing & Services Catalog
+                </h3>
+
+                {category === 'bakery' && <BakeryForm />}
+                {category === 'cafe' && <CafeForm />}
+                {category === 'salon' && <SalonForm />}
+                {category === 'gym' && <GymForm />}
+                {category === 'tuition' && <TuitionForm />}
+              </div>
 
               {/* Save CTA Button */}
-              <div className="pt-4 border-t border-warm-border flex justify-end">
+              <div className="pt-4 border-t border-slate-200 flex justify-end">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-3 rounded-md bg-teal text-paper font-serif font-bold text-sm hover:bg-teal-hover shadow-ledger transition-all flex items-center space-x-2 disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs shadow-sm transition-all flex items-center space-x-2 disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4 text-marigold" />
-                  <span>{saving ? 'Updating System Prompt...' : 'Save Configuration Changes'}</span>
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Updating Knowledge Base...' : 'Save Configuration Changes'}</span>
                 </button>
               </div>
             </form>
@@ -440,25 +446,25 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
         </div>
       </div>
 
-      {/* Danger Zone: Permanent Account Deletion */}
-      <div className="bg-red-50/50 border-2 border-red-200 rounded-lg p-6 space-y-4">
+      {/* Danger Zone */}
+      <div className="bg-red-50/50 border border-red-200 rounded-xl p-6 space-y-3">
         <div className="flex items-center space-x-2 text-red-700">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
-          <h3 className="font-serif font-bold text-base">Danger Zone: Permanent Business Deletion</h3>
+          <AlertTriangle className="w-4 h-4" />
+          <h3 className="font-semibold text-sm">Danger Zone: Permanent Business Account Deletion</h3>
         </div>
-        <p className="text-xs text-ink-muted leading-relaxed">
+        <p className="text-xs text-slate-600 leading-relaxed">
           Deleting your business account will permanently wipe all registered catalogs, conversations, orders ledger,
-          pricing configs, and customer history from the database. This action is irreversible.
+          pricing configs, and customer history. This action cannot be undone.
         </p>
-        <div className="pt-2 flex justify-start">
+        <div className="pt-1">
           <button
             type="button"
             onClick={handleDeleteBusiness}
             disabled={deleting}
-            className="px-4 py-2.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-serif font-bold shadow-sm transition-all flex items-center space-x-2 disabled:opacity-50"
+            className="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium shadow-sm transition-all flex items-center space-x-2 disabled:opacity-50"
           >
-            <Trash2 className="w-4 h-4 text-red-100" />
-            <span>{deleting ? 'Deleting Account & Data...' : 'Delete Business Account & Reset Data'}</span>
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{deleting ? 'Deleting Account...' : 'Delete Business Account'}</span>
           </button>
         </div>
       </div>

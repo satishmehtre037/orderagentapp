@@ -38,63 +38,63 @@ export const GymForm: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* 1. Membership Plans Section */}
-      <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-warm-border">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center space-x-2">
-            <Dumbbell className="w-5 h-5 text-teal" />
-            <h3 className="font-serif text-lg font-bold text-ink">Gym Memberships & Passes</h3>
+            <Dumbbell className="w-4 h-4 text-slate-700" />
+            <h3 className="text-sm font-semibold text-slate-900">Gym Memberships & Passes</h3>
           </div>
           <button
             type="button"
             onClick={() => appendPlan({ name: '', price: 1500, duration: '1 Month' })}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-teal-light text-teal border border-teal/20 hover:bg-teal hover:text-white transition-colors"
+            className="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add Membership Plan</span>
+            <span>Add Plan</span>
           </button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {planFields.map((field, index) => (
             <div
               key={field.id}
-              className="grid grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 bg-warm-card rounded-md border border-warm-border/70"
+              className="grid grid-cols-12 gap-2 sm:gap-3 items-center p-3 bg-slate-50 rounded-lg border border-slate-200/80"
             >
               <div className="col-span-5 sm:col-span-5">
-                <label className="block text-[11px] font-mono text-ink-light mb-1">Plan / Package Name</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Plan Name</label>
                 <input
                   {...register(`gym_plans.${index}.name` as const)}
-                  placeholder="e.g. Monthly Standard / Annual VIP"
-                  className="w-full text-xs px-2.5 py-1.5 bg-paper border border-warm-border rounded focus:border-teal"
+                  placeholder="e.g. Monthly Standard"
+                  className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
                 />
               </div>
 
               <div className="col-span-3 sm:col-span-3">
-                <label className="block text-[11px] font-mono text-ink-light mb-1">Price (₹)</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Price (₹)</label>
                 <input
                   type="number"
                   {...register(`gym_plans.${index}.price` as const)}
                   placeholder="1500"
-                  className="w-full text-xs px-2.5 py-1.5 bg-paper border border-warm-border rounded focus:border-teal font-mono"
+                  className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
                 />
               </div>
 
               <div className="col-span-3 sm:col-span-3">
-                <label className="block text-[11px] font-mono text-ink-light mb-1">Duration</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Duration</label>
                 <input
                   {...register(`gym_plans.${index}.duration` as const)}
-                  placeholder="e.g. 1 Month / 1 Year"
-                  className="w-full text-xs px-2.5 py-1.5 bg-paper border border-warm-border rounded focus:border-teal font-mono"
+                  placeholder="e.g. 1 Month"
+                  className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 text-center"
                 />
               </div>
 
-              <div className="col-span-1 flex justify-end pt-4">
+              <div className="col-span-1 flex justify-end pt-5">
                 <button
                   type="button"
                   onClick={() => removePlan(index)}
-                  className="p-1.5 text-ink-light hover:text-red-600 transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -105,16 +105,16 @@ export const GymForm: React.FC = () => {
       </div>
 
       {/* 2. Personal Trainers */}
-      <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-warm-border">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center space-x-2">
-            <UserCheck className="w-5 h-5 text-teal" />
-            <h3 className="font-serif text-lg font-bold text-ink">Trainers & Coaches</h3>
+            <UserCheck className="w-4 h-4 text-slate-700" />
+            <h3 className="text-sm font-semibold text-slate-900">Trainers & Coaches</h3>
           </div>
           <button
             type="button"
             onClick={() => appendTrainer({ name: '', specialty: 'Strength & Conditioning' })}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-teal-light text-teal border border-teal/20 hover:bg-teal hover:text-white transition-colors"
+            className="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Trainer</span>
@@ -125,24 +125,24 @@ export const GymForm: React.FC = () => {
           {trainerFields.map((field, index) => (
             <div
               key={field.id}
-              className="flex items-center justify-between p-2.5 bg-warm-card rounded-md border border-warm-border/70"
+              className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200/80"
             >
               <div className="flex-1 mr-2 space-y-1">
                 <input
                   {...register(`staff.${index}.name` as const)}
-                  placeholder="Trainer Name (e.g. Vikram)"
-                  className="w-full text-xs px-2.5 py-1.5 bg-paper border border-warm-border rounded"
+                  placeholder="Trainer Name"
+                  className="w-full text-xs px-3 py-1.5 bg-white border border-slate-200 rounded-lg"
                 />
                 <input
                   {...register(`staff.${index}.specialty` as const)}
-                  placeholder="Specialty (e.g. CrossFit / Bodybuilding)"
-                  className="w-full text-[11px] px-2 py-1 bg-paper border border-warm-border rounded"
+                  placeholder="Specialty (e.g. Strength / Cardio)"
+                  className="w-full text-[11px] px-2.5 py-1 bg-white border border-slate-200 rounded-lg"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => removeTrainer(index)}
-                className="p-1.5 text-ink-light hover:text-red-600 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -151,31 +151,31 @@ export const GymForm: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Timings & FAQs */}
-      <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm space-y-4">
-        <div className="flex items-center space-x-2 pb-2 border-b border-warm-border">
-          <Clock className="w-5 h-5 text-teal" />
-          <h3 className="font-serif text-lg font-bold text-ink">Gym Hours & Batch Timings</h3>
+      {/* 3. Timings */}
+      <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-3">
+        <div className="flex items-center space-x-2">
+          <Clock className="w-4 h-4 text-slate-700" />
+          <h3 className="text-sm font-semibold text-slate-900">Gym Hours & Batches</h3>
         </div>
         <textarea
           {...register('hours')}
-          placeholder="e.g. Mon-Sat: Morning 6:00 AM - 11:00 AM, Evening 5:00 PM - 10:00 PM. Sunday: 7:00 AM - 1:00 PM."
+          placeholder="e.g. Mon-Sat: 6:00 AM - 11:00 AM, 5:00 PM - 10:00 PM. Sunday: 7:00 AM - 1:00 PM."
           rows={2}
-          className="w-full text-xs px-3 py-2 bg-warm-card border border-warm-border rounded focus:border-teal font-mono"
+          className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-mono"
         />
       </div>
 
-      {/* 4. Common FAQs */}
-      <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-warm-border">
+      {/* 4. FAQs */}
+      <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center space-x-2">
-            <HelpCircle className="w-5 h-5 text-teal" />
-            <h3 className="font-serif text-lg font-bold text-ink">Gym Inquiries & FAQs</h3>
+            <HelpCircle className="w-4 h-4 text-slate-700" />
+            <h3 className="text-sm font-semibold text-slate-900">Gym FAQs</h3>
           </div>
           <button
             type="button"
             onClick={() => appendFaq({ question: '', answer: '' })}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-teal-light text-teal border border-teal/20 hover:bg-teal hover:text-white transition-colors"
+            className="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add FAQ</span>
@@ -184,26 +184,26 @@ export const GymForm: React.FC = () => {
 
         <div className="space-y-3">
           {faqFields.map((field, index) => (
-            <div key={field.id} className="p-3 bg-warm-card rounded-md border border-warm-border/70 space-y-2">
+            <div key={field.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
               <div className="flex justify-between items-center">
                 <input
                   {...register(`faqs.${index}.question` as const)}
-                  placeholder="Question (e.g. Do you provide a free trial session?)"
-                  className="w-full text-xs px-2.5 py-1.5 bg-paper border border-warm-border rounded font-bold"
+                  placeholder="Question (e.g. Free trial session?)"
+                  className="w-full text-xs font-medium px-3 py-2 bg-white border border-slate-200 rounded-lg"
                 />
                 <button
                   type="button"
                   onClick={() => removeFaq(index)}
-                  className="ml-2 p-1.5 text-ink-light hover:text-red-600 transition-colors"
+                  className="ml-2 p-1.5 text-slate-400 hover:text-red-600 rounded"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
               <textarea
                 {...register(`faqs.${index}.answer` as const)}
-                placeholder="Answer (e.g. Yes! We offer 1 free trial workout pass. Message us your name to book.)"
+                placeholder="Answer (e.g. Yes! We offer 1 free workout pass.)"
                 rows={2}
-                className="w-full text-xs px-2.5 py-1.5 bg-paper border border-warm-border rounded"
+                className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg"
               />
             </div>
           ))}

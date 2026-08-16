@@ -29,55 +29,55 @@ export const BakeryForm: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* 1. Menu Items Section */}
-      <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-warm-border">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center space-x-2">
-            <Utensils className="w-5 h-5 text-teal" />
-            <h3 className="font-serif text-lg font-bold text-ink">Bakery Menu & Pricing Ledger</h3>
+            <Utensils className="w-4 h-4 text-slate-700" />
+            <h3 className="text-sm font-semibold text-slate-900">Bakery Menu & Pricing Catalog</h3>
           </div>
           <button
             type="button"
             onClick={() => appendMenu({ name: '', price: 100, unit: 'pcs' })}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-teal-light text-teal border border-teal/20 hover:bg-teal hover:text-white transition-colors"
+            className="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add Menu Item</span>
+            <span>Add Item</span>
           </button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {menuFields.map((field, index) => (
             <div
               key={field.id}
-              className="grid grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 bg-warm-card rounded-md border border-warm-border/70"
+              className="grid grid-cols-12 gap-2 sm:gap-3 items-center p-3 bg-slate-50 rounded-lg border border-slate-200/80"
             >
               <div className="col-span-6 sm:col-span-6">
-                <label className="block text-[11px] font-mono text-ink-light mb-1">Item Name</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Item Name</label>
                 <input
                   {...register(`menu_items.${index}.name` as const)}
                   placeholder="e.g. Chocolate Truffle Cake (1kg)"
-                  className="w-full text-xs font-medium px-3 py-2 bg-paper border border-warm-border rounded focus:border-teal"
+                  className="w-full text-xs font-medium px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
                 />
               </div>
 
               <div className="col-span-3 sm:col-span-3">
-                <label className="block text-[11px] font-mono text-ink-light mb-1">Price (₹)</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Price (₹)</label>
                 <input
                   type="number"
                   {...register(`menu_items.${index}.price` as const)}
                   placeholder="500"
-                  className="w-full text-xs font-mono tabular-nums font-semibold px-3 py-2 bg-paper border border-warm-border rounded focus:border-teal"
+                  className="w-full text-xs font-mono font-semibold px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
                 />
               </div>
 
               <div className="col-span-2 sm:col-span-2">
-                <label className="block text-[11px] font-mono text-ink-light mb-1">Unit</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Unit</label>
                 <input
                   {...register(`menu_items.${index}.unit` as const)}
                   placeholder="kg / pcs"
-                  className="w-full text-xs font-medium px-2 py-2 bg-paper border border-warm-border rounded focus:border-teal text-center"
+                  className="w-full text-xs font-medium px-2 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 text-center"
                 />
               </div>
 
@@ -86,7 +86,7 @@ export const BakeryForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => removeMenu(index)}
-                    className="p-1.5 text-ink-light hover:text-red-600 rounded hover:bg-red-50 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -98,15 +98,15 @@ export const BakeryForm: React.FC = () => {
       </div>
 
       {/* 2. Business Hours */}
-      <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm">
-        <div className="flex items-center space-x-2 mb-3">
-          <Clock className="w-5 h-5 text-teal" />
-          <h3 className="font-serif text-lg font-bold text-ink">Opening Hours</h3>
+      <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-3">
+        <div className="flex items-center space-x-2">
+          <Clock className="w-4 h-4 text-slate-700" />
+          <h3 className="text-sm font-semibold text-slate-900">Store Hours</h3>
         </div>
         <input
           {...register('hours')}
           placeholder="e.g. Monday to Sunday, 9:00 AM - 9:30 PM (Closed on Tuesdays)"
-          className="w-full text-sm px-3.5 py-2.5 bg-paper border border-warm-border rounded-md focus:border-teal"
+          className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
         />
         {errors.hours && (
           <p className="text-xs text-red-600 mt-1">{errors.hours.message}</p>
@@ -114,16 +114,16 @@ export const BakeryForm: React.FC = () => {
       </div>
 
       {/* 3. Customer FAQs */}
-      <div className="bg-paper border border-warm-border rounded-lg p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-warm-border">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center space-x-2">
-            <HelpCircle className="w-5 h-5 text-teal" />
-            <h3 className="font-serif text-lg font-bold text-ink">Frequently Asked Questions</h3>
+            <HelpCircle className="w-4 h-4 text-slate-700" />
+            <h3 className="text-sm font-semibold text-slate-900">Frequently Asked Questions</h3>
           </div>
           <button
             type="button"
             onClick={() => appendFaq({ question: '', answer: '' })}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-teal-light text-teal border border-teal/20 hover:bg-teal hover:text-white transition-colors"
+            className="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add FAQ</span>
@@ -132,14 +132,14 @@ export const BakeryForm: React.FC = () => {
 
         <div className="space-y-3">
           {faqFields.map((field, index) => (
-            <div key={field.id} className="p-3 bg-warm-card rounded-md border border-warm-border/70 space-y-2">
+            <div key={field.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[11px] font-mono text-teal font-semibold">FAQ #{index + 1}</span>
+                <span className="text-[11px] font-medium text-slate-500">FAQ #{index + 1}</span>
                 {faqFields.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeFaq(index)}
-                    className="p-1 text-ink-light hover:text-red-600 rounded"
+                    className="p-1 text-slate-400 hover:text-red-600 rounded"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -148,12 +148,12 @@ export const BakeryForm: React.FC = () => {
               <input
                 {...register(`faqs.${index}.question` as const)}
                 placeholder="Question (e.g. Do you deliver eggless cakes?)"
-                className="w-full text-xs font-medium px-3 py-2 bg-paper border border-warm-border rounded"
+                className="w-full text-xs font-medium px-3 py-2 bg-white border border-slate-200 rounded-lg"
               />
               <input
                 {...register(`faqs.${index}.answer` as const)}
                 placeholder="Answer (e.g. Yes! All our cakes can be prepared 100% eggless upon request.)"
-                className="w-full text-xs px-3 py-2 bg-paper border border-warm-border rounded"
+                className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg"
               />
             </div>
           ))}

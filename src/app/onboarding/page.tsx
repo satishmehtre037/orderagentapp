@@ -47,7 +47,7 @@ export default function OnboardingPage() {
         { name: 'Class 10th CBSE Mathematics', fee: '₹2,500/month', batch_timing: 'Mon-Fri 5:00 PM' },
         { name: 'NEET Foundation Chemistry', fee: '₹3,500/month', batch_timing: 'Mon-Sat 6:30 PM' },
       ],
-      admission_process: '2-Day free trial demo class available. Registration requires parent contact details and previous report card copy.',
+      admission_process: '2-Day free trial demo class available. Registration requires parent contact details.',
       faqs: [
         {
           question: 'What are your working hours?',
@@ -61,7 +61,6 @@ export default function OnboardingPage() {
   const selectedCategory = watch('category');
   const formData = watch();
 
-  // Check auth user session
   useEffect(() => {
     async function checkAuth() {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -69,33 +68,28 @@ export default function OnboardingPage() {
         const userEmail = session.user.email;
         setOwnerEmail(userEmail);
 
-        // If user already created a business, auto-redirect straight to dashboard
         try {
           const res = await fetch(`/api/business?email=${encodeURIComponent(userEmail.trim())}`);
           const bizData = await res.json();
           if (bizData?.business?.id) {
-            console.log('[Onboarding] Existing business found, redirecting to dashboard:', bizData.business.name);
             router.push('/dashboard');
           }
         } catch (e) {
           console.error('Error checking existing business:', e);
         }
       } else {
-        // If not authenticated, default email fallback for testing
         setOwnerEmail('owner@bizbotos.in');
       }
     }
     checkAuth();
   }, [router]);
 
-  // Step Navigation Validation
   const handleNextStep = async () => {
     setSubmitError(null);
     if (currentStep === 1) {
       const valid = await trigger(['business_name', 'category']);
       if (valid) setCurrentStep(2);
     } else if (currentStep === 2) {
-      // Validate step 2
       const valid = await trigger(['hours', 'faqs']);
       if (valid) setCurrentStep(3);
     } else if (currentStep === 3) {
@@ -105,99 +99,95 @@ export default function OnboardingPage() {
   };
 
   const handlePrevStep = () => {
+    setSubmitError(null);
     if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   };
 
-  // Final Onboarding Submission to Server Route (bypasses RLS safely)
   const onSubmitWizard = async (data: OnboardingWizardFormData) => {
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      console.log('Submitting onboarding data via API route:', data);
+      const payload = {
+        ownerEmail,
+        businessName: data.business_name,
+        category: data.category,
+        whatsappNumber: data.whatsapp_number,
+        formData: data,
+      };
 
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data, ownerEmail: ownerEmail || 'owner@bizbotos.in' }),
+        body: JSON.stringify(payload),
       });
 
       const resData = await res.json();
-
-      if (!res.ok || resData.error) {
-        throw new Error(resData.error || 'Failed to save business profile.');
-      }
-
-      const businessId = resData.businessId;
-      console.log('Successfully created business and config via API! ID:', businessId);
-      
-      // Store active business_id in localStorage for local session persistence
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bizbot_active_business_id', businessId);
+      if (!res.ok) {
+        throw new Error(resData.error || 'Failed to complete onboarding');
       }
 
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Wizard submission error:', err);
-      setSubmitError(err.message || 'An unexpected error occurred during setup.');
+      console.error('Onboarding submission error:', err);
+      setSubmitError(err.message || 'Something went wrong. Please check your data.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-paper py-8 px-4 sm:px-6 lg:px-8">
-      {/* Top Header */}
-      <div className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="bg-teal text-paper p-2 rounded-lg">
-            <Bot className="w-6 h-6 text-marigold" />
-          </div>
-          <span className="font-serif text-xl font-bold text-ink">BizBot OS</span>
-        </div>
-        <div className="text-xs font-mono text-ink-muted">
-          Signed in as: <span className="font-bold text-teal">{ownerEmail}</span>
-        </div>
-      </div>
-
-      {/* Main Wizard Container */}
-      <div className="max-w-4xl mx-auto bg-paper border-2 border-warm-border rounded-lg shadow-ledger overflow-hidden">
-        {/* Passbook Stub Step Indicator */}
-        <StepIndicator currentStep={currentStep} onStepClick={(step) => setCurrentStep(step)} />
-
-        {/* Wizard Content Body */}
-        <div className="p-6 sm:p-8">
-          {submitError && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md">
-              {submitError}
+    <main className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Top Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+              <Bot className="w-5 h-5" />
             </div>
-          )}
+            <div>
+              <h1 className="text-base font-bold text-slate-900 leading-tight">BizBot OS Setup Wizard</h1>
+              <p className="text-xs text-slate-500">Create your autonomous WhatsApp AI commerce assistant</p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <span className="text-xs font-mono text-slate-500">{ownerEmail}</span>
+          </div>
+        </div>
+
+        {/* Wizard Card Container */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+          <StepIndicator currentStep={currentStep} onStepClick={(s) => s < currentStep && setCurrentStep(s)} />
 
           <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmitWizard)}>
-              {/* STEP 1: BUSINESS BASICS */}
+            <form onSubmit={handleSubmit(onSubmitWizard)} className="p-6 sm:p-8">
+              {submitError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
+                  {submitError}
+                </div>
+              )}
+
+              {/* STEP 1 */}
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[11px] font-mono text-teal font-semibold tracking-wider uppercase">
-                      STEP 1 OF 4 — BUSINESS IDENTIFICATION
+                    <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
+                      Step 1 of 4 — Store Profile
                     </span>
-                    <h2 className="font-serif text-2xl font-bold text-ink mt-1">
-                      What is your business name & category?
+                    <h2 className="text-xl font-bold text-slate-900 mt-1">
+                      Enter your store name and select your industry
                     </h2>
-                    <p className="text-xs text-ink-muted mt-1">
-                      Your AI WhatsApp agent will introduce itself under this business name.
-                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono text-ink-light uppercase mb-1.5">
-                      Business Name
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Business Name *
                     </label>
                     <input
                       {...methods.register('business_name')}
-                      placeholder="e.g. Royal Bakers & Cafe"
-                      className="w-full text-base px-4 py-3 bg-paper border border-warm-border rounded-md focus:border-teal font-medium"
+                      placeholder="e.g. CafeDay Artisan Bakery"
+                      className="w-full text-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-medium"
                     />
                     {errors.business_name && (
                       <p className="text-xs text-red-600 mt-1">{errors.business_name.message}</p>
@@ -205,8 +195,8 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono text-ink-light uppercase mb-1.5">
-                      Select Business Category
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Select Business Category *
                     </label>
                     <CategorySelector
                       value={selectedCategory}
@@ -219,14 +209,14 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* STEP 2: CATEGORY SPECIFIC CONFIG */}
+              {/* STEP 2 */}
               {currentStep === 2 && (
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[11px] font-mono text-teal font-semibold tracking-wider uppercase">
-                      STEP 2 OF 4 — CATALOG & SERVICE CONFIGURATION
+                    <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
+                      Step 2 of 4 — Catalog & Services
                     </span>
-                    <h2 className="font-serif text-2xl font-bold text-ink mt-1">
+                    <h2 className="text-xl font-bold text-slate-900 mt-1">
                       {selectedCategory === 'bakery'
                         ? 'Set up your Bakery Menu & Pricing'
                         : selectedCategory === 'cafe'
@@ -234,11 +224,11 @@ export default function OnboardingPage() {
                         : selectedCategory === 'salon'
                         ? 'Set up your Salon Services & Pricing'
                         : selectedCategory === 'gym'
-                        ? 'Set up your Gym Memberships & Trainers'
+                        ? 'Set up your Gym Memberships & Passes'
                         : 'Set up your Courses & Fee Structure'}
                     </h2>
-                    <p className="text-xs text-ink-muted mt-1">
-                      Your AI agent uses these exact line-items to answer price queries and confirm bookings/orders on WhatsApp.
+                    <p className="text-xs text-slate-500 mt-1">
+                      Your AI agent uses these exact items to answer customer questions and take orders on WhatsApp.
                     </p>
                   </div>
 
@@ -250,32 +240,32 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* STEP 3: WHATSAPP CONNECTION */}
+              {/* STEP 3 */}
               {currentStep === 3 && (
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[11px] font-mono text-teal font-semibold tracking-wider uppercase">
-                      STEP 3 OF 4 — WHATSAPP PHONE CONNECTION
+                    <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
+                      Step 3 of 4 — WhatsApp Binding
                     </span>
-                    <h2 className="font-serif text-2xl font-bold text-ink mt-1">
+                    <h2 className="text-xl font-bold text-slate-900 mt-1">
                       Connect your Business WhatsApp Number
                     </h2>
-                    <p className="text-xs text-ink-muted mt-1">
-                      Enter the dedicated WhatsApp number that customers text for inquiries and bookings.
+                    <p className="text-xs text-slate-500 mt-1">
+                      Enter the dedicated phone number that will run your AI assistant.
                     </p>
                   </div>
 
-                  <div className="bg-paper border border-warm-border rounded-lg p-6 space-y-4">
+                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-6 space-y-4">
                     <div>
-                      <label className="block text-xs font-mono text-ink-light uppercase mb-1.5">
-                        Business WhatsApp Number (with Country Code)
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Business WhatsApp Number (with Country Code) *
                       </label>
                       <div className="relative">
-                        <PhoneCall className="w-5 h-5 text-teal absolute left-3.5 top-3" />
+                        <PhoneCall className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                         <input
                           {...methods.register('whatsapp_number')}
                           placeholder="+91 9876543210"
-                          className="w-full text-base font-mono font-bold pl-11 pr-4 py-2.5 bg-paper border border-warm-border rounded-md focus:border-teal"
+                          className="w-full text-sm font-mono font-semibold pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
                         />
                       </div>
                       {errors.whatsapp_number && (
@@ -283,12 +273,12 @@ export default function OnboardingPage() {
                       )}
                     </div>
 
-                    <div className="p-4 bg-warm-card border border-warm-border rounded-md text-xs space-y-2">
-                      <div className="flex items-center space-x-2 text-teal font-bold font-serif">
-                        <Info className="w-4 h-4 text-teal" />
+                    <div className="p-4 bg-white border border-slate-200 rounded-lg text-xs space-y-1.5">
+                      <div className="flex items-center space-x-2 text-slate-900 font-semibold">
+                        <Info className="w-4 h-4 text-slate-600" />
                         <span>How Meta WhatsApp Integration Works</span>
                       </div>
-                      <p className="text-ink-muted leading-relaxed">
+                      <p className="text-slate-500 leading-relaxed">
                         We connect your number to Meta WhatsApp Cloud API webhooks. Once you click "Go Live", your AI agent will automatically start responding to customer messages sent to this number.
                       </p>
                     </div>
@@ -296,7 +286,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* STEP 4: REVIEW & CONFIRM */}
+              {/* STEP 4 */}
               {currentStep === 4 && (
                 <ReviewLedgerCard
                   formData={formData}
@@ -306,26 +296,26 @@ export default function OnboardingPage() {
                 />
               )}
 
-              {/* Step Action Buttons (For Steps 1, 2, 3) */}
+              {/* Action Buttons */}
               {currentStep < 4 && (
-                <div className="mt-8 pt-6 border-t border-warm-border flex items-center justify-between">
+                <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={handlePrevStep}
                     disabled={currentStep === 1}
-                    className="inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2.5 rounded-md border border-warm-border bg-paper text-ink hover:bg-warm-card disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="inline-flex items-center space-x-2 text-xs font-medium px-4 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Previous Step</span>
+                    <span>Back</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    className="inline-flex items-center space-x-2 text-xs font-serif font-bold px-6 py-2.5 rounded-md bg-teal text-paper hover:bg-teal-hover shadow-sm transition-colors"
+                    className="inline-flex items-center space-x-2 text-xs font-medium px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-colors"
                   >
                     <span>Save & Continue</span>
-                    <ArrowRight className="w-4 h-4 text-marigold" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}

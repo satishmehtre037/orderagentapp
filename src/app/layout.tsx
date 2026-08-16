@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'BizBot OS | WhatsApp AI Agent for Local Businesses',
-  description: 'Self-serve WhatsApp AI Agent platform for bakeries, salons, and tuition centers.',
+  title: 'BizBot OS | Autonomous WhatsApp AI Commerce Platform',
+  description: 'Self-serve WhatsApp AI commerce agent for bakeries, cafes, salons, gyms, and tuition centers.',
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-paper text-ink min-h-screen antialiased selection:bg-teal-light selection:text-teal">
+      <body className="bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-slate-900 selection:text-white font-sans">
         {children}
       </body>
     </html>

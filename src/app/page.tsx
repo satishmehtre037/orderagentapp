@@ -22,10 +22,10 @@ export default function Home() {
   }, [router]);
 
   return (
-    <main className="min-h-screen bg-paper flex items-center justify-center p-4">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="text-center space-y-3">
-        <div className="w-8 h-8 border-2 border-teal border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="font-serif text-sm font-bold text-teal">Loading BizBot OS Portal...</p>
+        <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs font-medium text-slate-600">Loading BizBot OS...</p>
       </div>
     </main>
   );

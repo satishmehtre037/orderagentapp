@@ -1,6 +1,6 @@
 import React from 'react';
 import { OnboardingWizardFormData } from '../../lib/validations/onboarding';
-import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface ReviewLedgerCardProps {
   formData: OnboardingWizardFormData;
@@ -28,108 +28,103 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Physical Passbook Entry Card */}
-      <div className="bg-paper border-2 border-warm-border rounded-lg shadow-ledger overflow-hidden">
-        {/* Passbook Top Banner */}
-        <div className="bg-teal text-paper px-6 py-4 flex items-center justify-between border-b border-teal-hover">
+      {/* Review Card */}
+      <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-mono tracking-widest text-teal-light uppercase">
-              PASSBOOK ENTRY #BIZ-808
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
+              Configuration Review
             </span>
-            <h2 className="font-serif text-xl font-bold text-paper">{formData.business_name || 'Business Name'}</h2>
+            <h2 className="text-lg font-bold text-white">{formData.business_name || 'Business Name'}</h2>
           </div>
           <div className="text-right">
-            <span className="inline-block text-xs font-mono px-2.5 py-1 rounded bg-teal-hover text-marigold font-semibold border border-marigold/30">
-              30-DAY TRIAL READY
+            <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              1-Day Free Trial
             </span>
           </div>
         </div>
 
-        {/* Ledger Details Grid */}
+        {/* Details Grid */}
         <div className="p-6 space-y-6">
-          {/* Business Core Ledger Rows */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-warm-card p-4 rounded-md border border-warm-border/80 text-xs">
+          {/* Core Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 text-xs">
             <div>
-              <span className="text-[11px] font-mono text-ink-light block mb-0.5">BUSINESS CATEGORY</span>
-              <span className="font-serif text-sm font-bold text-ink">{categoryLabel}</span>
+              <span className="text-[11px] text-slate-400 block mb-0.5">BUSINESS CATEGORY</span>
+              <span className="font-semibold text-slate-900">{categoryLabel}</span>
             </div>
             <div>
-              <span className="text-[11px] font-mono text-ink-light block mb-0.5">REGISTERED OWNER EMAIL</span>
-              <span className="font-mono text-sm font-medium text-ink">{ownerEmail}</span>
+              <span className="text-[11px] text-slate-400 block mb-0.5">REGISTERED OWNER EMAIL</span>
+              <span className="font-mono text-slate-900">{ownerEmail}</span>
             </div>
             <div>
-              <span className="text-[11px] font-mono text-ink-light block mb-0.5">WHATSAPP AGENT NUMBER</span>
-              <span className="font-mono text-sm font-bold text-teal">{formData.whatsapp_number}</span>
+              <span className="text-[11px] text-slate-400 block mb-0.5">WHATSAPP AGENT NUMBER</span>
+              <span className="font-mono font-semibold text-slate-900">{formData.whatsapp_number}</span>
             </div>
             <div>
-              <span className="text-[11px] font-mono text-ink-light block mb-0.5">BUSINESS HOURS</span>
-              <span className="font-medium text-ink">{formData.hours || 'Standard Business Hours'}</span>
+              <span className="text-[11px] text-slate-400 block mb-0.5">BUSINESS HOURS</span>
+              <span className="font-medium text-slate-900">{formData.hours || 'Standard Hours'}</span>
             </div>
           </div>
 
-          {/* Category Items Ruled Ledger Table */}
-          <div className="border border-warm-border rounded-md overflow-hidden">
-            <div className="bg-warm-stub px-4 py-2 border-b border-warm-border text-xs font-mono font-semibold text-ink-muted uppercase flex justify-between">
-              <span>Catalog & Price Ledger Entry</span>
-              <span>{formData.category.toUpperCase()} CONFIG</span>
+          {/* Catalog Table */}
+          <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 text-xs font-semibold text-slate-700 uppercase flex justify-between">
+              <span>Catalog & Price Line Items</span>
+              <span>{formData.category.toUpperCase()}</span>
             </div>
 
-            <div className="divide-y divide-warm-border text-xs bg-paper">
-              {/* Bakery Menu Items */}
+            <div className="divide-y divide-slate-100 text-xs bg-white">
               {formData.category === 'bakery' && formData.menu_items && (
                 <div>
                   {formData.menu_items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-warm-card/40">
-                      <span className="font-medium text-ink">{item.name} ({item.unit})</span>
-                      <span className="font-mono tabular-nums font-semibold text-teal">₹{item.price}</span>
+                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
+                      <span className="font-medium text-slate-800">{item.name} ({item.unit})</span>
+                      <span className="font-mono font-semibold text-slate-900">₹{item.price}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Cafe Menu Items */}
               {formData.category === 'cafe' && formData.cafe_menu && (
                 <div>
                   {formData.cafe_menu.map((item, idx) => (
-                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-warm-card/40">
-                      <span className="font-medium text-ink">{item.name} {item.category ? `(${item.category})` : ''}</span>
-                      <span className="font-mono tabular-nums font-semibold text-teal">₹{item.price}</span>
+                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
+                      <span className="font-medium text-slate-800">{item.name} {item.category ? `(${item.category})` : ''}</span>
+                      <span className="font-mono font-semibold text-slate-900">₹{item.price}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Salon Services */}
               {formData.category === 'salon' && formData.services && (
                 <div>
                   {formData.services.map((item, idx) => (
-                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-warm-card/40">
-                      <span className="font-medium text-ink">{item.name} ({item.duration})</span>
-                      <span className="font-mono tabular-nums font-semibold text-teal">₹{item.price}</span>
+                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
+                      <span className="font-medium text-slate-800">{item.name} ({item.duration})</span>
+                      <span className="font-mono font-semibold text-slate-900">₹{item.price}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Gym Plans */}
               {formData.category === 'gym' && formData.gym_plans && (
                 <div>
                   {formData.gym_plans.map((item, idx) => (
-                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-warm-card/40">
-                      <span className="font-medium text-ink">{item.name} ({item.duration})</span>
-                      <span className="font-mono tabular-nums font-semibold text-teal">₹{item.price}</span>
+                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
+                      <span className="font-medium text-slate-800">{item.name} ({item.duration})</span>
+                      <span className="font-mono font-semibold text-slate-900">₹{item.price}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Tuition Courses */}
               {formData.category === 'tuition' && formData.courses && (
                 <div>
                   {formData.courses.map((item, idx) => (
-                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-warm-card/40">
-                      <span className="font-medium text-ink">{item.name} [{item.batch_timing}]</span>
-                      <span className="font-mono tabular-nums font-semibold text-teal">{item.fee}</span>
+                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
+                      <span className="font-medium text-slate-800">{item.name} [{item.batch_timing}]</span>
+                      <span className="font-mono font-semibold text-slate-900">{item.fee}</span>
                     </div>
                   ))}
                 </div>
@@ -137,47 +132,30 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
             </div>
           </div>
 
-          {/* FAQs Summary */}
-          {formData.faqs && formData.faqs.length > 0 && (
-            <div className="border border-warm-border rounded-md p-4 bg-warm-card/40 space-y-2">
-              <span className="text-[11px] font-mono font-semibold text-ink-light uppercase block">
-                CONFIGURED FAQS ({formData.faqs.length} ITEMS)
-              </span>
-              <div className="space-y-1 text-xs">
-                {formData.faqs.map((faq, idx) => (
-                  <div key={idx} className="flex space-x-2">
-                    <span className="text-teal font-bold font-mono">Q:</span>
-                    <span className="text-ink font-medium">{faq.question}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Verification & Trust Callout */}
-          <div className="flex items-center space-x-3 p-3.5 bg-sage-light/60 border border-sage/30 rounded-md text-xs text-ink">
-            <ShieldCheck className="w-5 h-5 text-sage flex-shrink-0" />
+          {/* Verification Callout */}
+          <div className="flex items-center space-x-3 p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs text-emerald-900">
+            <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <p className="leading-snug">
-              Your AI agent prompt will be generated automatically. You can edit your menu, hours, and answers anytime from your owner dashboard.
+              Your AI agent knowledge base will be configured automatically. You can edit items, prices, and settings anytime from your dashboard.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Signature Go Live CTA Button */}
+      {/* Go Live CTA */}
       <div className="pt-2">
         <button
           type="button"
           onClick={onGoLive}
           disabled={isSubmitting}
-          className="w-full py-4 px-6 rounded-lg bg-marigold text-ink font-serif text-lg font-bold shadow-ledger hover:bg-marigold-hover active:translate-y-0.5 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+          className="w-full py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
         >
           {isSubmitting ? (
-            <span>Creating Your WhatsApp AI Agent...</span>
+            <span>Activating Your AI Agent...</span>
           ) : (
             <>
-              <span>Go Live — Start 30-Day Free Trial</span>
-              <ArrowRight className="w-5 h-5" />
+              <span>Activate AI Agent & Go Live</span>
+              <ArrowRight className="w-4 h-4" />
             </>
           )}
         </button>

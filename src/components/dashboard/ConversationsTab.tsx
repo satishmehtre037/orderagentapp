@@ -6,14 +6,12 @@ import {
   MessageSquare,
   User,
   Bot,
-  Clock,
-  Sparkles,
   RefreshCw,
   Send,
   Search,
   Phone,
   ShieldCheck,
-  CheckCircle2,
+  CheckCheck,
 } from 'lucide-react';
 
 interface ConversationsTabProps {
@@ -60,7 +58,6 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
   useEffect(() => {
     fetchConversations();
 
-    // Supabase Realtime subscription
     const channel = supabaseClient
       .channel(`realtime-conversations-${businessId}`)
       .on(
@@ -91,7 +88,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
     };
   }, [businessId, fetchConversations]);
 
-  // Memoize grouped threads by customer_number so parent re-renders don't trigger effects
+  // Group threads by customer_number
   const threads = useMemo(() => {
     const threadsMap = new Map<string, ConversationThread>();
     conversations.forEach((rawMsg: any) => {
@@ -126,58 +123,65 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
     );
   }, [conversations]);
 
-  // Filter threads by search query
-  const filteredThreads = useMemo(() => {
-    if (!searchQuery.trim()) return threads;
-    const q = searchQuery.toLowerCase();
-    return threads.filter(
-      (t) => t.customer_number.toLowerCase().includes(q) || t.last_message.toLowerCase().includes(q)
-    );
-  }, [threads, searchQuery]);
-
-  // Set default selected thread if none selected
+  // Auto-select first thread if none selected
   useEffect(() => {
     if (!selectedCustomerNumber && threads.length > 0) {
       setSelectedCustomerNumber(threads[0].customer_number);
     }
   }, [threads, selectedCustomerNumber]);
 
+  // Filtered threads based on search
+  const filteredThreads = useMemo(() => {
+    return threads.filter((t) => {
+      const q = searchQuery.toLowerCase();
+      return (
+        t.customer_number.toLowerCase().includes(q) ||
+        t.last_message.toLowerCase().includes(q)
+      );
+    });
+  }, [threads, searchQuery]);
+
+  // Active Selected Thread
   const activeThread = useMemo(() => {
-    return threads.find((t) => t.customer_number === selectedCustomerNumber);
+    return threads.find((t) => t.customer_number === selectedCustomerNumber) || null;
   }, [threads, selectedCustomerNumber]);
 
-  // Track if user is scrolling manually inside chat container
-  const handleChatScroll = () => {
+  // Track if user has scrolled away from bottom
+  const handleChatScroll = useCallback(() => {
     const el = chatContainerRef.current;
     if (!el) return;
-    const threshold = 60; // px from bottom
+    const threshold = 60;
     isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
-  };
+  }, []);
 
-  // Safe internal container scroll: only scroll when switching thread or if already at bottom
+  // Smart Auto-Scroll
   useEffect(() => {
     const el = chatContainerRef.current;
     if (!el || !activeThread) return;
 
     const threadChanged = prevSelectedThreadRef.current !== selectedCustomerNumber;
-    const msgCount = activeThread.messages.length;
-    const hasNewMessages = msgCount > prevMessagesLengthRef.current;
+    const messagesAdded = activeThread.messages.length > prevMessagesLengthRef.current;
+
+    if (threadChanged) {
+      el.scrollTop = el.scrollHeight;
+      isAtBottomRef.current = true;
+    } else if (messagesAdded && isAtBottomRef.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
 
     prevSelectedThreadRef.current = selectedCustomerNumber;
-    prevMessagesLengthRef.current = msgCount;
+    prevMessagesLengthRef.current = activeThread.messages.length;
+  }, [activeThread?.messages, selectedCustomerNumber]);
 
-    // Only scroll if thread changed or if user was already at the bottom
-    if (threadChanged || isAtBottomRef.current || hasNewMessages) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [selectedCustomerNumber, activeThread?.messages.length]);
-
-  // Send Manual Reply (Human Takeover)
+  // Send Manual Reply via WhatsApp Cloud API
   const handleSendManualReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualReplyText.trim() || !selectedCustomerNumber) return;
+    if (!manualReplyText.trim() || !selectedCustomerNumber || sendingReply) return;
 
     setSendingReply(true);
+    const messageToSend = manualReplyText.trim();
+    setManualReplyText('');
+
     try {
       const res = await fetch('/api/conversations', {
         method: 'POST',
@@ -185,18 +189,16 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
         body: JSON.stringify({
           businessId,
           customerNumber: selectedCustomerNumber,
-          messageText: manualReplyText.trim(),
+          message: messageToSend,
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.message) {
-        setConversations((prev) => [...prev, data.message]);
-        setManualReplyText('');
-      } else {
-        alert(data.error || 'Failed to deliver message via WhatsApp');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to dispatch WhatsApp message');
       }
     } catch (err: any) {
+      console.error('Manual reply error:', err);
       alert(`Error sending message: ${err.message}`);
     } finally {
       setSendingReply(false);
@@ -204,17 +206,17 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Top Banner Toolbar */}
-      <div className="bg-warm-card border border-warm-border p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+      <div className="bg-white border border-slate-200/80 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-paper rounded border border-warm-border">
-            <MessageSquare className="w-5 h-5 text-teal" />
+          <div className="p-2 bg-slate-100 rounded-lg text-slate-700">
+            <MessageSquare className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-serif text-base font-bold text-ink">Conversations Studio & Live Takeover</h2>
-            <p className="text-xs text-ink-muted">
-              Live automated AI chat history with direct manual WhatsApp reply capabilities
+            <h2 className="text-sm font-semibold text-slate-900">Live WhatsApp Inbox & Human Takeover</h2>
+            <p className="text-xs text-slate-500">
+              Inspect real-time customer conversations or step in with manual replies anytime
             </p>
           </div>
         </div>
@@ -223,34 +225,34 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
           <button
             onClick={() => fetchConversations(true)}
             disabled={refreshing}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-paper border border-warm-border text-xs font-mono text-ink-light hover:text-ink hover:bg-warm-stub transition-all shadow-sm disabled:opacity-50"
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-teal' : ''}`} />
-            <span>{refreshing ? 'Refreshing...' : 'Refresh Chats'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-slate-900' : 'text-slate-400'}`} />
+            <span>{refreshing ? 'Refreshing...' : 'Refresh Inbox'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Studio Split Layout */}
-      <div className="bg-paper border-2 border-warm-border rounded-lg shadow-ledger overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[580px]">
+      <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[600px]">
         {/* Left Sidebar: Threads List */}
-        <div className="md:col-span-4 border-r border-warm-border flex flex-col h-full bg-warm-card/30">
+        <div className="md:col-span-4 border-r border-slate-200/80 flex flex-col h-full bg-slate-50/50">
           {/* Thread Search Box */}
-          <div className="p-3.5 border-b border-warm-border bg-warm-stub">
+          <div className="p-3 border-b border-slate-200/80 bg-white">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-ink-light absolute left-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search phone or text..."
-                className="w-full pl-8 pr-3 py-1.5 bg-paper border border-warm-border rounded text-xs focus:border-teal"
+                placeholder="Search chats by phone or text..."
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
               />
             </div>
           </div>
 
           {/* Threads List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-warm-border/60">
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
             {loading ? (
               <div className="p-4 space-y-3">
                 <ConversationThreadSkeleton />
@@ -259,7 +261,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
               </div>
             ) : filteredThreads.length === 0 ? (
               <div className="p-8 text-center space-y-2">
-                <p className="text-xs text-ink-muted">No conversation threads found.</p>
+                <p className="text-xs text-slate-500">No conversations recorded yet.</p>
               </div>
             ) : (
               filteredThreads.map((thread) => {
@@ -270,23 +272,23 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
                     onClick={() => setSelectedCustomerNumber(thread.customer_number)}
                     className={`p-3.5 cursor-pointer transition-colors ${
                       isSelected
-                        ? 'bg-paper border-l-4 border-l-teal shadow-sm'
-                        : 'hover:bg-warm-card/60'
+                        ? 'bg-white border-l-4 border-l-slate-900 shadow-sm'
+                        : 'hover:bg-slate-100/60'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center space-x-1.5">
-                        <Phone className="w-3 h-3 text-teal" />
-                        <span className="font-mono text-xs font-bold text-ink">{thread.customer_number}</span>
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        <span className="font-mono text-xs font-semibold text-slate-900">{thread.customer_number}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-ink-light">
+                      <span className="text-[10px] text-slate-400">
                         {new Date(thread.last_timestamp).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                       </span>
                     </div>
-                    <p className="text-xs text-ink-muted line-clamp-1 font-sans">{thread.last_message}</p>
+                    <p className="text-xs text-slate-500 line-clamp-1">{thread.last_message}</p>
                   </div>
                 );
               })
@@ -295,26 +297,26 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
         </div>
 
         {/* Right Area: Active Chat Transcript & Live Takeover Input */}
-        <div className="md:col-span-8 flex flex-col h-full bg-paper">
+        <div className="md:col-span-8 flex flex-col h-full bg-white">
           {activeThread ? (
             <>
               {/* Chat Header */}
-              <div className="px-6 py-3.5 border-b border-warm-border bg-warm-stub flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-teal-light text-teal border border-teal/30 flex items-center justify-center font-mono font-bold text-xs">
+              <div className="px-6 py-3.5 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono font-bold text-xs">
                     WA
                   </div>
                   <div>
-                    <h3 className="font-mono text-xs font-bold text-ink">{activeThread.customer_number}</h3>
-                    <span className="text-[10px] text-ink-muted flex items-center space-x-1">
-                      <ShieldCheck className="w-3 h-3 text-sage" />
-                      <span>Groq Llama 3.3 Active Assistant</span>
+                    <h3 className="font-mono text-xs font-semibold text-slate-900">{activeThread.customer_number}</h3>
+                    <span className="text-[11px] text-slate-500 flex items-center space-x-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      <span>Groq Whisper + LLaMA Live Agent</span>
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="text-[11px] font-mono px-2 py-0.5 bg-paper rounded border border-warm-border text-ink-light">
+                  <span className="text-[11px] px-2.5 py-0.5 bg-white rounded-md border border-slate-200 text-slate-600 font-medium">
                     {activeThread.messages.length} messages
                   </span>
                 </div>
@@ -324,7 +326,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
               <div
                 ref={chatContainerRef}
                 onScroll={handleChatScroll}
-                className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[460px]"
+                className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[480px] bg-slate-50/30"
               >
                 {activeThread.messages.map((msg, index) => {
                   const isCustomer = msg.sender === 'customer';
@@ -334,33 +336,36 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
                       className={`flex items-start space-x-2.5 ${isCustomer ? 'justify-start' : 'justify-end'}`}
                     >
                       {isCustomer && (
-                        <div className="w-7 h-7 rounded-full bg-warm-card border border-warm-border flex items-center justify-center text-ink-light shrink-0 mt-1">
+                        <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 shrink-0 mt-1">
                           <User className="w-3.5 h-3.5" />
                         </div>
                       )}
 
                       <div
-                        className={`max-w-[78%] rounded-lg p-3.5 text-xs shadow-sm whitespace-pre-wrap leading-relaxed ${
+                        className={`max-w-[78%] rounded-xl p-3.5 text-xs shadow-sm whitespace-pre-wrap leading-relaxed ${
                           isCustomer
-                            ? 'bg-warm-card border border-warm-border text-ink'
-                            : 'bg-teal text-white border border-teal'
+                            ? 'bg-white border border-slate-200 text-slate-900'
+                            : 'bg-slate-900 text-white'
                         }`}
                       >
                         <p>{msg.message}</p>
                         <div
-                          className={`text-[9px] font-mono mt-1 text-right ${
-                            isCustomer ? 'text-ink-light' : 'text-teal-light'
+                          className={`flex items-center justify-end space-x-1 text-[10px] mt-1.5 ${
+                            isCustomer ? 'text-slate-400' : 'text-slate-400'
                           }`}
                         >
-                          {new Date(msg.created_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          <span>
+                            {new Date(msg.created_at).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          {!isCustomer && <CheckCheck className="w-3 h-3 text-emerald-400" />}
                         </div>
                       </div>
 
                       {!isCustomer && (
-                        <div className="w-7 h-7 rounded-full bg-teal-light border border-teal/30 flex items-center justify-center text-teal shrink-0 mt-1">
+                        <div className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center text-white shrink-0 mt-1">
                           <Bot className="w-3.5 h-3.5" />
                         </div>
                       )}
@@ -369,35 +374,32 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
                 })}
               </div>
 
-              {/* Live Takeover / Manual WhatsApp Reply Bar */}
-              <div className="p-4 border-t border-warm-border bg-warm-stub">
-                <form onSubmit={handleSendManualReply} className="flex items-center space-x-2">
+              {/* Live Takeover Manual Message Input */}
+              <form onSubmit={handleSendManualReply} className="p-4 border-t border-slate-200 bg-white">
+                <div className="flex items-center space-x-2">
                   <input
                     type="text"
                     value={manualReplyText}
                     onChange={(e) => setManualReplyText(e.target.value)}
-                    placeholder="Type manual reply to customer's WhatsApp..."
-                    className="flex-1 px-3.5 py-2.5 bg-paper border border-warm-border rounded-md text-xs focus:border-teal"
+                    placeholder={`Reply manually to ${activeThread.customer_number} via WhatsApp...`}
+                    disabled={sendingReply}
+                    className="flex-1 px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 disabled:opacity-50"
                   />
                   <button
                     type="submit"
-                    disabled={sendingReply || !manualReplyText.trim()}
-                    className="px-4 py-2.5 rounded-md bg-teal text-white font-serif font-bold text-xs hover:bg-teal-hover shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50"
+                    disabled={!manualReplyText.trim() || sendingReply}
+                    className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-40"
                   >
-                    <Send className="w-3.5 h-3.5 text-marigold" />
+                    <Send className="w-3.5 h-3.5" />
                     <span>{sendingReply ? 'Sending...' : 'Send'}</span>
                   </button>
-                </form>
-                <span className="text-[10px] text-ink-muted block mt-1.5">
-                  Sends directly to customer's WhatsApp chat from your business number.
-                </span>
-              </div>
+                </div>
+              </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-2">
-              <MessageSquare className="w-8 h-8 text-ink-light" />
-              <h4 className="font-serif font-bold text-sm text-ink">No conversation selected</h4>
-              <p className="text-xs text-ink-muted">Select a conversation thread from the left to view the transcript.</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400 space-y-2">
+              <MessageSquare className="w-10 h-10 stroke-1 text-slate-300" />
+              <p className="text-xs text-slate-500">Select a conversation thread to view the live chat</p>
             </div>
           )}
         </div>

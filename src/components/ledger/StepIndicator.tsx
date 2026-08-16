@@ -7,16 +7,16 @@ interface StepIndicatorProps {
 }
 
 const STEPS = [
-  { id: 1, label: 'Business Basics', stub: 'STUB #01' },
-  { id: 2, label: 'Services & Menu', stub: 'STUB #02' },
-  { id: 3, label: 'WhatsApp Number', stub: 'STUB #03' },
-  { id: 4, label: 'Review Ledger', stub: 'STUB #04' },
+  { id: 1, label: 'Store Profile', stepNum: 'Step 1' },
+  { id: 2, label: 'Menu & Services', stepNum: 'Step 2' },
+  { id: 3, label: 'WhatsApp Binding', stepNum: 'Step 3' },
+  { id: 4, label: 'Review & Go Live', stepNum: 'Step 4' },
 ];
 
 export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onStepClick }) => {
   return (
-    <div className="w-full bg-warm-card border-b border-warm-border p-3 sm:p-4 rounded-t-lg shadow-ledger">
-      <div className="flex items-center justify-between overflow-x-auto gap-2 scrollbar-none pb-1">
+    <div className="w-full bg-slate-50/80 border-b border-slate-200/80 p-3 sm:p-4 rounded-t-xl">
+      <div className="flex items-center justify-between overflow-x-auto gap-2 scrollbar-none">
         {STEPS.map((step) => {
           const isCurrent = step.id === currentStep;
           const isCompleted = step.id < currentStep;
@@ -27,23 +27,23 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onSte
               type="button"
               disabled={step.id > currentStep}
               onClick={() => onStepClick && onStepClick(step.id)}
-              className={`flex-1 min-w-[130px] p-2.5 rounded-md border text-left transition-all duration-150 ${
+              className={`flex-1 min-w-[130px] p-2.5 rounded-lg border text-left transition-all ${
                 isCurrent
-                  ? 'bg-paper border-teal text-teal shadow-sm ring-1 ring-teal/20 font-medium'
+                  ? 'bg-white border-slate-900 text-slate-900 shadow-sm ring-1 ring-slate-900/10'
                   : isCompleted
-                  ? 'bg-sage-light border-sage/40 text-ink cursor-pointer hover:bg-sage/10'
-                  : 'bg-warm-stub border-warm-border text-ink-muted cursor-not-allowed opacity-70'
+                  ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900 hover:bg-emerald-50'
+                  : 'bg-slate-100/60 border-slate-200/60 text-slate-400 cursor-not-allowed'
               }`}
             >
-              <div className="flex items-center justify-between text-[10px] font-mono tracking-widest text-ink-light uppercase mb-0.5">
-                <span>{step.stub}</span>
+              <div className="flex items-center justify-between text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">
+                <span>{step.stepNum}</span>
                 {isCompleted && (
-                  <span className="w-4 h-4 rounded-full bg-sage text-white flex items-center justify-center">
+                  <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center">
                     <Check className="w-2.5 h-2.5" />
                   </span>
                 )}
               </div>
-              <div className="text-xs sm:text-sm font-semibold truncate font-serif">
+              <div className="text-xs font-semibold truncate">
                 {step.label}
               </div>
             </button>
