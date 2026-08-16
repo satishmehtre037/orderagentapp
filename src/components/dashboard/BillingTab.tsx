@@ -134,20 +134,26 @@ export const BillingTab: React.FC<BillingTabProps> = ({
 
     try {
       const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
+      if (!scriptLoaded || typeof window.Razorpay === 'undefined') {
         throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
       }
 
       const planKey = selectedBillingCycle === 'annual' ? 'annual_10' : 'monthly_1';
       const amountPaise = selectedBillingCycle === 'annual' ? 1000 : 100;
+      const planLabel = selectedBillingCycle === 'annual' ? 'Annual Saver (₹10/year)' : 'Pro Monthly (₹1/month)';
 
-      const orderRes = await fetch('/api/billing', {
+      console.log(`[Frontend Checkout] Requesting order creation for ₹${amountPaise / 100} ...`);
+      const orderRes = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessId,
-          plan: planKey,
           amount: amountPaise,
+          currency: 'INR',
+          receipt: `rcpt_${businessId ? businessId.substring(0, 8) : 'biz'}_${Date.now()}`,
+          notes: {
+            business_id: businessId,
+            plan_cycle: selectedBillingCycle,
+          },
         }),
       });
 
@@ -158,76 +164,139 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         throw new Error('Payment service temporarily unavailable. Please try again.');
       }
 
-      if (!orderRes.ok) {
+      if (!orderRes.ok || !orderData.order_id) {
         throw new Error(orderData.error || 'Failed to initialize Razorpay payment order');
       }
 
+      const keyId =
+        orderData.key_id ||
+        orderData.keyId ||
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+        'rzp_live_TPDyzIAe95Bgky';
+
       const options = {
-        key: orderData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
-        amount: orderData.amount || amountPaise,
-        currency: 'INR',
-        name: 'BizBot OS',
-        description: `Pro Plan (${selectedBillingCycle === 'annual' ? '1 Year' : '1 Month'})`,
-        image: 'https://cdn-icons-png.flaticon.com/512/4712/4712139.png',
-        order_id: orderData.orderId,
-        handler: async function (response: any) {
+        key: keyId,
+        amount: Math.round(Number(orderData.amount || amountPaise)),
+        currency: orderData.currency || 'INR',
+        name: 'WebcoreStudio',
+        description: `${planLabel} — WhatsApp AI Agent Plan`,
+        order_id: orderData.order_id,
+        notes: {
+          business_id: businessId,
+        },
+        theme: {
+          color: '#d8707d',
+        },
+        // Enable UPI Intent inside mobile browsers / WebViews
+        webview_intent: true,
+        // Explicitly force full display of all payment options with UPI prioritized
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: 'Pay via UPI',
+                instruments: [
+                  {
+                    method: 'upi',
+                  },
+                ],
+              },
+              other: {
+                name: 'Cards, NetBanking & Wallet',
+                instruments: [
+                  {
+                    method: 'card',
+                  },
+                  {
+                    method: 'netbanking',
+                  },
+                  {
+                    method: 'wallet',
+                  },
+                ],
+              },
+            },
+            sequence: ['block.upi', 'block.other'],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
+        },
+        modal: {
+          ondismiss: function () {
+            console.log('[Razorpay Modal] Closed/Cancelled by user');
+            setLoading(false);
+          },
+          escape: true,
+          backdropclose: true,
+        },
+        handler: async function (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) {
+          console.log('[Razorpay Checkout] Payment received, verifying HMAC signature ...', response);
+          setLoading(true);
+
           try {
-            const verifyRes = await fetch('/api/billing/verify', {
+            const verifyRes = await fetch('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                businessId,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+                business_id: businessId,
                 plan: planKey,
+                amount: amountPaise,
               }),
             });
 
             let verifyData: any = {};
             try {
               verifyData = await verifyRes.json();
-            } catch (jsonErr) {
+            } catch (vErr) {
               verifyData = {};
             }
 
-            if (!verifyRes.ok) {
-              throw new Error(verifyData.error || 'Payment signature verification failed.');
+            if (verifyRes.ok && (verifyData.success || verifyData.message)) {
+              setSuccessMsg(`🎉 Payment of ₹${amountPaise / 100} verified! Your Pro Plan is now active.`);
+              fetchPaymentHistory();
+              if (onSubscriptionUpdated) onSubscriptionUpdated();
+            } else {
+              handlePaymentSuccessFallback(response.razorpay_payment_id, planKey, amountPaise);
             }
-
-            setSuccessMsg(`Payment of ₹${amountPaise / 100} verified! Your Pro Plan is now active.`);
-            fetchPaymentHistory();
-            if (onSubscriptionUpdated) onSubscriptionUpdated();
           } catch (err: any) {
             console.error('Verification error:', err);
             handlePaymentSuccessFallback(response.razorpay_payment_id, planKey, amountPaise);
-          }
-        },
-        prefill: {
-          name: 'Store Owner',
-          email: 'owner@bizbotos.in',
-          contact: '9876543210',
-          method: 'upi',
-        },
-        theme: {
-          color: '#3399cc',
-        },
-        modal: {
-          ondismiss: function () {
+          } finally {
             setLoading(false);
-          },
+          }
         },
       };
 
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.on('payment.failed', function (response: any) {
-        setErrorMsg(`Payment failed: ${response.error?.description || 'Transaction declined'}`);
+      const rzp = new window.Razorpay(options);
+
+      rzp.on('payment.failed', function (response: any) {
+        console.warn('[Razorpay] Payment failed:', response);
+        setErrorMsg(`Payment Failed: ${response.error?.description || response.error?.reason || 'Transaction declined'}`);
+        setLoading(false);
       });
-      paymentObject.open();
+
+      rzp.on('payment.cancelled', function () {
+        console.log('[Razorpay] Payment cancelled by user');
+        setLoading(false);
+      });
+
+      rzp.open();
+
+      // Auto-reset loading state after modal opens so button is never stuck
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
     } catch (err: any) {
-      console.error('Checkout error:', err);
-      setErrorMsg(err.message || 'Payment initiation failed.');
-    } finally {
+      console.error('[Upgrade Click Error]:', err);
+      setErrorMsg(err.message || 'Failed to initiate Razorpay Checkout');
       setLoading(false);
     }
   };
