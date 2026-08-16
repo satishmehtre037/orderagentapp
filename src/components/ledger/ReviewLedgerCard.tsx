@@ -59,7 +59,13 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
             </div>
             <div>
               <span className="text-[11px] text-slate-400 block mb-0.5">WHATSAPP AGENT NUMBER</span>
-              <span className="font-mono font-semibold text-slate-900">{formData.whatsapp_number}</span>
+              <span className="font-mono font-semibold text-slate-900">
+                {formData.whatsapp_number
+                  ? formData.whatsapp_number.startsWith('+91')
+                    ? formData.whatsapp_number
+                    : `+91 ${formData.whatsapp_number}`
+                  : 'Not provided'}
+              </span>
             </div>
             <div>
               <span className="text-[11px] text-slate-400 block mb-0.5">BUSINESS HOURS</span>

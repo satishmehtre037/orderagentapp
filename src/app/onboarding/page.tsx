@@ -108,12 +108,18 @@ export default function OnboardingPage() {
     setSubmitError(null);
 
     try {
+      const cleanDigits = data.whatsapp_number.replace(/\D/g, '').replace(/^91/, '');
+      const fullWhatsAppNumber = cleanDigits ? `+91${cleanDigits}` : '';
+
       const payload = {
         ownerEmail,
         businessName: data.business_name,
         category: data.category,
-        whatsappNumber: data.whatsapp_number,
-        formData: data,
+        whatsappNumber: fullWhatsAppNumber,
+        formData: {
+          ...data,
+          whatsapp_number: fullWhatsAppNumber,
+        },
       };
 
       const res = await fetch('/api/onboarding', {
@@ -273,13 +279,10 @@ export default function OnboardingPage() {
                           pattern="[0-9]*"
                           maxLength={10}
                           autoComplete="tel-national"
-                          value={(() => {
-                            const raw = (watch('whatsapp_number') || '').replace(/\D/g, '');
-                            return raw.startsWith('91') && raw.length > 10 ? raw.slice(2, 12) : raw.slice(0, 10);
-                          })()}
+                          value={watch('whatsapp_number') || ''}
                           onChange={(e) => {
                             const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-                            setValue('whatsapp_number', digits ? `+91${digits}` : '', { shouldValidate: true });
+                            setValue('whatsapp_number', digits, { shouldValidate: true });
                           }}
                           placeholder="9876543210"
                           className="flex-1 px-3.5 py-2.5 text-sm font-mono font-semibold text-slate-900 bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:font-normal"
@@ -293,11 +296,7 @@ export default function OnboardingPage() {
                           <p className="text-[11px] text-slate-500">Enter exactly 10 digits without +91 or 0</p>
                         )}
                         <span className="text-[10px] font-mono text-slate-400">
-                          {(() => {
-                            const raw = (watch('whatsapp_number') || '').replace(/\D/g, '');
-                            const ten = raw.startsWith('91') && raw.length > 10 ? raw.slice(2, 12) : raw.slice(0, 10);
-                            return `${ten.length}/10 digits`;
-                          })()}
+                          {`${(watch('whatsapp_number') || '').length}/10 digits`}
                         </span>
                       </div>
                     </div>

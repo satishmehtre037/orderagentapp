@@ -70,15 +70,16 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
         setLoading(true);
         const res = await fetch(`/api/business?id=${encodeURIComponent(businessId)}`);
         const data = await res.json();
-
         if (data.business) {
           const bus = data.business;
           const configMap = data.configs || {};
+          const rawPhone = bus.whatsapp_number ? bus.whatsapp_number.replace(/\D/g, '') : '';
+          const tenDigitPhone = rawPhone.startsWith('91') && rawPhone.length > 10 ? rawPhone.slice(2, 12) : rawPhone.slice(0, 10);
 
           reset({
             business_name: bus.name || 'My Business',
             category: category,
-            whatsapp_number: bus.whatsapp_number || '',
+            whatsapp_number: tenDigitPhone,
             hours: configMap.hours || 'Mon - Sun, 9:00 AM - 9:00 PM',
             menu_items: configMap.menu_items || [
               { name: 'Fresh Chocolate Truffle Cake (1kg)', price: 650, unit: 'kg' },
@@ -159,13 +160,16 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
         updates.push({ config_key: 'admission_process', config_value: formData.admission_process || '' });
       }
 
+      const cleanDigits = (formData.whatsapp_number || '').replace(/\D/g, '').replace(/^91/, '');
+      const fullWhatsAppNumber = cleanDigits ? `+91${cleanDigits}` : '';
+
       const res = await fetch('/api/business', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessId,
           name: formData.business_name,
-          whatsapp_number: formData.whatsapp_number,
+          whatsapp_number: fullWhatsAppNumber,
           category,
           configs: updates,
         }),
@@ -300,13 +304,10 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
                         pattern="[0-9]*"
                         maxLength={10}
                         autoComplete="tel-national"
-                        value={(() => {
-                          const raw = (methods.watch('whatsapp_number') || '').replace(/\D/g, '');
-                          return raw.startsWith('91') && raw.length > 10 ? raw.slice(2, 12) : raw.slice(0, 10);
-                        })()}
+                        value={methods.watch('whatsapp_number') || ''}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-                          methods.setValue('whatsapp_number', digits ? `+91${digits}` : '', { shouldValidate: true });
+                          methods.setValue('whatsapp_number', digits, { shouldValidate: true });
                         }}
                         placeholder="9876543210"
                         className="flex-1 px-3 py-2 text-xs font-mono font-semibold text-slate-900 bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:font-normal"
