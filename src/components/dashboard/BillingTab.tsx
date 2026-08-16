@@ -206,21 +206,42 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         prefill: {
           name: 'Store Owner',
           email: 'owner@bizbotos.in',
-          contact: '+919876543210',
+          contact: '9876543210',
+          method: 'upi',
         },
         theme: {
-          color: '#0f172a',
+          color: '#3399cc',
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          },
         },
       };
 
       const paymentObject = new window.Razorpay(options);
       paymentObject.on('payment.failed', function (response: any) {
-        setErrorMsg(`Payment failed: ${response.error.description || 'Transaction declined'}`);
+        setErrorMsg(`Payment failed: ${response.error?.description || 'Transaction declined'}`);
       });
       paymentObject.open();
     } catch (err: any) {
       console.error('Checkout error:', err);
       setErrorMsg(err.message || 'Payment initiation failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSimulateTestPayment = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg(null);
+      const planKey = selectedBillingCycle === 'annual' ? 'annual_10' : 'monthly_1';
+      const amountPaise = selectedBillingCycle === 'annual' ? 1000 : 100;
+      const testPaymentId = `pay_sim_${Date.now()}`;
+      await handlePaymentSuccessFallback(testPaymentId, planKey, amountPaise);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Simulation failed');
     } finally {
       setLoading(false);
     }
@@ -469,7 +490,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                 </li>
               </ul>
 
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
                 <button
                   type="button"
                   onClick={handleUpgradeClick}
@@ -485,6 +506,22 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                       : `Upgrade Now — ${selectedBillingCycle === 'annual' ? '₹10/yr' : '₹1/mo'}`}
                   </span>
                 </button>
+
+                {/* Developer & Sandbox Instant Activate Button */}
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-xs">
+                  <div>
+                    <span className="font-semibold text-slate-800 text-[11px] block">Test Sandbox Mode</span>
+                    <span className="text-[10px] text-slate-500">1-click test activation without payment</span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={handleSimulateTestPayment}
+                    className="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 text-[11px] font-medium hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+                  >
+                    Instant Test Activate
+                  </button>
+                </div>
               </div>
             </div>
           </div>
