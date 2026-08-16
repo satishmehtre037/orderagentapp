@@ -10,17 +10,28 @@ const adminSupabase = createClient(supabaseUrl, serviceKey);
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { data, ownerEmail } = body;
+    const formData = body.formData || body.data || body;
+    const resolvedEmail = (body.ownerEmail || body.email || formData.ownerEmail || formData.email || 'owner@bizbotos.in').trim();
 
-    console.log('[API Onboarding] Processing business for owner:', ownerEmail);
+    const businessName = formData.business_name || formData.businessName || body.businessName || 'My Business';
+    const category = formData.category || body.category || 'bakery';
+    
+    // Ensure clean phone number
+    const rawNumber = formData.whatsapp_number || formData.whatsappNumber || body.whatsappNumber || '';
+    const cleanDigits = rawNumber.replace(/\D/g, '').replace(/^91/, '');
+    const whatsappNumber = cleanDigits ? `+91${cleanDigits}` : rawNumber;
 
-    const resolvedEmail = ownerEmail || 'owner@bizbotos.in';
+    console.log('[API Onboarding] Processing business for owner:', resolvedEmail, {
+      businessName,
+      category,
+      whatsappNumber,
+    });
 
     // 1. Check if this owner already has a business (lookup by email)
     const { data: existingBusiness } = await adminSupabase
       .from('businesses')
       .select('id, whatsapp_number')
-      .eq('owner_email', resolvedEmail)
+      .ilike('owner_email', resolvedEmail)
       .maybeSingle();
 
     let businessId: string;
@@ -34,9 +45,9 @@ export async function POST(req: Request) {
       const { data: updatedBiz, error: updateErr } = await adminSupabase
         .from('businesses')
         .update({
-          name: data.business_name,
-          category: data.category,
-          whatsapp_number: data.whatsapp_number,
+          name: businessName,
+          category: category,
+          whatsapp_number: whatsappNumber,
           subscription_status: 'trial',
           trial_end_date: oneDayFromNow,
         })
@@ -56,9 +67,9 @@ export async function POST(req: Request) {
       const { data: newBiz, error: insertErr } = await adminSupabase
         .from('businesses')
         .insert([{
-          name: data.business_name,
-          category: data.category,
-          whatsapp_number: data.whatsapp_number,
+          name: businessName,
+          category: category,
+          whatsapp_number: whatsappNumber,
           owner_email: resolvedEmail,
           subscription_status: 'trial',
           trial_end_date: oneDayFromNow,
@@ -79,63 +90,103 @@ export async function POST(req: Request) {
       {
         business_id: businessId,
         config_key: 'hours',
-        config_value: data.hours || '9:00 AM - 9:00 PM',
+        config_value: formData.hours || 'Mon - Sun, 9:00 AM - 9:00 PM',
       },
       {
         business_id: businessId,
         config_key: 'faqs',
-        config_value: data.faqs || [],
+        config_value: formData.faqs || [],
+      },
+      {
+        business_id: businessId,
+        config_key: 'upi_id',
+        config_value: formData.upi_id || '',
+      },
+      {
+        business_id: businessId,
+        config_key: 'auto_send_payment_link',
+        config_value: formData.auto_send_payment_link !== false,
+      },
+      {
+        business_id: businessId,
+        config_key: 'payment_note',
+        config_value: formData.payment_note || '',
+      },
+      {
+        business_id: businessId,
+        config_key: 'gst_number',
+        config_value: formData.gst_number || '',
+      },
+      {
+        business_id: businessId,
+        config_key: 'store_address',
+        config_value: formData.store_address || '',
+      },
+      {
+        business_id: businessId,
+        config_key: 'enable_reminders',
+        config_value: formData.enable_reminders !== false,
+      },
+      {
+        business_id: businessId,
+        config_key: 'reminder_days',
+        config_value: formData.reminder_days || (category === 'salon' ? 25 : category === 'gym' ? 27 : 7),
+      },
+      {
+        business_id: businessId,
+        config_key: 'reminder_template',
+        config_value: formData.reminder_template || '',
       },
     ];
 
-    if (data.category === 'bakery') {
+    if (category === 'bakery') {
       configRows.push({
         business_id: businessId,
         config_key: 'menu_items',
-        config_value: data.menu_items || [],
+        config_value: formData.menu_items || [],
       });
-    } else if (data.category === 'salon') {
+    } else if (category === 'salon') {
       configRows.push({
         business_id: businessId,
         config_key: 'services',
-        config_value: data.services || [],
+        config_value: formData.services || [],
       });
       configRows.push({
         business_id: businessId,
         config_key: 'staff',
-        config_value: data.staff || [],
+        config_value: formData.staff || [],
       });
-    } else if (data.category === 'tuition') {
+    } else if (category === 'tuition') {
       configRows.push({
         business_id: businessId,
         config_key: 'course_list',
-        config_value: data.courses || [],
+        config_value: formData.courses || formData.course_list || [],
       });
       configRows.push({
         business_id: businessId,
         config_key: 'admission_process',
-        config_value: data.admission_process || '',
+        config_value: formData.admission_process || '',
       });
-    } else if (data.category === 'gym') {
+    } else if (category === 'gym') {
       configRows.push({
         business_id: businessId,
         config_key: 'gym_plans',
-        config_value: data.gym_plans || [],
+        config_value: formData.gym_plans || [],
       });
       configRows.push({
         business_id: businessId,
         config_key: 'staff',
-        config_value: data.staff || [],
+        config_value: formData.staff || [],
       });
-    } else if (data.category === 'cafe') {
+    } else if (category === 'cafe') {
       configRows.push({
         business_id: businessId,
         config_key: 'cafe_menu',
-        config_value: data.cafe_menu || [],
+        config_value: formData.cafe_menu || [],
       });
     }
 
-    // 3. Upsert config rows using admin client (update if config_key already exists for this business)
+    // 3. Upsert config rows using admin client
     const { error: configErr } = await adminSupabase
       .from('business_config')
       .upsert(configRows, { onConflict: 'business_id,config_key' });

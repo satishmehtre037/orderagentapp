@@ -3,28 +3,37 @@ import { OnboardingWizardFormData } from '../../lib/validations/onboarding';
 import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface ReviewLedgerCardProps {
-  formData: OnboardingWizardFormData;
-  ownerEmail: string;
+  formData?: OnboardingWizardFormData;
+  ownerEmail?: string;
   onGoLive: () => void;
   isSubmitting: boolean;
 }
 
 export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
-  formData,
-  ownerEmail,
+  formData = {} as OnboardingWizardFormData,
+  ownerEmail = 'owner@bizbotos.in',
   onGoLive,
   isSubmitting,
 }) => {
+  const category = formData?.category || 'bakery';
   const categoryLabel =
-    formData.category === 'bakery'
+    category === 'bakery'
       ? 'Bakery & Cakes (Orders)'
-      : formData.category === 'cafe'
+      : category === 'cafe'
       ? 'Cafe & Dining (Orders)'
-      : formData.category === 'salon'
+      : category === 'salon'
       ? 'Salon & Spa (Bookings)'
-      : formData.category === 'gym'
+      : category === 'gym'
       ? 'Gym & Fitness (Memberships)'
       : 'Tuition & Coaching (Leads)';
+
+  const businessName = formData?.business_name || 'My Business';
+  const rawNumber = formData?.whatsapp_number || '';
+  const displayPhone = rawNumber
+    ? rawNumber.startsWith('+91')
+      ? rawNumber
+      : `+91 ${rawNumber}`
+    : 'Not provided';
 
   return (
     <div className="space-y-6">
@@ -36,7 +45,7 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
             <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">
               Configuration Review
             </span>
-            <h2 className="text-lg font-bold text-white">{formData.business_name || 'Business Name'}</h2>
+            <h2 className="text-lg font-bold text-white">{businessName}</h2>
           </div>
           <div className="text-right">
             <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -59,17 +68,11 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
             </div>
             <div>
               <span className="text-[11px] text-slate-400 block mb-0.5">WHATSAPP AGENT NUMBER</span>
-              <span className="font-mono font-semibold text-slate-900">
-                {formData.whatsapp_number
-                  ? formData.whatsapp_number.startsWith('+91')
-                    ? formData.whatsapp_number
-                    : `+91 ${formData.whatsapp_number}`
-                  : 'Not provided'}
-              </span>
+              <span className="font-mono font-semibold text-slate-900">{displayPhone}</span>
             </div>
             <div>
               <span className="text-[11px] text-slate-400 block mb-0.5">BUSINESS HOURS</span>
-              <span className="font-medium text-slate-900">{formData.hours || 'Standard Hours'}</span>
+              <span className="font-medium text-slate-900">{formData?.hours || 'Standard Hours'}</span>
             </div>
           </div>
 
@@ -77,11 +80,11 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
           <div className="border border-slate-200 rounded-xl overflow-hidden">
             <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 text-xs font-semibold text-slate-700 uppercase flex justify-between">
               <span>Catalog & Price Line Items</span>
-              <span>{formData.category.toUpperCase()}</span>
+              <span>{category.toUpperCase()}</span>
             </div>
 
             <div className="divide-y divide-slate-100 text-xs bg-white">
-              {formData.category === 'bakery' && formData.menu_items && (
+              {category === 'bakery' && formData?.menu_items && (
                 <div>
                   {formData.menu_items.map((item, idx) => (
                     <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
@@ -92,7 +95,7 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
                 </div>
               )}
 
-              {formData.category === 'cafe' && formData.cafe_menu && (
+              {category === 'cafe' && formData?.cafe_menu && (
                 <div>
                   {formData.cafe_menu.map((item, idx) => (
                     <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
@@ -103,7 +106,7 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
                 </div>
               )}
 
-              {formData.category === 'salon' && formData.services && (
+              {category === 'salon' && formData?.services && (
                 <div>
                   {formData.services.map((item, idx) => (
                     <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
@@ -114,7 +117,7 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
                 </div>
               )}
 
-              {formData.category === 'gym' && formData.gym_plans && (
+              {category === 'gym' && formData?.gym_plans && (
                 <div>
                   {formData.gym_plans.map((item, idx) => (
                     <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
@@ -125,7 +128,7 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
                 </div>
               )}
 
-              {formData.category === 'tuition' && formData.courses && (
+              {category === 'tuition' && formData?.courses && (
                 <div>
                   {formData.courses.map((item, idx) => (
                     <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
