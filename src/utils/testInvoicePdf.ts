@@ -1,4 +1,4 @@
-import { generateInvoicePdfBuffer, InvoiceData } from '../services/invoiceService.js';
+import { generateInvoicePdfBuffer, InvoiceData } from '../services/invoiceService';
 import fs from 'fs';
 import path from 'path';
 

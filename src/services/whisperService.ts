@@ -1,5 +1,5 @@
-import { groq } from '../config/groq.js';
-import { ENV } from '../config/env.js';
+import { groq } from '../config/groq';
+import { ENV } from '../config/env';
 
 /**
  * Downloads media binary buffer from Meta WhatsApp Cloud API

@@ -1,4 +1,4 @@
-import { ENV } from '../config/env.js';
+import { ENV } from '../config/env';
 
 /**
  * Cleans and formats markdown text for WhatsApp compatibility

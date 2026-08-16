@@ -1,6 +1,6 @@
-import { groq } from '../config/groq.js';
-import { ENV } from '../config/env.js';
-import { ConversationMessage } from '../types/index.js';
+import { groq } from '../config/groq';
+import { ENV } from '../config/env';
+import { ConversationMessage } from '../types/index';
 
 /**
  * Executes a text request against Groq Llama 3.3/3.1 API using system prompt and history

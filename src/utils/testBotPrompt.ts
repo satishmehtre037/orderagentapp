@@ -1,5 +1,5 @@
-import { buildSystemPrompt } from '../services/promptBuilder.js';
-import { getResponse } from '../services/groqService.js';
+import { buildSystemPrompt } from '../services/promptBuilder';
+import { getResponse } from '../services/groqService';
 import dotenv from 'dotenv';
 dotenv.config();
 

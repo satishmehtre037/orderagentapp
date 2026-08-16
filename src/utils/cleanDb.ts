@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import { supabase } from '../config/supabase';
 
 async function clean() {
   console.log('Cleaning up database...');

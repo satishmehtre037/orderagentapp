@@ -1,10 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import { ENV } from './config/env.js';
-import healthRouter from './routes/health.js';
-import webhookRouter from './routes/webhook.js';
-import billingRouter from './routes/billing.js';
-import paymentRouter from './routes/payment.js';
+import { ENV } from './config/env';
+import healthRouter from './routes/health';
+import webhookRouter from './routes/webhook';
+import billingRouter from './routes/billing';
+import paymentRouter from './routes/payment';
 
 const app = express();
 

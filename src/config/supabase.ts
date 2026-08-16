@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import WebSocket from 'ws';
-import { ENV } from './env.js';
+import { ENV } from './env';
 
 if (!ENV.SUPABASE_URL || !ENV.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn('⚠️ [Supabase] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing in .env');

@@ -1,9 +1,9 @@
 import {
   getBusinessConfigs,
   getCategoryTemplate,
-} from './businessService.js';
-import { supabase } from '../config/supabase.js';
-import { Business } from '../types/index.js';
+} from './businessService';
+import { supabase } from '../config/supabase';
+import { Business } from '../types/index';
 
 /**
  * Builds a category-aware system prompt dynamically by merging

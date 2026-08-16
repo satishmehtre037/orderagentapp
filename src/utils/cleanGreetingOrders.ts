@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import { supabase } from '../config/supabase';
 
 async function clean() {
   const { data: rows, error } = await supabase.from('orders_bookings_leads').select('*');

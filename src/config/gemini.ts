@@ -1,1 +1,1 @@
-export * from './groq.js';
+export * from './groq';

@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { supabase } from '../config/supabase.js';
-import { ENV } from '../config/env.js';
+import { supabase } from '../config/supabase';
+import { ENV } from '../config/env';
 
 const router = Router();
 

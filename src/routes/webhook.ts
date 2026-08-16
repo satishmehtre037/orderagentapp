@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { ENV } from '../config/env.js';
+import { ENV } from '../config/env';
 import {
   getBusinessByWhatsappNumber,
   getBusinessConfigs,
@@ -8,11 +8,11 @@ import {
   saveCapturedRecord,
   cancelOrdersForCustomer,
   cancelLatestOrderForCustomer,
-} from '../services/businessService.js';
-import { buildSystemPrompt } from '../services/promptBuilder.js';
-import { getResponse, extractStructuredCapture } from '../services/groqService.js';
-import { sendMessage } from '../services/whatsappService.js';
-import { downloadWhatsAppMedia, transcribeAudioWithGroq } from '../services/whisperService.js';
+} from '../services/businessService';
+import { buildSystemPrompt } from '../services/promptBuilder';
+import { getResponse, extractStructuredCapture } from '../services/groqService';
+import { sendMessage } from '../services/whatsappService';
+import { downloadWhatsAppMedia, transcribeAudioWithGroq } from '../services/whisperService';
 
 const router = Router();
 

@@ -1,1 +1,1 @@
-export * from './gemini.js';
+export * from './gemini';

@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import { supabase } from '../config/supabase';
 import {
   Business,
   BusinessCategory,
@@ -8,7 +8,7 @@ import {
   OrderBookingLead,
   CaptureType,
   MessageDirection,
-} from '../types/index.js';
+} from '../types/index';
 
 /**
  * Fetch business tenant by registered WhatsApp number

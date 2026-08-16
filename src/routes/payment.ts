@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { ENV } from '../config/env.js';
+import { ENV } from '../config/env';
 
 const router = Router();
 
