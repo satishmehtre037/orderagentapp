@@ -1,4 +1,4 @@
-import PDFDocument from 'pdfkit';
+import { jsPDF } from 'jspdf';
 
 export interface InvoiceData {
   orderId: string;
@@ -23,139 +23,223 @@ export interface InvoiceData {
 
 /**
  * Generates a high-quality, professional, vector-styled PDF invoice/booking slip buffer
+ * Runs 100% in-memory with jsPDF (no filesystem .afm font dependencies on Vercel / serverless).
  */
 export async function generateInvoicePdfBuffer(data: InvoiceData): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({
-        size: 'A4',
-        margin: 40,
-        info: {
-          Title: `Invoice - ${data.orderId.slice(0, 8).toUpperCase()}`,
-          Author: data.businessName,
-          Subject: 'Official Purchase Invoice / Booking Slip',
-        },
-      });
-
-      const buffers: Buffer[] = [];
-      doc.on('data', (chunk) => buffers.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
-      doc.on('error', (err) => reject(err));
-
-      const primaryColor = '#0f766e'; // Teal
-      const darkColor = '#1f2937';
-      const grayColor = '#6b7280';
-      const lightBg = '#f3f4f6';
-
-      // --- HEADER SECTION ---
-      doc.rect(40, 40, 515, 75).fill('#f8fafc');
-
-      doc.fillColor(primaryColor).fontSize(20).font('Helvetica-Bold').text(data.businessName, 55, 55);
-      doc.fillColor(grayColor).fontSize(9).font('Helvetica')
-        .text(`${data.businessCategory.toUpperCase()} • BIZBOT OS VERIFIED STORE`, 55, 80);
-
-      if (data.gstNumber) {
-        doc.text(`GSTIN: ${data.gstNumber}`, 55, 93);
-      }
-
-      // Top Right Invoice Meta
-      const invoiceCode = `INV-${new Date(data.createdAt).getFullYear()}-${data.orderId.slice(0, 6).toUpperCase()}`;
-      doc.fillColor(darkColor).fontSize(12).font('Helvetica-Bold').text('OFFICIAL INVOICE', 380, 55, { align: 'right' });
-      doc.fillColor(grayColor).fontSize(9).font('Helvetica')
-        .text(`Bill No: ${invoiceCode}`, 380, 72, { align: 'right' })
-        .text(`Date: ${new Date(data.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`, 380, 85, { align: 'right' })
-        .text(`Time: ${new Date(data.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`, 380, 98, { align: 'right' });
-
-      doc.moveDown(3);
-
-      // --- BILL TO & STORE DETAILS ---
-      const billToY = 135;
-      doc.rect(40, billToY, 250, 75).fill(lightBg);
-      doc.rect(305, billToY, 250, 75).fill(lightBg);
-
-      // Left Box: Customer Details
-      doc.fillColor(primaryColor).fontSize(9).font('Helvetica-Bold').text('BILLED TO (CUSTOMER):', 50, billToY + 10);
-      doc.fillColor(darkColor).fontSize(9).font('Helvetica')
-        .text(`Phone: ${data.customerNumber}`, 50, billToY + 25)
-        .text(`Fulfillment: ${data.fulfillment || 'In-store / Delivery'}`, 50, billToY + 38)
-        .text(`Address: ${data.deliveryAddress || 'Store Pickup / Counter'}`, 50, billToY + 51, { width: 230 });
-
-      // Right Box: Payment & Store Status
-      doc.fillColor(primaryColor).fontSize(9).font('Helvetica-Bold').text('PAYMENT & STORE DETAILS:', 315, billToY + 10);
-      doc.fillColor(darkColor).fontSize(9).font('Helvetica')
-        .text(`Store Contact: ${data.businessPhone || 'Via WhatsApp'}`, 315, billToY + 25)
-        .text(`UPI VPA: ${data.upiId || 'Counter / Cash'}`, 315, billToY + 38);
-
-      const isPaid = data.paymentStatus === 'paid';
-      doc.fillColor(isPaid ? '#059669' : '#d97706').font('Helvetica-Bold')
-        .text(`Status: ${isPaid ? 'PAID VIA UPI ✅' : 'PAYMENT PENDING ⏳'}`, 315, billToY + 51);
-
-      // --- ITEMIZATION TABLE ---
-      let tableY = 230;
-      doc.rect(40, tableY, 515, 24).fill(primaryColor);
-      doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
-      doc.text('#', 50, tableY + 7);
-      doc.text('ITEM / SERVICE DESCRIPTION', 80, tableY + 7);
-      doc.text('QTY', 360, tableY + 7, { align: 'center' });
-      doc.text('PRICE (INR)', 420, tableY + 7, { align: 'right' });
-      doc.text('TOTAL (INR)', 485, tableY + 7, { align: 'right' });
-
-      tableY += 24;
-
-      if (data.items && data.items.length > 0) {
-        data.items.forEach((item, index) => {
-          const itemTotal = (item.price || 0) * (item.quantity || 1);
-          const rowBg = index % 2 === 0 ? '#ffffff' : '#f9fafb';
-          doc.rect(40, tableY, 515, 22).fill(rowBg);
-
-          doc.fillColor(darkColor).fontSize(9).font('Helvetica');
-          doc.text(String(index + 1), 50, tableY + 6);
-          doc.text(item.name || 'Store Item', 80, tableY + 6, { width: 270 });
-          doc.text(String(item.quantity || 1), 360, tableY + 6, { align: 'center' });
-          doc.text(`₹${item.price || 0}`, 420, tableY + 6, { align: 'right' });
-          doc.text(`₹${itemTotal}`, 485, tableY + 6, { align: 'right' });
-
-          tableY += 22;
-        });
-      } else {
-        // Fallback row for single service / notes
-        doc.rect(40, tableY, 515, 22).fill('#ffffff');
-        doc.fillColor(darkColor).fontSize(9).font('Helvetica');
-        doc.text('1', 50, tableY + 6);
-        doc.text(data.notes || 'Custom Order / Booking', 80, tableY + 6);
-        doc.text('1', 360, tableY + 6, { align: 'center' });
-        doc.text(`₹${data.totalAmount}`, 420, tableY + 6, { align: 'right' });
-        doc.text(`₹${data.totalAmount}`, 485, tableY + 6, { align: 'right' });
-        tableY += 22;
-      }
-
-      // Divider Line
-      doc.strokeColor('#e5e7eb').lineWidth(1).moveTo(40, tableY).lineTo(555, tableY).stroke();
-      tableY += 15;
-
-      // --- TOTALS CALCULATION BOX ---
-      const totalBoxY = tableY;
-      doc.rect(340, totalBoxY, 215, 60).fill('#f0fdfa');
-      doc.rect(340, totalBoxY, 215, 60).strokeColor('#99f6e4').stroke();
-
-      doc.fillColor(grayColor).fontSize(9).font('Helvetica').text('Subtotal:', 355, totalBoxY + 12);
-      doc.fillColor(darkColor).text(`₹${data.totalAmount}`, 485, totalBoxY + 12, { align: 'right' });
-
-      doc.fillColor(primaryColor).fontSize(12).font('Helvetica-Bold').text('GRAND TOTAL:', 355, totalBoxY + 34);
-      doc.fillColor(primaryColor).fontSize(14).font('Helvetica-Bold').text(`₹${data.totalAmount}`, 465, totalBoxY + 32, { align: 'right' });
-
-      // --- FOOTER & SIGN-OFF ---
-      const footerY = 700;
-      doc.strokeColor('#e5e7eb').lineWidth(1).moveTo(40, footerY).lineTo(555, footerY).stroke();
-
-      doc.fillColor(grayColor).fontSize(8).font('Helvetica')
-        .text('This is a computer-generated tax invoice issued via WhatsApp Business AI.', 40, footerY + 10, { align: 'center' })
-        .text(`Thank you for doing business with ${data.businessName}! For queries, contact ${data.businessPhone || 'support'}.`, 40, footerY + 22, { align: 'center' })
-        .text('Powered by BizBot OS • WhatsApp Commerce Cloud', 40, footerY + 34, { align: 'center' });
-
-      doc.end();
-    } catch (error) {
-      reject(error);
-    }
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: 'a4',
   });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 35;
+  const contentWidth = pageWidth - margin * 2;
+
+  // Teal Palette & Fonts
+  const tealPrimary = [15, 118, 110]; // #0f766e
+  const tealLight = [240, 253, 250]; // #f0fdfa
+  const tealBorder = [153, 246, 228]; // #99f6e4
+  const darkInk = [31, 41, 55]; // #1f2937
+  const mutedGray = [107, 114, 128]; // #6b7280
+  const lightGrayBg = [249, 250, 251]; // #f9fafb
+
+  // --- HEADER BANNER ---
+  doc.setFillColor(lightGrayBg[0], lightGrayBg[1], lightGrayBg[2]);
+  doc.roundedRect(margin, 30, contentWidth, 75, 4, 4, 'F');
+
+  // Business Name & Subtitle
+  doc.setTextColor(tealPrimary[0], tealPrimary[1], tealPrimary[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text(data.businessName || 'Business Store', margin + 15, 56);
+
+  doc.setTextColor(mutedGray[0], mutedGray[1], mutedGray[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text(`${(data.businessCategory || 'Store').toUpperCase()} • VERIFIED WHATSAPP COMMERCE`, margin + 15, 72);
+
+  if (data.gstNumber) {
+    doc.text(`GSTIN / Tax ID: ${data.gstNumber}`, margin + 15, 86);
+  }
+
+  // Top Right: Invoice Meta
+  const invoiceCode = `INV-${new Date(data.createdAt).getFullYear()}-${data.orderId.slice(0, 6).toUpperCase()}`;
+  doc.setTextColor(darkInk[0], darkInk[1], darkInk[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('TAX INVOICE / RECEIPT', pageWidth - margin - 15, 52, { align: 'right' });
+
+  doc.setTextColor(mutedGray[0], mutedGray[1], mutedGray[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text(`Bill No: ${invoiceCode}`, pageWidth - margin - 15, 66, { align: 'right' });
+  doc.text(
+    `Date: ${new Date(data.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+    pageWidth - margin - 15,
+    78,
+    { align: 'right' }
+  );
+  doc.text(
+    `Time: ${new Date(data.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`,
+    pageWidth - margin - 15,
+    90,
+    { align: 'right' }
+  );
+
+  // --- 2 COLUMNS: CUSTOMER & PAYMENT DETAILS ---
+  const boxY = 120;
+  const boxWidth = (contentWidth - 15) / 2;
+  const boxHeight = 80;
+
+  // Left Box: Customer Info
+  doc.setFillColor(lightGrayBg[0], lightGrayBg[1], lightGrayBg[2]);
+  doc.roundedRect(margin, boxY, boxWidth, boxHeight, 3, 3, 'F');
+
+  doc.setTextColor(tealPrimary[0], tealPrimary[1], tealPrimary[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('BILLED TO (CUSTOMER):', margin + 10, boxY + 16);
+
+  doc.setTextColor(darkInk[0], darkInk[1], darkInk[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text(`Phone: ${data.customerNumber || 'N/A'}`, margin + 10, boxY + 30);
+  doc.text(`Fulfillment: ${data.fulfillment || 'Delivery / Pickup'}`, margin + 10, boxY + 44);
+
+  const addressText = data.deliveryAddress ? `Address: ${data.deliveryAddress}` : 'Address: Store Counter / Walk-in';
+  const splitAddress = doc.splitTextToSize(addressText, boxWidth - 20);
+  doc.text(splitAddress, margin + 10, boxY + 58);
+
+  // Right Box: Payment & Store Details
+  const rightBoxX = margin + boxWidth + 15;
+  doc.setFillColor(lightGrayBg[0], lightGrayBg[1], lightGrayBg[2]);
+  doc.roundedRect(rightBoxX, boxY, boxWidth, boxHeight, 3, 3, 'F');
+
+  doc.setTextColor(tealPrimary[0], tealPrimary[1], tealPrimary[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('PAYMENT & STORE INFO:', rightBoxX + 10, boxY + 16);
+
+  doc.setTextColor(darkInk[0], darkInk[1], darkInk[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text(`Store Contact: ${data.businessPhone || 'Via WhatsApp'}`, rightBoxX + 10, boxY + 30);
+  doc.text(`UPI VPA: ${data.upiId || 'Counter / Cash'}`, rightBoxX + 10, boxY + 44);
+
+  const isPaid = data.paymentStatus === 'paid';
+  if (isPaid) {
+    doc.setTextColor(5, 150, 105); // emerald
+    doc.setFont('helvetica', 'bold');
+    doc.text('Status: PAID VIA UPI [VERIFIED]', rightBoxX + 10, boxY + 58);
+  } else {
+    doc.setTextColor(217, 119, 6); // amber
+    doc.setFont('helvetica', 'bold');
+    doc.text('Status: PAYMENT PENDING', rightBoxX + 10, boxY + 58);
+  }
+
+  // --- ITEMIZATION TABLE ---
+  let tableY = 220;
+  const tableHeaderHeight = 22;
+
+  // Header Row
+  doc.setFillColor(tealPrimary[0], tealPrimary[1], tealPrimary[2]);
+  doc.rect(margin, tableY, contentWidth, tableHeaderHeight, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('#', margin + 10, tableY + 14);
+  doc.text('ITEM / SERVICE DESCRIPTION', margin + 35, tableY + 14);
+  doc.text('QTY', margin + 310, tableY + 14, { align: 'center' });
+  doc.text('RATE (INR)', margin + 390, tableY + 14, { align: 'right' });
+  doc.text('TOTAL (INR)', margin + contentWidth - 12, tableY + 14, { align: 'right' });
+
+  tableY += tableHeaderHeight;
+
+  // Table Body Rows
+  const items = data.items && data.items.length > 0 ? data.items : [{ name: data.notes || 'Order / Booking Item', quantity: 1, price: data.totalAmount }];
+
+  items.forEach((item, index) => {
+    const rowHeight = 20;
+    const isEven = index % 2 === 0;
+    if (!isEven) {
+      doc.setFillColor(249, 250, 251);
+      doc.rect(margin, tableY, contentWidth, rowHeight, 'F');
+    }
+
+    doc.setTextColor(darkInk[0], darkInk[1], darkInk[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+
+    const itemTotal = (item.price || 0) * (item.quantity || 1);
+    doc.text(String(index + 1), margin + 10, tableY + 13);
+    doc.text(item.name || 'Store Item', margin + 35, tableY + 13);
+    doc.text(String(item.quantity || 1), margin + 310, tableY + 13, { align: 'center' });
+    doc.text(`Rs. ${item.price || 0}`, margin + 390, tableY + 13, { align: 'right' });
+    doc.text(`Rs. ${itemTotal}`, margin + contentWidth - 12, tableY + 13, { align: 'right' });
+
+    tableY += rowHeight;
+  });
+
+  // Table Bottom Divider
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(1);
+  doc.line(margin, tableY, margin + contentWidth, tableY);
+
+  tableY += 15;
+
+  // --- SUMMARY / TOTALS BOX ---
+  const calcBoxWidth = 200;
+  const calcBoxX = margin + contentWidth - calcBoxWidth;
+  const calcBoxY = tableY;
+
+  doc.setFillColor(tealLight[0], tealLight[1], tealLight[2]);
+  doc.setDrawColor(tealBorder[0], tealBorder[1], tealBorder[2]);
+  doc.roundedRect(calcBoxX, calcBoxY, calcBoxWidth, 54, 3, 3, 'FD');
+
+  doc.setTextColor(mutedGray[0], mutedGray[1], mutedGray[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Subtotal:', calcBoxX + 12, calcBoxY + 18);
+  doc.setTextColor(darkInk[0], darkInk[1], darkInk[2]);
+  doc.text(`Rs. ${data.totalAmount}`, calcBoxX + calcBoxWidth - 12, calcBoxY + 18, { align: 'right' });
+
+  doc.setTextColor(tealPrimary[0], tealPrimary[1], tealPrimary[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.text('GRAND TOTAL:', calcBoxX + 12, calcBoxY + 40);
+  doc.setFontSize(12);
+  doc.text(`Rs. ${data.totalAmount}`, calcBoxX + calcBoxWidth - 12, calcBoxY + 40, { align: 'right' });
+
+  // --- FOOTER & SIGN-OFF ---
+  const footerY = 760;
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(1);
+  doc.line(margin, footerY, margin + contentWidth, footerY);
+
+  doc.setTextColor(mutedGray[0], mutedGray[1], mutedGray[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.text(
+    'This is a computer-generated tax invoice issued via WhatsApp Business AI.',
+    pageWidth / 2,
+    footerY + 14,
+    { align: 'center' }
+  );
+  doc.text(
+    `Thank you for doing business with ${data.businessName}! For questions, contact ${data.businessPhone || 'support'}.`,
+    pageWidth / 2,
+    footerY + 26,
+    { align: 'center' }
+  );
+  doc.text(
+    'Powered by BizBot OS • WhatsApp Commerce Cloud',
+    pageWidth / 2,
+    footerY + 38,
+    { align: 'center' }
+  );
+
+  const arrayBuffer = doc.output('arraybuffer');
+  return Buffer.from(arrayBuffer);
 }
