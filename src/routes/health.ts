@@ -32,24 +32,26 @@ router.get('/test-groq', async (_req: Request, res: Response) => {
 
     // 1. Fetch available models from Groq account
     let availableModels: string[] = [];
+    let listError: string | null = null;
     try {
       const modelsList = await groqClient.models.list();
       availableModels = (modelsList.data || []).map((m: any) => m.id);
     } catch (listErr: any) {
-      console.warn('[Test Groq] Failed to list models:', listErr?.message);
+      listError = listErr?.message || String(listErr);
     }
 
-    // 2. Select best available model (priority: llama-3.3, llama-3.1, llama3)
-    const priorityModels = [
-      'llama-3.1-8b-instant',
-      'llama3-8b-8192',
-      'llama-3.3-70b-versatile',
-      'llama-3.1-70b-versatile',
-      'llama3-70b-8192',
-      'gemma2-9b-it',
-    ];
+    if (availableModels.length === 0) {
+      return res.json({
+        success: false,
+        error: 'No models found for this Groq API Key.',
+        listError,
+        groqKeyPrefix: (process.env.GROQ_API_KEY || '').slice(0, 8),
+        tip: 'Please generate a standard free API Key at https://console.groq.com/keys and update GROQ_API_KEY in Render environment variables.'
+      });
+    }
 
-    const modelToUse = priorityModels.find((m) => availableModels.includes(m)) || 'llama-3.1-8b-instant';
+    // 2. Select first available model
+    const modelToUse = availableModels[0];
 
     const completion = await groqClient.chat.completions.create({
       model: modelToUse,
@@ -63,7 +65,7 @@ router.get('/test-groq', async (_req: Request, res: Response) => {
       success: true,
       modelUsed: modelToUse,
       availableModelsCount: availableModels.length,
-      availableModels: availableModels.slice(0, 10),
+      availableModels,
       response: completion.choices[0]?.message?.content,
     });
   } catch (err: any) {
