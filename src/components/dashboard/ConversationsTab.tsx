@@ -61,32 +61,29 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
   useEffect(() => {
     fetchConversations();
 
+    // Fast background polling every 2.5s for zero-delay chat sync
+    const pollInterval = setInterval(() => {
+      fetchConversations(false);
+    }, 2500);
+
     const channel = supabaseClient
       .channel(`realtime-conversations-${businessId}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'conversations',
           filter: `business_id=eq.${businessId}`,
         },
-        (payload) => {
-          const rawMsg = payload.new as any;
-          const newMsg: Conversation = {
-            ...rawMsg,
-            message: rawMsg.message_text || rawMsg.message || '',
-            sender:
-              rawMsg.message_direction === 'inbound' || rawMsg.sender === 'customer' || rawMsg.sender === 'inbound'
-                ? 'customer'
-                : 'agent',
-          };
-          setConversations((prev) => [...prev, newMsg]);
+        () => {
+          fetchConversations(false);
         }
       )
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabaseClient.removeChannel(channel);
     };
   }, [businessId, fetchConversations]);

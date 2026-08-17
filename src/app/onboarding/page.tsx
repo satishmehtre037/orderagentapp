@@ -374,6 +374,7 @@ export default function OnboardingPage() {
                 <ReviewLedgerCard
                   formData={formData}
                   ownerEmail={ownerEmail}
+                  onBack={handlePrevStep}
                   onGoLive={() => {
                     handleSubmit(
                       (validData) => onSubmitWizard(validData),

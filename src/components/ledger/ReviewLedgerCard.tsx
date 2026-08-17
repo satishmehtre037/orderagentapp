@@ -1,11 +1,12 @@
 import React from 'react';
 import { OnboardingWizardFormData } from '../../lib/validations/onboarding';
-import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface ReviewLedgerCardProps {
   formData?: OnboardingWizardFormData;
   ownerEmail?: string;
   onGoLive: () => void;
+  onBack?: () => void;
   isSubmitting: boolean;
 }
 
@@ -13,6 +14,7 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
   formData = {} as OnboardingWizardFormData,
   ownerEmail = 'owner@bizbotos.in',
   onGoLive,
+  onBack,
   isSubmitting,
 }) => {
   const category = formData?.category || 'bakery';
@@ -170,13 +172,24 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
         </div>
       </div>
 
-      {/* Go Live CTA */}
-      <div className="pt-2">
+      {/* Go Live & Back Actions */}
+      <div className="pt-2 flex items-center space-x-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={isSubmitting}
+            className="py-3.5 px-5 rounded-xl border border-slate-300/80 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.98] shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={onGoLive}
           disabled={isSubmitting}
-          className="w-full py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+          className="flex-1 py-3.5 px-6 rounded-xl bg-slate-950 hover:bg-slate-900 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.98]"
         >
           {isSubmitting ? (
             <span>Activating Your AI Agent...</span>
