@@ -9,6 +9,19 @@ router.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+router.get('/health/config', (_req: Request, res: Response) => {
+  const groqKey = process.env.GROQ_API_KEY || '';
+  res.json({
+    status: 'ok',
+    hasGroqKey: Boolean(groqKey && groqKey !== 'placeholder-api-key'),
+    groqKeyPrefix: groqKey ? `${groqKey.slice(0, 6)}...` : 'MISSING',
+    hasSupabaseKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    hasWhatsappToken: Boolean(process.env.WHATSAPP_CLOUD_API_TOKEN),
+    nodeEnv: process.env.NODE_ENV || 'production',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 /**
  * Root index endpoint for GET /
  */
