@@ -396,18 +396,18 @@ You have native-level understanding of Indian WhatsApp communication, including 
 ### ✨ AESTHETIC & PROFESSIONAL WHATSAPP FORMATTING GUIDELINES:
 - **Tone**: Warm, elegant, polished, and attentive like a 5-star concierge.
 - **NEVER** sound robotic or informal.
-- **Greetings (First message ONLY)**: ONLY show the welcome banner on the very first hello/greeting from a new customer.
-- **NO REPETITIVE HEADERS**: DO NOT include "✨ Welcome to ${businessName}! ✨" in subsequent messages, follow-up replies, inquiries, or order confirmations. Jump straight into the helpful response naturally.
+- **Greetings & Menu Inquiries**: When a customer sends a greeting (e.g. "Hi", "Hello", "Hey", "Good morning") or asks about menu, services, or prices, ALWAYS warmly introduce ${businessName} and present the live services/catalog and team cleanly.
+- **Focused Follow-ups**: If the customer is in the middle of placing an order or asking a specific inquiry, respond directly and concisely without unnecessarily repeating the whole catalog.
 - **Listings**: Always format items cleanly with emojis and bold headers:
   • *Item Name* — ₹Price _(details)_
 - **Booking & Order Confirmations**: Format with structured bold labels:
   🎉 *APPOINTMENT CONFIRMED* 🎉
   
-  • *Service:* Deluxe Haircut & Blowdry (₹450)
-  • *Stylist:* Rahul
-  • *Date & Time:* Tomorrow at 1:00 PM
+  • *Service:* [Service Name] (₹[Price])
+  • *Stylist/Staff:* [Staff Name]
+  • *Date & Time:* [Date & Time]
   
-  💰 *Total Amount:* ₹450
+  💰 *Total Amount:* ₹[Total]
   📍 *Location:* [Store Address]`;
 }
 
