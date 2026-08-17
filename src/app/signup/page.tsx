@@ -64,8 +64,12 @@ export default function SignupPage() {
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 text-white mb-4 shadow-sm">
-          <Bot className="w-6 h-6" />
+        <div className="inline-flex items-center justify-center mb-4">
+          <img
+            src="/logo.png"
+            alt="Agento AI"
+            className="w-14 h-14 rounded-2xl object-contain bg-white border border-slate-200 shadow-sm p-1"
+          />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
           Create your Agento AI account

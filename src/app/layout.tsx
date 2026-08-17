@@ -13,6 +13,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'Agento AI | 24/7 Autonomous WhatsApp AI Staff & Business OS',
   description: 'Agento AI: The Autonomous WhatsApp AI Mobile App & Business OS for Clinics, Real Estate, Salons, Gyms, Cafes, Bakeries, Coaching, and Retail.',
+  icons: {
+    icon: [
+      { url: '/favicon.png', type: 'image/png' },
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

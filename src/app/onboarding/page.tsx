@@ -175,9 +175,11 @@ export default function OnboardingPage() {
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm flex-shrink-0">
-              <Bot className="w-5 h-5" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="Agento AI"
+              className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 shadow-sm flex-shrink-0 p-0.5"
+            />
             <div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">Agento AI</h1>
               <p className="text-[11px] sm:text-xs text-slate-500">Autonomous WhatsApp AI Setup</p>

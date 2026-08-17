@@ -15,9 +15,10 @@ export default function TermsPage() {
             <ArrowLeft className="w-4 h-4 mr-1.5" />
             Back to Dashboard
           </Link>
-          <span className="text-xs font-mono font-medium px-2.5 py-1 rounded bg-[#F1F5F9] text-[#64748B]">
-            WebcoreStudio Legal
-          </span>
+          <div className="flex items-center space-x-2">
+            <img src="/logo.png" alt="Agento AI" className="w-6 h-6 rounded-md object-contain" />
+            <span className="text-xs font-semibold text-slate-800">Agento AI Legal</span>
+          </div>
         </div>
       </header>
 

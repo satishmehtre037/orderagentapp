@@ -195,9 +195,11 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-sm">
-                <Bot className="w-5 h-5" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="Agento AI"
+                className="w-9 h-9 rounded-xl object-contain bg-white border border-slate-200/80 shadow-sm p-0.5"
+              />
               <div>
                 <div className="flex items-center space-x-2">
                   <h1 className="text-sm font-bold text-slate-900 leading-tight">
