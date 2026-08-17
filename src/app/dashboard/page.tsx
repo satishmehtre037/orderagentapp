@@ -10,6 +10,7 @@ import { ConversationsTab } from '../../components/dashboard/ConversationsTab';
 import { EditBusinessInfoTab } from '../../components/dashboard/EditBusinessInfoTab';
 import { BillingTab } from '../../components/dashboard/BillingTab';
 import { resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
+import { useToast } from '../../components/ui/ToastContext';
 import {
   Bot,
   ShoppingBag,
@@ -43,6 +44,8 @@ export default function DashboardPage() {
   const [isBotPaused, setIsBotPaused] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
 
+  const { showToast } = useToast();
+
   const toggleBotPause = async () => {
     try {
       setPauseLoading(true);
@@ -51,6 +54,14 @@ export default function DashboardPage() {
 
       const bizId = business?.id || (typeof window !== 'undefined' ? localStorage.getItem('biz_id') : null);
       const bizEmail = business?.owner_email || (typeof window !== 'undefined' ? localStorage.getItem('biz_email') : null);
+
+      showToast({
+        title: nextPausedState ? 'AI Agent Paused' : 'AI Agent Active',
+        message: nextPausedState
+          ? 'Automated WhatsApp replies are paused. You can reply manually in Live Chats.'
+          : 'Automated 24/7 AI staff is active and replying to incoming customer messages.',
+        type: nextPausedState ? 'info' : 'whatsapp',
+      });
 
       await fetch('/api/business', {
         method: 'PUT',
@@ -221,20 +232,20 @@ export default function DashboardPage() {
             <button
               onClick={toggleBotPause}
               disabled={pauseLoading}
-              className={`inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all shadow-sm active:scale-95 ${
+              className={`inline-flex items-center space-x-1.5 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all shadow-sm active:scale-95 select-none ${
                 isBotPaused
-                  ? 'bg-amber-500/10 text-amber-800 border-amber-300/50 hover:bg-amber-500/20'
-                  : 'bg-emerald-500/10 text-emerald-800 border-emerald-300/50 hover:bg-emerald-500/20'
+                  ? 'bg-amber-500/15 text-amber-800 border-amber-300/60 hover:bg-amber-500/25'
+                  : 'bg-emerald-500/15 text-emerald-800 border-emerald-300/60 hover:bg-emerald-500/25'
               }`}
-              title="Click to pause or activate AI agent replies"
+              title="Click to pause or activate 24/7 AI agent replies"
             >
               <span
-                className={`w-2 h-2 rounded-full ${
-                  isBotPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  isBotPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]'
                 }`}
               />
-              <span className="hidden xs:inline sm:inline">
-                {pauseLoading ? 'Updating...' : isBotPaused ? 'Agent Paused' : 'Agent Active'}
+              <span className="font-bold whitespace-nowrap">
+                {pauseLoading ? 'Updating...' : isBotPaused ? 'AI Paused' : 'AI Active'}
               </span>
             </button>
 
