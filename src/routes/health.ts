@@ -30,17 +30,40 @@ router.get('/test-groq', async (_req: Request, res: Response) => {
       return res.status(500).json({ error: 'Groq client failed to initialize. Check GROQ_API_KEY.' });
     }
 
+    // 1. Fetch available models from Groq account
+    let availableModels: string[] = [];
+    try {
+      const modelsList = await groqClient.models.list();
+      availableModels = (modelsList.data || []).map((m: any) => m.id);
+    } catch (listErr: any) {
+      console.warn('[Test Groq] Failed to list models:', listErr?.message);
+    }
+
+    // 2. Select best available model (priority: llama-3.3, llama-3.1, llama3)
+    const priorityModels = [
+      'llama-3.1-8b-instant',
+      'llama3-8b-8192',
+      'llama-3.3-70b-versatile',
+      'llama-3.1-70b-versatile',
+      'llama3-70b-8192',
+      'gemma2-9b-it',
+    ];
+
+    const modelToUse = priorityModels.find((m) => availableModels.includes(m)) || 'llama-3.1-8b-instant';
+
     const completion = await groqClient.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: modelToUse,
       messages: [
-        { role: 'user', content: 'Say "Groq Llama 3.3 is active and operational!"' }
+        { role: 'user', content: 'Say "Groq AI is active and operational!"' }
       ],
       max_tokens: 30,
     });
 
     return res.json({
       success: true,
-      model: 'llama-3.3-70b-versatile',
+      modelUsed: modelToUse,
+      availableModelsCount: availableModels.length,
+      availableModels: availableModels.slice(0, 10),
       response: completion.choices[0]?.message?.content,
     });
   } catch (err: any) {

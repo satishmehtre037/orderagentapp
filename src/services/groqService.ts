@@ -39,9 +39,11 @@ export async function getResponse(
   if (groqClient) {
     const groqModels = [
       process.env.GROQ_MODEL,
-      'llama-3.3-70b-versatile',
       'llama-3.1-8b-instant',
-      'mixtral-8x7b-32768',
+      'llama-3.3-70b-versatile',
+      'llama3-8b-8192',
+      'llama3-70b-8192',
+      'gemma2-9b-it',
     ].filter(Boolean) as string[];
 
     for (const model of groqModels) {
