@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 };
 
 import { ToastProvider } from '../components/ui/ToastContext';
+import { ThemeProvider } from '../components/ui/ThemeContext';
 
 export default function RootLayout({
   children,
@@ -31,11 +32,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-slate-900 selection:text-white font-sans">
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen antialiased selection:bg-slate-900 selection:text-white dark:selection:bg-slate-100 dark:selection:text-slate-900 font-sans transition-colors duration-200">
+        <ThemeProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

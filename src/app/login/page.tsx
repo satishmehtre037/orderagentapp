@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabaseClient } from '../../lib/supabase/client';
 import { Bot, ArrowRight, Lock, Mail } from 'lucide-react';
 import { loginSchema } from '../../lib/validations/auth';
+import { ThemeToggle } from '../../components/ui/ThemeContext';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,34 +20,28 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg(null);
 
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      setErrorMsg(validation.error.errors[0].message);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const parseResult = loginSchema.safeParse({ email, password });
-      if (!parseResult.success) {
-        throw new Error(parseResult.error.errors[0]?.message || 'Please enter valid login credentials.');
-      }
-
-      const cleanEmail = parseResult.data.email;
-      const cleanPassword = parseResult.data.password;
-
       const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: cleanEmail,
-        password: cleanPassword,
+        email,
+        password,
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      const res = await fetch(`/api/business?email=${encodeURIComponent(cleanEmail)}`);
-      const bizData = await res.json();
-
-      if (bizData?.business?.id) {
+      if (data.session) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('biz_email', email);
+        }
         router.push('/dashboard');
-      } else {
-        router.push('/onboarding');
       }
     } catch (err: any) {
-      console.error('Login error:', err);
       setErrorMsg(err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
@@ -54,7 +49,12 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 pb-safe font-sans antialiased text-slate-900">
+    <main className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-slate-950 flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 pb-safe font-sans antialiased text-slate-900 dark:text-slate-100 transition-colors duration-200 relative">
+      {/* Top Floating Theme Switch */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-3">
         <div className="inline-flex items-center justify-center">
           <div className="w-16 h-16 rounded-3xl bg-slate-950 border border-white/20 shadow-xl flex items-center justify-center p-2">
@@ -65,53 +65,57 @@ export default function LoginPage() {
             />
           </div>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           Welcome back to Agento AI
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 max-w-xs mx-auto leading-relaxed">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
           Sign in to manage your WhatsApp AI agent and live orders
         </p>
       </div>
 
-      <div className="mt-6 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="backdrop-blur-2xl bg-white/85 py-7 px-5 sm:px-8 border border-white/60 rounded-3xl shadow-[0_16px_40px_rgba(0,0,0,0.06)]">
-          <form onSubmit={handleLogin} className="space-y-4">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white dark:bg-slate-900 py-8 px-6 sm:px-10 shadow-xl shadow-slate-200/50 dark:shadow-black/40 border border-slate-200/80 dark:border-slate-800 rounded-3xl transition-colors duration-200">
+          <form className="space-y-5" onSubmit={handleLogin}>
             {errorMsg && (
-              <div className="p-3.5 bg-rose-500/10 border border-rose-300/50 text-rose-700 text-xs rounded-2xl font-medium">
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs font-medium text-rose-700 dark:text-rose-300">
                 {errorMsg}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5 ml-1">
-                Business Email
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                Business Email Address
               </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <div className="relative rounded-2xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="h-4 w-4" />
+                </div>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="owner@yourstore.in"
-                  className="w-full pl-10 pr-4 py-3 text-xs sm:text-sm bg-slate-100/70 border border-slate-200/80 rounded-2xl focus:bg-white focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all outline-none"
+                  className="block w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 transition-all font-medium"
+                  placeholder="owner@mybusiness.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5 ml-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 Password
               </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <div className="relative rounded-2xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="h-4 w-4" />
+                </div>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 text-xs sm:text-sm bg-slate-100/70 border border-slate-200/80 rounded-2xl focus:bg-white focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all outline-none"
+                  className="block w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 transition-all font-medium"
+                  placeholder="••••••••••••"
                 />
               </div>
             </div>
@@ -119,24 +123,26 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 px-4 rounded-2xl bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-[0_10px_25px_rgba(0,0,0,0.15)] transition-all flex items-center justify-center space-x-2 active:scale-[0.98] disabled:opacity-50"
+              className="w-full py-3.5 px-4 rounded-2xl bg-slate-950 dark:bg-white hover:bg-slate-900 dark:hover:bg-slate-100 text-white dark:text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 active:scale-98 disabled:opacity-50 mt-2"
             >
               {loading ? (
-                <span>Signing in...</span>
+                <span>Signing In...</span>
               ) : (
                 <>
-                  <span>Sign In to Console</span>
+                  <span>Sign In to Dashboard</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-slate-200/60 text-center text-xs text-slate-500 font-medium">
-            Don't have an account yet?{' '}
-            <Link href="/signup" className="font-bold text-slate-950 hover:underline">
-              Start 1-day free trial
-            </Link>
+          <div className="mt-6 text-center">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Don't have an account?{' '}
+              <Link href="/signup" className="text-slate-900 dark:text-white font-bold hover:underline">
+                Create new business
+              </Link>
+            </p>
           </div>
         </div>
       </div>

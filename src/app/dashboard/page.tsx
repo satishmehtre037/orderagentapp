@@ -11,6 +11,7 @@ import { EditBusinessInfoTab } from '../../components/dashboard/EditBusinessInfo
 import { BillingTab } from '../../components/dashboard/BillingTab';
 import { resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
 import { useToast } from '../../components/ui/ToastContext';
+import { ThemeToggle } from '../../components/ui/ThemeContext';
 import {
   Bot,
   ShoppingBag,
@@ -202,9 +203,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col antialiased text-slate-900 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col antialiased text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       {/* Sleek iOS Frosted Top Navigation Bar */}
-      <header className="backdrop-blur-2xl bg-white/85 border-b border-slate-200/60 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-2.5 sm:pt-3 pb-1.5 sm:pb-2">
+      <header className="backdrop-blur-2xl bg-white/85 dark:bg-slate-900/85 border-b border-slate-200/60 dark:border-slate-800/80 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-2.5 sm:pt-3 pb-1.5 sm:pb-2 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2.5 min-w-0 pr-2">
             <img
@@ -213,29 +214,32 @@ export default function DashboardPage() {
               className="w-10 h-10 rounded-2xl object-contain bg-slate-900 border border-white/20 shadow-md p-1 flex-shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="text-sm font-extrabold text-slate-900 leading-tight truncate max-w-[150px] xs:max-w-[200px] sm:max-w-[280px]">
+              <h1 className="text-sm font-extrabold text-slate-900 dark:text-white leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[280px]">
                 {business?.name || 'Agento AI Store'}
               </h1>
               <div className="flex items-center space-x-1.5 mt-0.5">
-                <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-slate-200/70 border border-slate-300/70 text-slate-700 rounded-md font-bold tracking-wider">
+                <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-slate-200/70 dark:bg-slate-800 border border-slate-300/70 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-md font-bold tracking-wider">
                   {effectiveCategory || business?.category || 'tuition'}
                 </span>
-                <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
                   24/7 AI Staff
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-2.5">
+            {/* Dark / Light Mode Switch */}
+            <ThemeToggle />
+
             {/* Quick Bot Toggle */}
             <button
               onClick={toggleBotPause}
               disabled={pauseLoading}
               className={`inline-flex items-center space-x-1.5 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all shadow-sm active:scale-95 select-none ${
                 isBotPaused
-                  ? 'bg-amber-500/15 text-amber-800 border-amber-300/60 hover:bg-amber-500/25'
-                  : 'bg-emerald-500/15 text-emerald-800 border-emerald-300/60 hover:bg-emerald-500/25'
+                  ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-300/60 dark:border-amber-500/40 hover:bg-amber-500/25'
+                  : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-300/60 dark:border-emerald-500/40 hover:bg-emerald-500/25'
               }`}
               title="Click to pause or activate 24/7 AI agent replies"
             >
@@ -253,7 +257,7 @@ export default function DashboardPage() {
               href="https://web.whatsapp.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center space-x-1.5 text-xs font-semibold text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-300/50 transition-all shadow-sm"
+              className="hidden md:inline-flex items-center space-x-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-300/50 dark:border-emerald-500/30 transition-all shadow-sm"
             >
               <Phone className="w-3.5 h-3.5" />
               <span>WhatsApp Web</span>
@@ -262,7 +266,7 @@ export default function DashboardPage() {
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white/80 hover:bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 transition-all shadow-sm"
+              className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 transition-all shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5 text-slate-400" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -289,58 +293,72 @@ export default function DashboardPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 pb-28 sm:pb-10">
-        {/* Metric Stat Cards with Frosted Glass */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {/* Card 1: Subscription Status */}
-          <div className="backdrop-blur-xl bg-white/75 border border-white/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md">
+        {/* Top 3 Quick Stats Widgets */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Card 1: Live Plan / Trial Countdown */}
+          <div className="backdrop-blur-xl bg-white/75 dark:bg-slate-900/75 border border-white/60 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md">
             <div className="space-y-1">
-              <span className="text-xs font-medium text-slate-500">Plan & Subscription</span>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-lg font-bold text-slate-900">
-                  {business?.subscription_status === 'active' ? 'Pro Plan Active' : 'Free Trial'}
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Plan & Subscription</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-bold text-slate-900 dark:text-white">
+                  {business?.subscription_status === 'active'
+                    ? 'Pro Plan Active'
+                    : isTrialEnded
+                    ? 'Trial Expired'
+                    : 'Free Trial'}
                 </span>
-                {business?.subscription_status !== 'active' && (
-                  <span className="text-xs font-mono font-medium text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-300/50">
+                {countdownStr && (
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-medium ${
+                      isTrialEnded
+                        ? 'bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
+                        : 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                    }`}
+                  >
                     {countdownStr}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500">
-                {business?.subscription_status === 'active' ? '₹1/mo unlimited access' : 'Full access to WhatsApp automation'}
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {business?.subscription_status === 'active'
+                  ? 'Full WhatsApp AI Automation & Live CRM'
+                  : isTrialEnded
+                  ? 'Upgrade to continue automated replies'
+                  : 'Full access to WhatsApp automation'}
               </p>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-300/40 flex items-center justify-center shadow-inner">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-300/40 dark:border-emerald-500/30 flex items-center justify-center shadow-inner">
               <Clock className="w-5 h-5" />
             </div>
           </div>
 
-          {/* Card 2: WhatsApp Automation Status */}
-          <div className="backdrop-blur-xl bg-white/75 border border-white/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md">
+          {/* Card 2: 24/7 WhatsApp AI Bot Active Status */}
+          <div className="backdrop-blur-xl bg-white/75 dark:bg-slate-900/75 border border-white/60 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md">
             <div className="space-y-1">
-              <span className="text-xs font-medium text-slate-500">WhatsApp Automation</span>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">WhatsApp Automation</span>
               <div className="flex items-center space-x-2">
                 <span
                   className={`w-2.5 h-2.5 rounded-full ${
-                    isBotPaused ? 'bg-amber-500' : isTrialExpired ? 'bg-red-500' : 'bg-emerald-500'
+                    isBotPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
                   }`}
                 />
-                <span className="text-lg font-bold text-slate-900">
+                <span className="text-lg font-bold text-slate-900 dark:text-white">
                   {isBotPaused
-                    ? 'Paused'
-                    : isTrialExpired
+                    ? 'AI Paused'
+                    : isTrialEnded
                     ? 'Paused (Trial Ended)'
                     : 'Active & Responding'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {isBotPaused ? 'Replies stopped' : 'Auto taking orders & inquiries'}
               </p>
             </div>
             <div
               className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-inner ${
                 isBotPaused
-                  ? 'bg-amber-500/10 text-amber-600 border-amber-300/40'
-                  : 'bg-emerald-500/10 text-emerald-600 border-emerald-300/40'
+                  ? 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-300/40 dark:border-amber-500/30'
+                  : 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-300/40 dark:border-emerald-500/30'
               }`}
             >
               {renderCategoryIcon('w-5 h-5')}
@@ -348,32 +366,32 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 3: Business Vertical Category */}
-          <div className="backdrop-blur-xl bg-white/75 border border-white/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between sm:col-span-2 lg:col-span-1 transition-all hover:shadow-md">
+          <div className="backdrop-blur-xl bg-white/75 dark:bg-slate-900/75 border border-white/60 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between sm:col-span-2 lg:col-span-1 transition-all hover:shadow-md">
             <div className="space-y-1">
-              <span className="text-xs font-medium text-slate-500">Operating Category</span>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Operating Category</span>
               <div className="flex items-center space-x-2">
-                <span className="text-lg font-bold text-slate-900 capitalize">
+                <span className="text-lg font-bold text-slate-900 dark:text-white capitalize">
                   {effectiveCategory.replace('_', ' ')}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 AI customized for {effectiveCategory.replace('_', ' ')} workflow
               </p>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-600 border border-indigo-300/40 flex items-center justify-center shadow-inner">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-300/40 dark:border-indigo-500/30 flex items-center justify-center shadow-inner">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
         </div>
 
         {/* Desktop & Tablet Segmented Navigation Tabs */}
-        <div className="hidden sm:flex bg-slate-200/60 p-1 rounded-xl items-center space-x-1 overflow-x-auto">
+        <div className="hidden sm:flex bg-slate-200/60 dark:bg-slate-800/80 p-1 rounded-xl items-center space-x-1 overflow-x-auto">
           <button
             onClick={() => setActiveTab('orders')}
             className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
               activeTab === 'orders'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
             }`}
           >
             {renderCategoryIcon('w-4 h-4')}
@@ -384,8 +402,8 @@ export default function DashboardPage() {
             onClick={() => setActiveTab('conversations')}
             className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
               activeTab === 'conversations'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -396,34 +414,34 @@ export default function DashboardPage() {
             onClick={() => setActiveTab('edit_info')}
             className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
               activeTab === 'edit_info'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <Settings className="w-4 h-4" />
-            <span>Store & Catalog</span>
+            <span>Store Settings & Catalog</span>
           </button>
 
           <button
             onClick={() => setActiveTab('billing')}
             className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
               activeTab === 'billing'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <CreditCard className="w-4 h-4" />
-            <span>Billing & Plans</span>
+            <span>Billing & Pro Plans</span>
           </button>
         </div>
 
-        {/* Tab Content Display */}
-        <div className="pt-1">
+        {/* Tab Content Body */}
+        <div className="transition-all duration-300">
           {activeTab === 'orders' && (
             <OrdersLedgerTab
               businessId={business?.id || 'demo-business-id'}
               category={business?.category || 'bakery'}
-              businessName={business?.name || 'Our Business'}
+              businessName={business?.name || 'Agento AI Store'}
             />
           )}
 
@@ -453,17 +471,17 @@ export default function DashboardPage() {
       </main>
 
       {/* Mobile Native Bottom Navigation Bar (iOS Frosted Glass) */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/80 border-t border-slate-200/60 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] px-3 py-2 flex items-center justify-around pb-safe">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/85 dark:bg-slate-900/90 border-t border-slate-200/60 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-3 py-2 flex items-center justify-around pb-safe transition-colors duration-200">
         <button
           onClick={() => setActiveTab('orders')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'orders'
-              ? 'text-slate-950 font-bold scale-105'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-slate-950 dark:text-white font-bold scale-105'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           {renderCategoryIcon(
-            `w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`
+            `w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`
           )}
           <span className="text-[10px] tracking-tight font-medium">{captureTypeLabel}</span>
         </button>
@@ -472,11 +490,11 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('conversations')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'conversations'
-              ? 'text-slate-950 font-bold scale-105'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-slate-950 dark:text-white font-bold scale-105'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          <MessageSquare className={`w-5 h-5 mb-0.5 ${activeTab === 'conversations' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <MessageSquare className={`w-5 h-5 mb-0.5 ${activeTab === 'conversations' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
           <span className="text-[10px] tracking-tight font-medium">Live Chats</span>
         </button>
 
@@ -484,11 +502,11 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('edit_info')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'edit_info'
-              ? 'text-slate-950 font-bold scale-105'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-slate-950 dark:text-white font-bold scale-105'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          <Settings className={`w-5 h-5 mb-0.5 ${activeTab === 'edit_info' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <Settings className={`w-5 h-5 mb-0.5 ${activeTab === 'edit_info' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
           <span className="text-[10px] tracking-tight font-medium">Store Info</span>
         </button>
 
@@ -496,11 +514,11 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('billing')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'billing'
-              ? 'text-slate-950 font-bold scale-105'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-slate-950 dark:text-white font-bold scale-105'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          <CreditCard className={`w-5 h-5 mb-0.5 ${activeTab === 'billing' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <CreditCard className={`w-5 h-5 mb-0.5 ${activeTab === 'billing' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
           <span className="text-[10px] tracking-tight font-medium">Plan</span>
         </button>
       </nav>
