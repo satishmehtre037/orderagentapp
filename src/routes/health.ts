@@ -50,8 +50,17 @@ router.get('/test-groq', async (_req: Request, res: Response) => {
       });
     }
 
-    // 2. Select first available model
-    const modelToUse = availableModels[0];
+    // 2. Select best English/multilingual conversational model
+    const priorityModels = [
+      'qwen/qwen2.5-27b',
+      'groq/compound',
+      'groq/compound-mini',
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'llama3-8b-8192',
+    ];
+
+    const modelToUse = priorityModels.find((m) => availableModels.includes(m)) || availableModels[0];
 
     const completion = await groqClient.chat.completions.create({
       model: modelToUse,
