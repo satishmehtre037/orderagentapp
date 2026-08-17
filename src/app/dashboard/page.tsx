@@ -201,13 +201,13 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center space-x-2">
                   <h1 className="text-sm font-bold text-slate-900 leading-tight">
-                    {business?.name || 'BizBot OS Store'}
+                    {business?.name || 'Agento AI Store'}
                   </h1>
                   <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded-md font-semibold">
                     {business?.category || 'bakery'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500">Autonomous WhatsApp AI Concierge</p>
+                <p className="text-xs text-slate-500">24/7 Autonomous WhatsApp AI Staff</p>
               </div>
             </div>
           </div>
@@ -492,9 +492,9 @@ export default function DashboardPage() {
       <footer className="hidden sm:block bg-white border-t border-slate-200 mt-16 py-6 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
-            <span className="font-semibold text-slate-700">BizBot OS</span>
+            <span className="font-semibold text-slate-700">Agento AI</span>
             <span>•</span>
-            <span>Enterprise WhatsApp Commerce Engine</span>
+            <span>24/7 Autonomous WhatsApp AI Staff & Business OS</span>
           </div>
           <div className="flex flex-wrap items-center gap-6">
             <Link href="/privacy" className="hover:text-slate-900 transition-colors">

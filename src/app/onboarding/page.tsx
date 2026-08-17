@@ -179,8 +179,8 @@ export default function OnboardingPage() {
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">BizBot OS</h1>
-              <p className="text-[11px] sm:text-xs text-slate-500">Autonomous WhatsApp AI Concierge Setup</p>
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">Agento AI</h1>
+              <p className="text-[11px] sm:text-xs text-slate-500">Autonomous WhatsApp AI Setup</p>
             </div>
           </div>
           <span className="text-xs font-medium px-2.5 py-1 bg-slate-200/70 text-slate-700 rounded-full border border-slate-300/60 flex-shrink-0">

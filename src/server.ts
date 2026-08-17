@@ -53,7 +53,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // Start Server
 app.listen(ENV.PORT, () => {
   console.log(`\n======================================================`);
-  console.log(`🚀 BizBot OS Backend Engine (Razorpay Checkout) Live!`);
+  console.log(`🚀 Agento AI Backend Engine (Razorpay Checkout) Live!`);
   console.log(`📡 Listening on Port        : http://localhost:${ENV.PORT}`);
   console.log(`💳 Create Order Endpoint    : http://localhost:${ENV.PORT}/api/create-order`);
   console.log(`🔐 Verify Payment Endpoint  : http://localhost:${ENV.PORT}/api/verify-payment`);

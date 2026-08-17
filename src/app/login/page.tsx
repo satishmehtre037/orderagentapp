@@ -60,7 +60,7 @@ export default function LoginPage() {
           <Bot className="w-6 h-6" />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Welcome back to BizBot OS
+          Welcome back to Agento AI
         </h1>
         <p className="mt-1.5 text-xs text-slate-500">
           Sign in to manage your WhatsApp AI agent and live orders

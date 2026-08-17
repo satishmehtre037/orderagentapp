@@ -519,8 +519,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({
 
               <div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Unlimited Commercial</span>
-                <h3 className="text-lg font-semibold text-slate-900 mt-1">BizBot Pro Plan</h3>
-                <p className="text-xs text-slate-500 mt-1">Complete autonomous WhatsApp commerce for Indian SMBs.</p>
+                <h3 className="text-lg font-semibold text-slate-900 mt-1">Agento AI Pro Plan</h3>
+                <p className="text-xs text-slate-500 mt-1">Complete autonomous WhatsApp AI staff for modern businesses.</p>
               </div>
 
               <div className="flex items-baseline space-x-1">

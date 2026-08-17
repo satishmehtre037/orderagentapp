@@ -11,8 +11,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'BizBot OS | Autonomous WhatsApp AI Commerce Platform',
-  description: 'Self-serve WhatsApp AI commerce agent for bakeries, cafes, salons, gyms, clinics, real estate, and retail businesses.',
+  title: 'Agento AI | 24/7 Autonomous WhatsApp AI Staff & Business OS',
+  description: 'Agento AI: The Autonomous WhatsApp AI Mobile App & Business OS for Clinics, Real Estate, Salons, Gyms, Cafes, Bakeries, Coaching, and Retail.',
 };
 
 export default function RootLayout({

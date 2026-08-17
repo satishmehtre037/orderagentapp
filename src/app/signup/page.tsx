@@ -68,10 +68,10 @@ export default function SignupPage() {
           <Bot className="w-6 h-6" />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Create your BizBot OS account
+          Create your Agento AI account
         </h1>
         <p className="mt-1.5 text-xs text-slate-500">
-          Autonomous WhatsApp commerce agent for Bakeries, Salons, Gyms & Cafes
+          24/7 Autonomous WhatsApp AI Staff & Business Operating System
         </p>
       </div>
 

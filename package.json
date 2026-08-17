@@ -1,7 +1,7 @@
 {
-  "name": "whatsapp-ai-saas-platform",
+  "name": "agento-ai-mobile-app",
   "version": "1.0.0",
-  "description": "BizBot OS - WhatsApp AI Agent SaaS Platform & Backend Core",
+  "description": "Agento AI - 24/7 Autonomous WhatsApp AI Mobile App & Business OS",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {

@@ -254,7 +254,7 @@ export async function generateInvoicePdfBuffer(data: InvoiceData): Promise<Buffe
     { align: 'center' }
   );
   doc.text(
-    'Powered by BizBot OS • WhatsApp Commerce Cloud',
+    'Powered by Agento AI • Autonomous WhatsApp Commerce Cloud',
     pageWidth / 2,
     footerY + 38,
     { align: 'center' }

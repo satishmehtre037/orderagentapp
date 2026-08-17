@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.bizbot.os',
-  appName: 'BizBot OS',
+  appId: 'com.agento.ai',
+  appName: 'Agento AI',
   webDir: 'out',
   server: {
     url: 'https://orderagentapp.webcorestudio.dev',
