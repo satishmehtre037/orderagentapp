@@ -1,6 +1,6 @@
 import { groq, getGroqClient } from '../config/groq';
 import { ENV } from '../config/env';
-import { ConversationMessage } from '../types/index';
+import { ConversationMessage, Business, BusinessConfig } from '../types/index';
 
 /**
  * Executes a text request against Groq Llama 3.3/3.1 API using system prompt and history
@@ -8,7 +8,9 @@ import { ConversationMessage } from '../types/index';
 export async function getResponse(
   systemPrompt: string,
   conversationHistory: ConversationMessage[],
-  newMessage: string
+  newMessage: string,
+  business?: Business,
+  configs?: BusinessConfig[]
 ): Promise<string> {
   // Format historical messages into normalized role format
   const formattedHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
@@ -74,16 +76,35 @@ export async function getResponse(
     console.error(`[Groq AI Error] GROQ_API_KEY is missing or invalid in environment.`);
   }
 
-  // Smart local fallback responses if offline or key not yet set
-  const lower = newMessage.toLowerCase();
-  if (lower.includes('menu') || lower.includes('item') || lower.includes('price') || lower.includes('cake') || lower.includes('bread')) {
-    return `🍰 *Welcome to our Bakery!* Here is our popular menu:\n\n1. Chocolate Truffle Cake - ₹450\n2. Fresh Butter Croissant - ₹80\n3. Red Velvet Pastry - ₹120\n4. Artisan Sourdough Bread - ₹150\n\nWould you like to place an order? Please tell me the items and quantity!`;
-  }
-  if (lower.includes('book') || lower.includes('appointment') || lower.includes('salon') || lower.includes('hair') || lower.includes('facial')) {
-    return `💇‍♀️ *Welcome to our Salon!* Our services include:\n\n1. Haircut & Styling - ₹500\n2. Facial & Cleanup - ₹800\n3. Manicure & Pedicure - ₹700\n\nPlease let us know your preferred date and time slot for booking!`;
-  }
-  if (lower.includes('tuition') || lower.includes('fee') || lower.includes('class') || lower.includes('batch')) {
-    return `📚 *Welcome to Tuition Center Admissions!* We offer coaching for:\n\n1. 9th & 10th Math & Science (Evening Batches)\n2. 11th & 12th Physics & Chemistry\n3. NEET / JEE Foundation\n\nPlease reply with your student's name and grade to schedule a free demo class!`;
+  // Smart local fallback responses if Groq API is offline or rate limited
+  if (business) {
+    const configMap: Record<string, any> = {};
+    (configs || []).forEach((c) => {
+      configMap[c.config_key] = c.config_value;
+    });
+
+    const category = business.category || 'store';
+    let catalogList = '';
+
+    if (category === 'bakery' && Array.isArray(configMap.menu_items)) {
+      catalogList = configMap.menu_items.map((m: any) => `• *${m.name}* — ₹${m.price}${m.unit ? ` (${m.unit})` : ''}`).join('\n');
+    } else if (category === 'salon' && Array.isArray(configMap.services)) {
+      catalogList = configMap.services.map((s: any) => `• *${s.name}* — ₹${s.price}${s.duration ? ` (${s.duration})` : ''}`).join('\n');
+    } else if (category === 'gym' && Array.isArray(configMap.gym_plans)) {
+      catalogList = configMap.gym_plans.map((g: any) => `• *${g.name}* — ₹${g.price}${g.duration ? ` (${g.duration})` : ''}`).join('\n');
+    } else if (category === 'cafe' && Array.isArray(configMap.cafe_menu)) {
+      catalogList = configMap.cafe_menu.map((c: any) => `• *${c.name}* — ₹${c.price}${c.category ? ` (${c.category})` : ''}`).join('\n');
+    } else if (category === 'tuition' && Array.isArray(configMap.course_list)) {
+      catalogList = configMap.course_list.map((t: any) => `• *${t.name}* — ${t.fee}${t.batch_timing ? ` [${t.batch_timing}]` : ''}`).join('\n');
+    }
+
+    const staffList = Array.isArray(configMap.staff) && configMap.staff.length > 0
+      ? `\n\n*Our Team:*\n` + configMap.staff.map((s: any) => `• ${s.name}${s.specialty ? ` (${s.specialty})` : ''}`).join('\n')
+      : '';
+
+    const hours = configMap.hours ? `\n\n🕒 *Hours:* ${configMap.hours}` : '';
+
+    return `✨ *Welcome to ${business.name}!* ✨\n\nWe're excited to assist you! Here are our ${category === 'salon' ? 'services' : category === 'gym' ? 'membership plans' : 'offerings'}:\n${catalogList || 'Please ask about our available items and pricing.'}${staffList}${hours}\n\nHow can we help you today?`;
   }
 
   return `Hello! Thank you for reaching out to us on WhatsApp. How can we assist you with our menu, services, or bookings today?`;

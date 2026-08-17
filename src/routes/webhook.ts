@@ -176,7 +176,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     }
 
     // 6. Generate response from Groq Llama AI
-    const aiResponseText = await getResponse(systemPrompt, history, messageText);
+    const aiResponseText = await getResponse(systemPrompt, history, messageText, business, configs);
 
     // Robust JSON extraction and stripping
     let replyText = aiResponseText;
