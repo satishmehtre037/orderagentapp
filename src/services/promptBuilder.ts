@@ -25,13 +25,31 @@ export async function buildSystemPrompt(businessId: string): Promise<string> {
 
   const business = businessData as Business;
 
-  // 2. Fetch category template
-  const templateObj = await getCategoryTemplate(business.category);
-  if (!templateObj) {
-    throw new Error(`[PromptBuilder Error] Template not found for category: ${business.category}`);
+  // 2. Fetch category template with guaranteed fallback
+  let prompt = '';
+  try {
+    const templateObj = await getCategoryTemplate(business.category);
+    if (templateObj?.prompt_template) {
+      prompt = templateObj.prompt_template;
+    }
+  } catch (err) {
+    console.warn(`[PromptBuilder Warning] Template lookup warning for category ${business.category}:`, err);
   }
 
-  let prompt = templateObj.prompt_template;
+  if (!prompt) {
+    const cat = (business.category || '').toLowerCase();
+    if (cat === 'salon') {
+      prompt = `You are a polite, helpful AI receptionist for {{business_name}} (Salon & Spa).\nHelp clients with bookings, staff appointments, treatment details, and pricing.\n\nServices:\n{{services}}\n\nTeam:\n{{staff}}\n\nHours:\n{{hours}}`;
+    } else if (cat === 'bakery') {
+      prompt = `You are an expert AI ordering assistant for {{business_name}} (Bakery).\nHelp customers order cakes, pastries, snacks, and fresh bakes with delivery details.\n\nMenu:\n{{menu_items}}\n\nHours:\n{{hours}}`;
+    } else if (cat === 'cafe') {
+      prompt = `You are a friendly AI cafe concierge for {{business_name}}.\nHelp customers with coffee, food menu, prices, and orders.\n\nMenu:\n{{cafe_menu}}\n\nHours:\n{{hours}}`;
+    } else if (cat === 'gym') {
+      prompt = `You are a fitness counselor for {{business_name}} (Gym & Fitness Center).\nHelp with memberships, trainers, and trial passes.\n\nPlans:\n{{gym_plans}}\n\nTrainers:\n{{staff}}\n\nHours:\n{{hours}}`;
+    } else {
+      prompt = `You are the official customer service assistant for {{business_name}}.\nHelp customers with inquiries, catalog items, pricing, and bookings.`;
+    }
+  }
 
   // 3. Fetch business configs
   const configs = await getBusinessConfigs(businessId);

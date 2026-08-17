@@ -22,6 +22,37 @@ router.get('/health/config', (_req: Request, res: Response) => {
   });
 });
 
+router.get('/test-groq', async (_req: Request, res: Response) => {
+  try {
+    const { getGroqClient } = await import('../config/groq');
+    const groqClient = getGroqClient();
+    if (!groqClient) {
+      return res.status(500).json({ error: 'Groq client failed to initialize. Check GROQ_API_KEY.' });
+    }
+
+    const completion = await groqClient.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'user', content: 'Say "Groq Llama 3.3 is active and operational!"' }
+      ],
+      max_tokens: 30,
+    });
+
+    return res.json({
+      success: true,
+      model: 'llama-3.3-70b-versatile',
+      response: completion.choices[0]?.message?.content,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: err?.message || err,
+      status: err?.status,
+      code: err?.code,
+    });
+  }
+});
+
 /**
  * Root index endpoint for GET /
  */
