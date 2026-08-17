@@ -238,7 +238,7 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
 
       <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
         {/* Header Toolbar */}
-        <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between">
+        <div className="p-4 sm:px-6 sm:py-4 border-b border-slate-200/80 flex items-center justify-between gap-2">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-slate-100 rounded-lg text-slate-700">
               <Building2 className="w-5 h-5" />
@@ -247,17 +247,17 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
               <h2 className="text-sm font-semibold text-slate-900">
                 Store Catalog & AI Knowledge Base
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 hidden sm:block">
                 Update prices, items, UPI IDs, address, and automated follow-up rules
               </p>
             </div>
           </div>
-          <span className="text-xs font-medium px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-md text-slate-700 capitalize">
+          <span className="text-xs font-medium px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-md text-slate-700 capitalize flex-shrink-0">
             {category} Mode
           </span>
         </div>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-8">
           <FormProvider {...methods}>
             <form
               onSubmit={handleSubmit(onSaveConfig, (validationErrors) => {

@@ -542,16 +542,16 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
           </div>
 
           {/* Segmented Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1 w-full sm:w-auto bg-slate-200/60 p-1 rounded-lg">
+          <div className="flex items-center gap-1 w-full sm:w-auto bg-slate-200/60 p-1 rounded-lg overflow-x-auto no-scrollbar">
             {['all', 'new', 'confirmed', 'completed', 'cancelled'].map((tab) => {
               const count = tab === 'all' ? orders.length : orders.filter((o) => o.status === tab).length;
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveFilter(tab)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium capitalize transition-all ${
+                  className={`px-3 py-1 rounded-md text-xs font-medium capitalize transition-all flex-shrink-0 whitespace-nowrap ${
                     activeFilter === tab
-                      ? 'bg-white text-slate-900 shadow-sm'
+                      ? 'bg-white text-slate-900 shadow-sm font-semibold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >

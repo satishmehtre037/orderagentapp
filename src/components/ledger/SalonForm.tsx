@@ -60,10 +60,21 @@ export const SalonForm: React.FC = () => {
           {serviceFields.map((field, index) => (
             <div
               key={field.id}
-              className="grid grid-cols-12 gap-2 sm:gap-3 items-center p-3 bg-slate-50 rounded-lg border border-slate-200/80"
+              className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-3 sm:items-center"
             >
-              <div className="col-span-5 sm:col-span-5">
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">Service Name</label>
+              <div className="sm:col-span-5">
+                <div className="flex items-center justify-between mb-1 sm:block">
+                  <label className="block text-[11px] font-medium text-slate-500">Service Name</label>
+                  {serviceFields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeService(index)}
+                      className="sm:hidden p-1 text-slate-400 hover:text-red-600 rounded"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
                 <input
                   {...register(`services.${index}.name` as const)}
                   placeholder="e.g. Haircut & Styling"
@@ -71,26 +82,28 @@ export const SalonForm: React.FC = () => {
                 />
               </div>
 
-              <div className="col-span-3 sm:col-span-3">
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">Price (₹)</label>
-                <input
-                  type="number"
-                  {...register(`services.${index}.price` as const)}
-                  placeholder="400"
-                  className="w-full text-xs font-mono font-semibold px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
-                />
+              <div className="grid grid-cols-2 gap-2 sm:contents">
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Price (₹)</label>
+                  <input
+                    type="number"
+                    {...register(`services.${index}.price` as const)}
+                    placeholder="400"
+                    className="w-full text-xs font-mono font-semibold px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Duration</label>
+                  <input
+                    {...register(`services.${index}.duration` as const)}
+                    placeholder="45 mins"
+                    className="w-full text-xs font-medium px-2 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 text-center"
+                  />
+                </div>
               </div>
 
-              <div className="col-span-3 sm:col-span-3">
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">Duration</label>
-                <input
-                  {...register(`services.${index}.duration` as const)}
-                  placeholder="45 mins"
-                  className="w-full text-xs font-medium px-2 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 text-center"
-                />
-              </div>
-
-              <div className="col-span-1 flex justify-end pt-5">
+              <div className="hidden sm:flex sm:col-span-1 justify-end pt-5">
                 {serviceFields.length > 1 && (
                   <button
                     type="button"

@@ -164,20 +164,20 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <main className="min-h-screen bg-slate-50 py-5 sm:py-10 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900 overflow-x-hidden max-w-full">
+      <div className="max-w-4xl mx-auto space-y-5 sm:space-y-6">
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm flex-shrink-0">
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-900 leading-tight">BizBot OS</h1>
-              <p className="text-xs text-slate-500">Autonomous WhatsApp AI Concierge Setup</p>
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">BizBot OS</h1>
+              <p className="text-[11px] sm:text-xs text-slate-500">Autonomous WhatsApp AI Concierge Setup</p>
             </div>
           </div>
-          <span className="text-xs font-medium px-3 py-1 bg-slate-200/70 text-slate-700 rounded-full border border-slate-300/60">
+          <span className="text-xs font-medium px-2.5 py-1 bg-slate-200/70 text-slate-700 rounded-full border border-slate-300/60 flex-shrink-0">
             Step {currentStep} of 4
           </span>
         </div>
@@ -196,7 +196,7 @@ export default function OnboardingPage() {
         {/* Form Body */}
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmitWizard)} className="space-y-6">
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-8 shadow-sm">
               {/* STEP 1 */}
               {currentStep === 1 && (
                 <div className="space-y-6">

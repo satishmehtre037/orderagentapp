@@ -438,7 +438,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           </div>
         </div>
 
-        <div className="p-6 sm:p-8 space-y-8">
+        <div className="p-4 sm:p-8 space-y-8">
           {/* Cycle Toggle (Monthly vs Annual) */}
           <div className="flex items-center justify-center">
             <div className="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 border border-slate-200">
@@ -604,7 +604,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
               </div>
             </div>
 
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="border border-slate-200 rounded-xl overflow-x-auto no-scrollbar">
               {paymentsLoading ? (
                 <div className="p-6 text-center text-xs text-slate-500">Loading payment records...</div>
               ) : payments.length === 0 ? (
