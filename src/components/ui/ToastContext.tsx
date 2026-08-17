@@ -90,7 +90,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       {/* 1. Apple iPhone Dynamic Island / Frosted Glass Push Toast Notification */}
       {toast && (
-        <div className="fixed top-0 left-0 right-0 z-[9999] flex justify-center px-4 pointer-events-none pt-[max(env(safe-area-inset-top),2.75rem)]">
+        <div className="fixed top-3 sm:top-4 left-0 right-0 z-[9999] flex justify-center px-4 pointer-events-none">
           <div
             onClick={dismissToast}
             className={`pointer-events-auto cursor-pointer w-full max-w-sm sm:max-w-md rounded-3xl backdrop-blur-3xl bg-slate-900/95 text-white border border-white/20 p-4 flex items-start space-x-3.5 select-none transition-all duration-300 transform ${

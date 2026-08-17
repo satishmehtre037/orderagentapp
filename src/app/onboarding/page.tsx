@@ -169,7 +169,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#F8FAFC] py-6 sm:py-10 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900 overflow-x-hidden max-w-full pt-[max(env(safe-area-inset-top),2.5rem)] pb-safe">
+    <main className="min-h-[100dvh] bg-[#F8FAFC] py-4 sm:py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900 overflow-x-hidden max-w-full pb-safe">
       <div className="max-w-4xl mx-auto space-y-5 sm:space-y-6">
         {/* Top Header */}
         <div className="flex items-center justify-between">
