@@ -5,122 +5,322 @@ import {
 import { supabase } from '../config/supabase';
 import { Business } from '../types/index';
 
+// Set to false (or gate on env) in production to stop dumping full menus/pricing into logs.
+const DEBUG = process.env.NODE_ENV !== 'production';
+const log = (...args: any[]) => { if (DEBUG) console.log(...args); };
+const warn = (...args: any[]) => console.warn(...args);
+
+type CaptureType = 'booking' | 'lead' | 'order';
+
+interface ConfigRow {
+  config_key: string;
+  config_value: unknown;
+}
+
+/** Thrown for any PromptBuilder-specific failure so callers can branch on `.code`. */
+export class PromptBuilderError extends Error {
+  code: string;
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'PromptBuilderError';
+    this.code = code;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// In-memory TTL + LRU cache
+//
+// Note: this is per-process. Fine for a single Node server or one warm
+// serverless instance; if you scale to multiple instances/regions and need
+// a shared cache, swap this module out for Redis (same get/set/invalidate
+// shape below) — callers of buildSystemPrompt don't need to change.
+// ---------------------------------------------------------------------------
+
+interface CacheEntry {
+  prompt: string;
+  expiresAt: number;
+  builtAt: number;
+}
+
+const CACHE_TTL_MS = Number(process.env.PROMPT_CACHE_TTL_MS) || 5 * 60 * 1000; // 5 min default
+const CACHE_MAX_ENTRIES = Number(process.env.PROMPT_CACHE_MAX_ENTRIES) || 500;
+
+const promptCache = new Map<string, CacheEntry>();
+
+function cacheKey(businessId: string): string {
+  return businessId;
+}
+
+function getCached(businessId: string): CacheEntry | null {
+  const key = cacheKey(businessId);
+  const entry = promptCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    promptCache.delete(key);
+    return null;
+  }
+  // Touch for LRU: delete + reinsert moves it to the "most recent" end of Map's iteration order.
+  promptCache.delete(key);
+  promptCache.set(key, entry);
+  return entry;
+}
+
+function setCached(businessId: string, prompt: string): void {
+  const key = cacheKey(businessId);
+  if (promptCache.size >= CACHE_MAX_ENTRIES && !promptCache.has(key)) {
+    const oldestKey = promptCache.keys().next().value;
+    if (oldestKey !== undefined) promptCache.delete(oldestKey);
+  }
+  promptCache.set(key, { prompt, expiresAt: Date.now() + CACHE_TTL_MS, builtAt: Date.now() });
+}
+
+/** Call this whenever a business's config/template is edited so stale prompts don't linger for up to CACHE_TTL_MS. */
+export function invalidatePromptCache(businessId: string): void {
+  promptCache.delete(cacheKey(businessId));
+  log(`[PromptBuilder] Cache invalidated for business_id: ${businessId}`);
+}
+
+/** Nuke the whole cache — e.g. after a bulk template migration. */
+export function clearPromptCache(): void {
+  promptCache.clear();
+  log('[PromptBuilder] Cache cleared entirely.');
+}
+
+export function getPromptCacheStats(): { size: number; maxEntries: number; ttlMs: number } {
+  return { size: promptCache.size, maxEntries: CACHE_MAX_ENTRIES, ttlMs: CACHE_TTL_MS };
+}
+
+/** Prebuild + cache prompts for a batch of businesses (e.g. on server boot). Failures don't stop the batch. */
+export async function warmPromptCache(businessIds: string[]): Promise<void> {
+  const results = await Promise.allSettled(businessIds.map((id) => buildSystemPrompt(id)));
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  log(`[PromptBuilder] Cache warm complete: ${businessIds.length - failed}/${businessIds.length} succeeded.`);
+}
+
+// ---------------------------------------------------------------------------
+// Retry helper — Supabase/network calls get transient hiccups; retry a
+// couple of times with backoff before giving up.
+// ---------------------------------------------------------------------------
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  { retries = 2, baseDelayMs = 150, label = 'operation' }: { retries?: number; baseDelayMs?: number; label?: string } = {}
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) {
+        const delay = baseDelayMs * 2 ** attempt;
+        warn(`[PromptBuilder] ${label} failed (attempt ${attempt + 1}/${retries + 1}), retrying in ${delay}ms...`, err);
+        await sleep(delay);
+      }
+    }
+  }
+  throw lastErr;
+}
+
+// ---------------------------------------------------------------------------
+// Input validation
+// ---------------------------------------------------------------------------
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validateBusinessId(businessId: string): void {
+  if (!businessId || typeof businessId !== 'string') {
+    throw new PromptBuilderError('businessId is required and must be a non-empty string', 'INVALID_BUSINESS_ID');
+  }
+  if (!UUID_RE.test(businessId)) {
+    warn(`[PromptBuilder Warning] businessId "${businessId}" doesn't look like a UUID — proceeding anyway.`);
+  }
+}
+
 /**
- * Builds a category-aware system prompt dynamically by merging
- * category_templates with business_config rows for the tenant.
+ * Neutralizes triple-backtick fences inside user-editable config text (FAQ answers,
+ * item names, notes, etc.) so a customer-entered value can't accidentally — or
+ * deliberately — break out of the ```json capture block``` the model is instructed
+ * to emit at the end of its replies.
  */
-export async function buildSystemPrompt(businessId: string): Promise<string> {
-  console.log(`[PromptBuilder] Building system prompt for business_id: ${businessId}`);
+function sanitizeText(input: string): string {
+  return input.replace(/```/g, '\u200b`\u200b`\u200b`');
+}
 
-  // 1. Fetch business row
-  const { data: businessData, error: businessErr } = await supabase
-    .from('businesses')
-    .select('*')
-    .eq('id', businessId)
-    .single();
+// ---------------------------------------------------------------------------
+// Fallback templates (used only if category_templates lookup fails/misses)
+// ---------------------------------------------------------------------------
 
-  if (businessErr || !businessData) {
-    throw new Error(`[PromptBuilder Error] Business not found for ID: ${businessId}`);
-  }
+const CATEGORY_FALLBACK_TEMPLATES: Record<string, string> = {
+  salon: `You are a polite, helpful AI receptionist for {{business_name}} (Salon & Spa).
+Help clients with bookings, staff appointments, treatment details, and pricing.
 
-  const business = businessData as Business;
+Services:
+{{services}}
 
-  // 2. Fetch category template with guaranteed fallback
-  let prompt = '';
+Team:
+{{staff}}
+
+Hours:
+{{hours}}`,
+  bakery: `You are an expert AI ordering assistant for {{business_name}} (Bakery).
+Help customers order cakes, pastries, snacks, and fresh bakes with delivery details.
+
+Menu:
+{{menu_items}}
+
+Hours:
+{{hours}}`,
+  cafe: `You are a friendly AI cafe concierge for {{business_name}}.
+Help customers with coffee, food menu, prices, and orders.
+
+Menu:
+{{cafe_menu}}
+
+Hours:
+{{hours}}`,
+  gym: `You are a fitness counselor for {{business_name}} (Gym & Fitness Center).
+Help with memberships, trainers, and trial passes.
+
+Plans:
+{{gym_plans}}
+
+Trainers:
+{{staff}}
+
+Hours:
+{{hours}}`,
+};
+
+const DEFAULT_FALLBACK_TEMPLATE = `You are the official customer service assistant for {{business_name}}.
+Help customers with inquiries, catalog items, pricing, and bookings.`;
+
+const CAPTURE_TYPE_BY_CATEGORY: Record<string, CaptureType> = {
+  salon: 'booking',
+  tuition: 'lead',
+};
+
+// ---------------------------------------------------------------------------
+// Config value formatters — add a new config_key here instead of another
+// if/else branch.
+// ---------------------------------------------------------------------------
+
+type Formatter = { format: (val: any[]) => string; label?: string };
+
+const FORMATTERS: Record<string, Formatter> = {
+  menu_items: {
+    label: 'Live Menu Catalog',
+    format: (val) =>
+      val.map((m) => `🍰 *${m.name}* — ₹${m.price}${m.unit ? ` _(per ${m.unit})_` : ''}`).join('\n'),
+  },
+  cafe_menu: {
+    label: 'Live Cafe Menu',
+    format: (val) =>
+      val.map((c) => `☕ *${c.name}* — ₹${c.price}${c.category ? ` _(${c.category})_` : ''}`).join('\n'),
+  },
+  services: {
+    format: (val) =>
+      val.map((s) => `✂️ *${s.name}* — ₹${s.price}${s.duration ? ` _(${s.duration})_` : ''}`).join('\n'),
+  },
+  gym_plans: {
+    label: 'Live Gym Plans',
+    format: (val) =>
+      val.map((g) => `🏋️ *${g.name}* — ₹${g.price}${g.duration ? ` _(${g.duration})_` : ''}`).join('\n'),
+  },
+  staff: {
+    format: (val) =>
+      val.map((st) => `👤 *${st.name}*${st.specialty ? ` _(${st.specialty})_` : ''}`).join('\n'),
+  },
+  course_list: {
+    format: (val) =>
+      val.map((c) => `📚 *${c.name}* — Fee: ₹${c.fee}${c.batch_timing ? ` _(Timing: ${c.batch_timing})_` : ''}`).join('\n'),
+  },
+  faqs: {
+    format: (val) => val.map((f: any) => `*Q: ${f.question}*\n_${f.answer}_`).join('\n\n'),
+  },
+};
+FORMATTERS.courses = FORMATTERS.course_list; // alias, same shape as course_list
+
+function formatConfigValue(key: string, val: unknown): string {
   try {
-    const templateObj = await getCategoryTemplate(business.category);
-    if (templateObj?.prompt_template) {
-      prompt = templateObj.prompt_template;
-    }
-  } catch (err) {
-    console.warn(`[PromptBuilder Warning] Template lookup warning for category ${business.category}:`, err);
-  }
-
-  if (!prompt) {
-    const cat = (business.category || '').toLowerCase();
-    if (cat === 'salon') {
-      prompt = `You are a polite, helpful AI receptionist for {{business_name}} (Salon & Spa).\nHelp clients with bookings, staff appointments, treatment details, and pricing.\n\nServices:\n{{services}}\n\nTeam:\n{{staff}}\n\nHours:\n{{hours}}`;
-    } else if (cat === 'bakery') {
-      prompt = `You are an expert AI ordering assistant for {{business_name}} (Bakery).\nHelp customers order cakes, pastries, snacks, and fresh bakes with delivery details.\n\nMenu:\n{{menu_items}}\n\nHours:\n{{hours}}`;
-    } else if (cat === 'cafe') {
-      prompt = `You are a friendly AI cafe concierge for {{business_name}}.\nHelp customers with coffee, food menu, prices, and orders.\n\nMenu:\n{{cafe_menu}}\n\nHours:\n{{hours}}`;
-    } else if (cat === 'gym') {
-      prompt = `You are a fitness counselor for {{business_name}} (Gym & Fitness Center).\nHelp with memberships, trainers, and trial passes.\n\nPlans:\n{{gym_plans}}\n\nTrainers:\n{{staff}}\n\nHours:\n{{hours}}`;
-    } else {
-      prompt = `You are the official customer service assistant for {{business_name}}.\nHelp customers with inquiries, catalog items, pricing, and bookings.`;
-    }
-  }
-
-  // 3. Fetch business configs
-  const configs = await getBusinessConfigs(businessId);
-
-  // Map configs to dictionary with human-friendly formatting
-  const configMap: Record<string, string> = {
-    business_name: business.name,
-  };
-
-  for (const item of configs) {
-    const val = item.config_value;
-    let formattedVal = '';
-
-    if (item.config_key === 'menu_items' && Array.isArray(val)) {
-      formattedVal = val
-        .map((m: any) => `🍰 *${m.name}* — ₹${m.price}${m.unit ? ` _(per ${m.unit})_` : ''}`)
-        .join('\n');
-      console.log('[PromptBuilder] 📋 Live Menu Catalog Injected:\n' + formattedVal);
-    } else if (item.config_key === 'cafe_menu' && Array.isArray(val)) {
-      formattedVal = val
-        .map((c: any) => `☕ *${c.name}* — ₹${c.price}${c.category ? ` _(${c.category})_` : ''}`)
-        .join('\n');
-      console.log('[PromptBuilder] 📋 Live Cafe Menu Injected:\n' + formattedVal);
-    } else if (item.config_key === 'services' && Array.isArray(val)) {
-      formattedVal = val
-        .map((s: any) => `✂️ *${s.name}* — ₹${s.price}${s.duration ? ` _(${s.duration})_` : ''}`)
-        .join('\n');
-    } else if (item.config_key === 'gym_plans' && Array.isArray(val)) {
-      formattedVal = val
-        .map((g: any) => `🏋️ *${g.name}* — ₹${g.price}${g.duration ? ` _(${g.duration})_` : ''}`)
-        .join('\n');
-      console.log('[PromptBuilder] 📋 Live Gym Plans Injected:\n' + formattedVal);
-    } else if (item.config_key === 'staff' && Array.isArray(val)) {
-      formattedVal = val
-        .map((st: any) => `👤 *${st.name}*${st.specialty ? ` _(${st.specialty})_` : ''}`)
-        .join('\n');
-    } else if ((item.config_key === 'course_list' || item.config_key === 'courses') && Array.isArray(val)) {
-      formattedVal = val
-        .map((c: any) => `📚 *${c.name}* — Fee: ₹${c.fee}${c.batch_timing ? ` _(Timing: ${c.batch_timing})_` : ''}`)
-        .join('\n');
-    } else if (item.config_key === 'faqs' && Array.isArray(val)) {
-      formattedVal = val.map((f: any) => `*Q: ${f.question}*\n_${f.answer}_`).join('\n\n');
+    const formatter = FORMATTERS[key];
+    let out: string;
+    if (formatter && Array.isArray(val)) {
+      out = formatter.format(val);
+      if (formatter.label) log(`[PromptBuilder] 📋 ${formatter.label} Injected:\n${out}`);
     } else if (typeof val === 'string') {
-      formattedVal = val;
+      out = val;
     } else {
-      formattedVal = JSON.stringify(val, null, 2);
+      out = JSON.stringify(val, null, 2);
     }
-
-    configMap[item.config_key] = formattedVal;
+    return sanitizeText(out);
+  } catch (err) {
+    warn(`[PromptBuilder Warning] Failed to format config "${key}", falling back to raw JSON:`, err);
+    try {
+      return sanitizeText(JSON.stringify(val));
+    } catch {
+      return '[Unformattable value]';
+    }
   }
+}
 
-  console.log(`[PromptBuilder] Merging ${Object.keys(configMap).length} dynamic placeholders...`);
+// ---------------------------------------------------------------------------
+// Data fetching
+// ---------------------------------------------------------------------------
 
-  // Replace placeholders in prompt template e.g. {business_name}, {menu_items}, {hours}, {faqs}
-  prompt = prompt.replace(/\{(\w+)\}/g, (match, key) => {
-    if (configMap[key] !== undefined) {
-      return configMap[key];
-    }
-    console.warn(`[PromptBuilder Warning] Missing config value for key: ${key}. Defaulting to empty.`);
-    return `[Not provided]`;
+async function fetchBusiness(businessId: string): Promise<Business> {
+  const { data, error } = await supabase.from('businesses').select('*').eq('id', businessId).single();
+  if (error || !data) {
+    throw new PromptBuilderError(`Business not found for ID: ${businessId}`, 'BUSINESS_NOT_FOUND');
+  }
+  return data as Business;
+}
+
+async function resolveBaseTemplate(category: string): Promise<string> {
+  try {
+    const templateObj = await getCategoryTemplate(category);
+    if (templateObj?.prompt_template) return templateObj.prompt_template;
+  } catch (err) {
+    warn(`[PromptBuilder Warning] Template lookup failed for category "${category}":`, err);
+  }
+  const cat = (category || '').toLowerCase();
+  return CATEGORY_FALLBACK_TEMPLATES[cat] ?? DEFAULT_FALLBACK_TEMPLATE;
+}
+
+function buildConfigMap(business: Business, configs: ConfigRow[]): Record<string, string> {
+  const map: Record<string, string> = { business_name: business.name };
+  for (const item of configs) {
+    map[item.config_key] = formatConfigValue(item.config_key, item.config_value);
+  }
+  return map;
+}
+
+function injectPlaceholders(template: string, configMap: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_match, key) => {
+    if (configMap[key] !== undefined) return configMap[key];
+    warn(`[PromptBuilder Warning] Missing config value for key: ${key}. Defaulting to empty.`);
+    return '[Not provided]';
   });
+}
 
-  prompt = `### CRITICAL INSTRUCTION - LIVE MENU OVERRIDE:
-The items and pricing listed below represent the LIVE, UP-TO-DATE catalog for ${business.name}. 
+// ---------------------------------------------------------------------------
+// Prompt instruction blocks
+// ---------------------------------------------------------------------------
+
+function liveMenuOverrideBlock(businessName: string): string {
+  return `### CRITICAL INSTRUCTION - LIVE MENU OVERRIDE:
+The items and pricing listed below represent the LIVE, UP-TO-DATE catalog for ${businessName}. 
 Even if past messages in the conversation history claimed an item was unavailable, ALWAYS check the current catalog below. If an item is listed below, IT IS IN STOCK AND FULLY AVAILABLE. Never claim an item is unavailable if it is in the list below.
 
-` + prompt;
+`;
+}
 
-  const captureType = business.category === 'salon' ? 'booking' : business.category === 'tuition' ? 'lead' : 'order';
-
-  prompt += `\n\n### CRITICAL ORDER & BOOKING CAPTURE INSTRUCTION:
+function captureInstructionBlock(captureType: CaptureType): string {
+  return `\n\n### CRITICAL ORDER & BOOKING CAPTURE INSTRUCTION:
 - DO NOT output a JSON capture block for greetings ('hi', 'hello', 'hey'), casual talk, general questions, or menu inquiries.
 - ONLY output a JSON capture block at the very end of your message when the customer EXPLICITLY CONFIRMS a specific item/service order with quantity or books a specific appointment date/time.
 
@@ -143,20 +343,24 @@ When an order/booking is confirmed, append this JSON block at the very end:
 
 ### CANCELLATION RULES:
 - If a customer asks to cancel their order, booking, or appointment, politely confirm that their order has been cancelled and express that you look forward to serving them next time.
-- Append {"capture": {"action": "cancel"}} at the end.
+- Append {"capture": {"action": "cancel"}} at the end.`;
+}
 
-### STRICT SCOPE & OFF-TOPIC GUARDRAIL:
-- You are EXCLUSIVELY the virtual customer support assistant for ${business.name}.
+function scopeGuardBlock(businessName: string): string {
+  return `\n\n### STRICT SCOPE & OFF-TOPIC GUARDRAIL:
+- You are EXCLUSIVELY the virtual customer support assistant for ${businessName}.
 - You MUST NEVER write code (e.g. Python, Java, JavaScript, C++), solve math problems, write essays, answer general knowledge/trivia, or act as an open-ended AI assistant.
-- If the user asks for programming code, homework help, politics, trivia, or anything outside of ${business.name}'s menu, products, pricing, orders, and store timings, POLITELY DECLINE and redirect them:
-  "I am the virtual assistant for ${business.name} and can only assist with our products, menu, orders, and store services. How may I help you today?"
+- If the user asks for programming code, homework help, politics, trivia, or anything outside of ${businessName}'s menu, products, pricing, orders, and store timings, POLITELY DECLINE and redirect them:
+  "I am the virtual assistant for ${businessName} and can only assist with our products, menu, orders, and store services. How may I help you today?"`;
+}
 
-### 🌐 STRICT LANGUAGE & ELEGANCE GUIDELINES:
+function languageAndFormattingBlock(businessName: string): string {
+  return `\n\n### 🌐 STRICT LANGUAGE & ELEGANCE GUIDELINES:
 1. **DEFAULT LANGUAGE = POLISHED, PROFESSIONAL ENGLISH**:
    - By default, you MUST ALWAYS communicate in crisp, elegant, professional English.
    - When a customer greets in English ("Hi", "Hey", "Heyy", "Hello") or types in English, you MUST ALWAYS respond in elegant, structured English.
    - For a first greeting, ALWAYS format cleanly like this:
-     ✨ *Welcome to ${business.name}!* ✨
+     ✨ *Welcome to ${businessName}!* ✨
 
      We're excited to assist you! Here are our services:
      • *Deluxe Haircut & Blowdry* — ₹450 _(45 mins)_
@@ -193,7 +397,7 @@ You have native-level understanding of Indian WhatsApp communication, including 
 - **Tone**: Warm, elegant, polished, and attentive like a 5-star concierge.
 - **NEVER** sound robotic or informal.
 - **Greetings (First message ONLY)**: ONLY show the welcome banner on the very first hello/greeting from a new customer.
-- **NO REPETITIVE HEADERS**: DO NOT include "✨ Welcome to ${business.name}! ✨" in subsequent messages, follow-up replies, inquiries, or order confirmations. Jump straight into the helpful response naturally.
+- **NO REPETITIVE HEADERS**: DO NOT include "✨ Welcome to ${businessName}! ✨" in subsequent messages, follow-up replies, inquiries, or order confirmations. Jump straight into the helpful response naturally.
 - **Listings**: Always format items cleanly with emojis and bold headers:
   • *Item Name* — ₹Price _(details)_
 - **Booking & Order Confirmations**: Format with structured bold labels:
@@ -205,15 +409,17 @@ You have native-level understanding of Indian WhatsApp communication, including 
   
   💰 *Total Amount:* ₹450
   📍 *Location:* [Store Address]`;
+}
 
-  const upiConfig = configs.find((c) => c.config_key === 'upi_id')?.config_value;
-  const paymentNoteConfig = configs.find((c) => c.config_key === 'payment_note')?.config_value;
-  const autoSendPayment = configs.find((c) => c.config_key === 'auto_send_payment_link')?.config_value !== false;
+function isValidUpiId(upi: string): boolean {
+  // basic VPA pattern: name@bank
+  return /^[\w.\-]{2,256}@[\w.\-]{2,64}$/.test(upi);
+}
 
-  if (upiConfig && typeof upiConfig === 'string' && upiConfig.trim() && autoSendPayment) {
-    const cleanUpi = upiConfig.trim();
-    const cleanBizName = encodeURIComponent(business.name.replace(/\s+/g, '+'));
-    prompt += `\n\n### 💳 INSTANT UPI PAYMENT AUTOMATION RULES:
+function upiInstructionBlock(businessName: string, upiId: string, paymentNote?: string): string {
+  const cleanUpi = upiId.trim();
+  const cleanBizName = encodeURIComponent(businessName.replace(/\s+/g, '+'));
+  return `\n\n### 💳 INSTANT UPI PAYMENT AUTOMATION RULES:
 - Store UPI ID: \`${cleanUpi}\`
 - When confirming an order or booking with a total amount, ALWAYS provide the exact total and dynamic clickable UPI pay link in this structured format:
 
@@ -222,11 +428,110 @@ You have native-level understanding of Indian WhatsApp communication, including 
 📲 *Pay via any UPI App (GPay / PhonePe / Paytm / BHIM):*
 👉 upi://pay?pa=${cleanUpi}&pn=${cleanBizName}&am=[Total]&cu=INR&tn=Order-${cleanBizName}
 (Or send to UPI ID: \`${cleanUpi}\`)
-${paymentNoteConfig ? `\n📝 _${paymentNoteConfig}_` : ''}
+${paymentNote ? `\n📝 _${paymentNote}_` : ''}
 
 (Always replace [Total] with the exact calculated order sum in numbers, e.g. 650).`;
+}
+
+// ---------------------------------------------------------------------------
+// Orchestrator
+// ---------------------------------------------------------------------------
+
+const SLOW_BUILD_WARN_MS = Number(process.env.PROMPT_SLOW_BUILD_MS) || 800;
+
+/** Does the actual DB round-trips + assembly. No caching here — buildSystemPrompt owns that. */
+async function buildFreshPrompt(businessId: string): Promise<string> {
+  const business = await withRetry(() => fetchBusiness(businessId), { label: `fetchBusiness(${businessId})` });
+
+  // Template resolution and config fetch don't depend on each other — run in parallel.
+  const [baseTemplate, configs] = await Promise.all([
+    resolveBaseTemplate(business.category),
+    withRetry(() => getBusinessConfigs(businessId) as Promise<ConfigRow[]>, { label: `getBusinessConfigs(${businessId})` }),
+  ]);
+
+  const configMap = buildConfigMap(business, configs);
+  log(`[PromptBuilder] Merging ${Object.keys(configMap).length} dynamic placeholders...`);
+
+  let prompt = injectPlaceholders(baseTemplate, configMap);
+
+  const captureType: CaptureType = CAPTURE_TYPE_BY_CATEGORY[business.category] ?? 'order';
+
+  prompt =
+    liveMenuOverrideBlock(business.name) +
+    prompt +
+    captureInstructionBlock(captureType) +
+    scopeGuardBlock(business.name) +
+    languageAndFormattingBlock(business.name);
+
+  const upiId = configs.find((c) => c.config_key === 'upi_id')?.config_value;
+  const paymentNote = configs.find((c) => c.config_key === 'payment_note')?.config_value;
+  const autoSendPayment = configs.find((c) => c.config_key === 'auto_send_payment_link')?.config_value !== false;
+
+  if (typeof upiId === 'string' && upiId.trim() && autoSendPayment) {
+    if (!isValidUpiId(upiId.trim())) {
+      warn(`[PromptBuilder Warning] UPI ID "${upiId}" doesn't look valid — skipping payment block.`);
+    } else {
+      prompt += upiInstructionBlock(business.name, upiId, typeof paymentNote === 'string' ? paymentNote : undefined);
+    }
   }
 
-  console.log(`[PromptBuilder] System prompt built successfully (${prompt.length} chars)`);
   return prompt;
+}
+
+export interface BuildSystemPromptOptions {
+  /** Skip the cache and rebuild from the DB, refreshing the cached copy afterward. */
+  forceRefresh?: boolean;
+}
+
+/**
+ * Builds a category-aware system prompt dynamically by merging
+ * category_templates with business_config rows for the tenant.
+ *
+ * Cached per businessId for CACHE_TTL_MS (default 5 min) so a busy WhatsApp
+ * thread doesn't hit Supabase on every single inbound message. Call
+ * `invalidatePromptCache(businessId)` after the tenant edits their config or
+ * template so the next message picks up the change immediately instead of
+ * waiting out the TTL.
+ */
+export async function buildSystemPrompt(businessId: string, options: BuildSystemPromptOptions = {}): Promise<string> {
+  validateBusinessId(businessId);
+
+  if (!options.forceRefresh) {
+    const cached = getCached(businessId);
+    if (cached) {
+      log(`[PromptBuilder] Cache HIT for business_id: ${businessId} (age ${Date.now() - cached.builtAt}ms)`);
+      return cached.prompt;
+    }
+  }
+
+  log(`[PromptBuilder] Cache MISS for business_id: ${businessId} — building fresh prompt`);
+  const start = Date.now();
+  const prompt = await buildFreshPrompt(businessId);
+  const elapsed = Date.now() - start;
+
+  if (elapsed > SLOW_BUILD_WARN_MS) {
+    warn(`[PromptBuilder] Slow prompt build for ${businessId}: ${elapsed}ms`);
+  } else {
+    log(`[PromptBuilder] Prompt built in ${elapsed}ms`);
+  }
+
+  setCached(businessId, prompt);
+  log(`[PromptBuilder] System prompt built successfully (${prompt.length} chars)`);
+  return prompt;
+}
+
+/** Same as buildSystemPrompt but also returns cache/timing metadata — handy for debug endpoints or logging dashboards. */
+export async function buildSystemPromptWithMeta(
+  businessId: string,
+  options: BuildSystemPromptOptions = {}
+): Promise<{ prompt: string; cached: boolean; length: number; businessId: string; generatedAt: string }> {
+  const wasCached = !options.forceRefresh && !!getCached(businessId);
+  const prompt = await buildSystemPrompt(businessId, options);
+  return {
+    prompt,
+    cached: wasCached,
+    length: prompt.length,
+    businessId,
+    generatedAt: new Date().toISOString(),
+  };
 }

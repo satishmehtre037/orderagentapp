@@ -69,7 +69,7 @@ export async function getBusinessConfigs(businessId: string): Promise<BusinessCo
 /**
  * Fetch category prompt template
  */
-export async function getCategoryTemplate(category: BusinessCategory): Promise<CategoryTemplate | null> {
+export async function getCategoryTemplate(category: BusinessCategory | string): Promise<CategoryTemplate | null> {
   console.log(`[DB Service] Fetching category template for: ${category}`);
   const { data, error } = await supabase
     .from('category_templates')
