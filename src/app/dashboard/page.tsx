@@ -193,24 +193,26 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col antialiased text-slate-900 font-sans">
       {/* Sleek iOS Frosted Top Navigation Bar */}
-      <header className="backdrop-blur-2xl bg-white/90 border-b border-slate-200/60 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] pt-4 pb-3 sm:py-3.5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center space-x-3 sm:space-x-4">
+      <header className="backdrop-blur-2xl bg-white/85 border-b border-slate-200/60 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-[max(env(safe-area-inset-top),0.35rem)]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5 min-w-0 pr-2">
             <img
               src="/logo.png"
               alt="Agento AI"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-contain bg-slate-950 border border-white/20 shadow-md p-1 flex-shrink-0"
+              className="w-10 h-10 rounded-2xl object-contain bg-slate-900 border border-white/20 shadow-md p-1 flex-shrink-0"
             />
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
-                  {business?.name || 'Agento AI Store'}
-                </h1>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-slate-200/70 border border-slate-300/60 text-slate-700 rounded-lg font-bold">
-                  {effectiveCategory || 'bakery'}
+            <div className="min-w-0">
+              <h1 className="text-sm font-extrabold text-slate-900 leading-tight truncate max-w-[150px] xs:max-w-[200px] sm:max-w-[280px]">
+                {business?.name || 'Agento AI Store'}
+              </h1>
+              <div className="flex items-center space-x-1.5 mt-0.5">
+                <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-slate-200/70 border border-slate-300/70 text-slate-700 rounded-md font-bold tracking-wider">
+                  {effectiveCategory || business?.category || 'tuition'}
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
+                  24/7 AI Staff
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">24/7 WhatsApp AI Staff</p>
             </div>
           </div>
 
