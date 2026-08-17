@@ -1,4 +1,13 @@
-export type BusinessCategory = 'bakery' | 'cafe' | 'salon' | 'gym' | 'tuition';
+export type BusinessCategory =
+  | 'bakery'
+  | 'cafe'
+  | 'salon'
+  | 'gym'
+  | 'tuition'
+  | 'clinic'
+  | 'retail'
+  | 'real_estate'
+  | 'custom';
 export type SubscriptionStatus = 'trial' | 'active' | 'cancelled' | 'expired';
 export type PlanType = 'trial' | 'monthly_999';
 export type CaptureType = 'order' | 'booking' | 'lead';

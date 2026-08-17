@@ -1,12 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { supabase as adminSupabase } from '../config/supabase';
 import { generateInvoicePdfBuffer, InvoiceData } from '../services/invoiceService';
 
 const router = Router();
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const adminSupabase = createClient(supabaseUrl, serviceKey);
 
 router.get('/api/invoice/:orderId', async (req: Request, res: Response) => {
   try {

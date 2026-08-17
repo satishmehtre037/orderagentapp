@@ -14,9 +14,14 @@ import { CategorySelector } from '../../components/ledger/CategorySelector';
 import { BakeryForm } from '../../components/ledger/BakeryForm';
 import { CafeForm } from '../../components/ledger/CafeForm';
 import { SalonForm } from '../../components/ledger/SalonForm';
+import { ClinicForm } from '../../components/ledger/ClinicForm';
 import { GymForm } from '../../components/ledger/GymForm';
 import { TuitionForm } from '../../components/ledger/TuitionForm';
+import { RetailForm } from '../../components/ledger/RetailForm';
+import { RealEstateForm } from '../../components/ledger/RealEstateForm';
 import { ReviewLedgerCard } from '../../components/ledger/ReviewLedgerCard';
+import { CATEGORY_PRESETS } from '../../lib/constants/categoryPresets';
+import { BusinessCategory } from '../../types';
 import { Bot, ArrowRight, ArrowLeft, PhoneCall, Info } from 'lucide-react';
 
 export default function OnboardingPage() {
@@ -60,6 +65,22 @@ export default function OnboardingPage() {
   const { handleSubmit, watch, setValue, trigger, formState: { errors } } = methods;
   const selectedCategory = watch('category');
   const formData = watch();
+
+  const handleCategorySelect = (cat: BusinessCategory) => {
+    setValue('category', cat);
+    const preset = CATEGORY_PRESETS[cat];
+    if (preset) {
+      if (preset.hours) setValue('hours', preset.hours);
+      if (preset.faqs) setValue('faqs', preset.faqs);
+      if (preset.menu_items) setValue('menu_items', preset.menu_items);
+      if (preset.cafe_menu) setValue('cafe_menu', preset.cafe_menu);
+      if (preset.services) setValue('services', preset.services);
+      if (preset.staff) setValue('staff', preset.staff);
+      if (preset.gym_plans) setValue('gym_plans', preset.gym_plans);
+      if (preset.courses) setValue('courses', preset.courses);
+      if (preset.admission_process) setValue('admission_process', preset.admission_process);
+    }
+  };
 
   useEffect(() => {
     async function checkAuth() {
@@ -148,42 +169,47 @@ export default function OnboardingPage() {
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm">
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-slate-900 leading-tight">BizBot OS Setup Wizard</h1>
-              <p className="text-xs text-slate-500">Create your autonomous WhatsApp AI commerce assistant</p>
+              <h1 className="text-lg font-bold text-slate-900 leading-tight">BizBot OS</h1>
+              <p className="text-xs text-slate-500">Autonomous WhatsApp AI Concierge Setup</p>
             </div>
           </div>
-
-          <div className="text-right">
-            <span className="text-xs font-mono text-slate-500">{ownerEmail}</span>
-          </div>
+          <span className="text-xs font-medium px-3 py-1 bg-slate-200/70 text-slate-700 rounded-full border border-slate-300/60">
+            Step {currentStep} of 4
+          </span>
         </div>
 
-        {/* Wizard Card Container */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
-          <StepIndicator currentStep={currentStep} onStepClick={(s) => s < currentStep && setCurrentStep(s)} />
+        {/* Step Indicator Bar */}
+        <StepIndicator currentStep={currentStep} />
 
-          <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmitWizard)} className="p-6 sm:p-8">
-              {submitError && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
-                  {submitError}
-                </div>
-              )}
+        {/* Error Notification */}
+        {submitError && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start space-x-2">
+            <Info className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <span>{submitError}</span>
+          </div>
+        )}
 
+        {/* Form Body */}
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onSubmitWizard)} className="space-y-6">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm">
               {/* STEP 1 */}
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <div>
                     <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
-                      Step 1 of 4 — Store Profile
+                      Step 1 of 4 — Business Profile
                     </span>
                     <h2 className="text-xl font-bold text-slate-900 mt-1">
-                      Enter your store name and select your industry
+                      Tell us about your Business
                     </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Select your category and enter your business details to configure your AI agent knowledge base.
+                    </p>
                   </div>
 
                   <div>
@@ -206,7 +232,7 @@ export default function OnboardingPage() {
                     </label>
                     <CategorySelector
                       value={selectedCategory}
-                      onChange={(cat) => setValue('category', cat)}
+                      onChange={handleCategorySelect}
                     />
                     {errors.category && (
                       <p className="text-xs text-red-600 mt-1">{errors.category.message}</p>
@@ -229,9 +255,17 @@ export default function OnboardingPage() {
                         ? 'Set up your Cafe Menu & Beverages'
                         : selectedCategory === 'salon'
                         ? 'Set up your Salon Services & Pricing'
+                        : selectedCategory === 'clinic'
+                        ? 'Set up Doctor Consultations & OPD Tariffs'
                         : selectedCategory === 'gym'
                         ? 'Set up your Gym Memberships & Passes'
-                        : 'Set up your Courses & Fee Structure'}
+                        : selectedCategory === 'tuition'
+                        ? 'Set up your Courses & Fee Structure'
+                        : selectedCategory === 'retail'
+                        ? 'Set up your Retail Product Catalog & Prices'
+                        : selectedCategory === 'real_estate'
+                        ? 'Set up your Property Configurations & Advisory'
+                        : 'Set up your Service Catalog & Pricing'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">
                       Your AI agent uses these exact items to answer customer questions and take orders on WhatsApp.
@@ -241,8 +275,12 @@ export default function OnboardingPage() {
                   {selectedCategory === 'bakery' && <BakeryForm />}
                   {selectedCategory === 'cafe' && <CafeForm />}
                   {selectedCategory === 'salon' && <SalonForm />}
+                  {selectedCategory === 'clinic' && <ClinicForm />}
                   {selectedCategory === 'gym' && <GymForm />}
                   {selectedCategory === 'tuition' && <TuitionForm />}
+                  {selectedCategory === 'retail' && <RetailForm />}
+                  {selectedCategory === 'real_estate' && <RealEstateForm />}
+                  {selectedCategory === 'custom' && <SalonForm />}
                 </div>
               )}
 
@@ -347,9 +385,9 @@ export default function OnboardingPage() {
                   </button>
                 </div>
               )}
-            </form>
-          </FormProvider>
-        </div>
+            </div>
+          </form>
+        </FormProvider>
       </div>
     </main>
   );

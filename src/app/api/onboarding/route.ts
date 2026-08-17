@@ -184,6 +184,23 @@ export async function POST(req: Request) {
         config_key: 'cafe_menu',
         config_value: formData.cafe_menu || [],
       });
+    } else if (category === 'clinic' || category === 'real_estate' || category === 'custom') {
+      configRows.push({
+        business_id: businessId,
+        config_key: 'services',
+        config_value: formData.services || [],
+      });
+      configRows.push({
+        business_id: businessId,
+        config_key: 'staff',
+        config_value: formData.staff || [],
+      });
+    } else if (category === 'retail') {
+      configRows.push({
+        business_id: businessId,
+        config_key: 'menu_items',
+        config_value: formData.menu_items || [],
+      });
     }
 
     // 3. Upsert config rows using admin client

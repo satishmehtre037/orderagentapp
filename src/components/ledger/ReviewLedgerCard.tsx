@@ -23,9 +23,17 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
       ? 'Cafe & Dining (Orders)'
       : category === 'salon'
       ? 'Salon & Spa (Bookings)'
+      : category === 'clinic'
+      ? 'Clinic & Healthcare (Appointments)'
       : category === 'gym'
       ? 'Gym & Fitness (Memberships)'
-      : 'Tuition & Coaching (Leads)';
+      : category === 'tuition'
+      ? 'Tuition & Coaching (Leads)'
+      : category === 'retail'
+      ? 'Boutique & Retail (Orders)'
+      : category === 'real_estate'
+      ? 'Real Estate & Property (Leads)'
+      : 'General Business (Custom AI)';
 
   const businessName = formData?.business_name || 'My Business';
   const rawNumber = formData?.whatsapp_number || '';
@@ -106,11 +114,22 @@ export const ReviewLedgerCard: React.FC<ReviewLedgerCardProps> = ({
                 </div>
               )}
 
-              {category === 'salon' && formData?.services && (
+              {(category === 'salon' || category === 'clinic' || category === 'real_estate' || category === 'custom') && formData?.services && (
                 <div>
                   {formData.services.map((item, idx) => (
                     <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
-                      <span className="font-medium text-slate-800">{item.name} ({item.duration})</span>
+                      <span className="font-medium text-slate-800">{item.name} {item.duration ? `(${item.duration})` : ''}</span>
+                      <span className="font-mono font-semibold text-slate-900">₹{item.price}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(category === 'retail') && formData?.menu_items && (
+                <div>
+                  {formData.menu_items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between px-4 py-2.5 hover:bg-slate-50/50">
+                      <span className="font-medium text-slate-800">{item.name} ({item.unit})</span>
                       <span className="font-mono font-semibold text-slate-900">₹{item.price}</span>
                     </div>
                   ))}

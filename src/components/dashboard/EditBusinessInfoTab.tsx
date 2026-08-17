@@ -10,8 +10,12 @@ import {
 import { BakeryForm } from '../ledger/BakeryForm';
 import { CafeForm } from '../ledger/CafeForm';
 import { SalonForm } from '../ledger/SalonForm';
+import { ClinicForm } from '../ledger/ClinicForm';
 import { GymForm } from '../ledger/GymForm';
 import { TuitionForm } from '../ledger/TuitionForm';
+import { RetailForm } from '../ledger/RetailForm';
+import { RealEstateForm } from '../ledger/RealEstateForm';
+import { CATEGORY_PRESETS } from '../../lib/constants/categoryPresets';
 import { FormSkeleton } from './SkeletonLoaders';
 import {
   Save,
@@ -76,35 +80,21 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
           const rawPhone = bus.whatsapp_number ? bus.whatsapp_number.replace(/\D/g, '') : '';
           const tenDigitPhone = rawPhone.startsWith('91') && rawPhone.length > 10 ? rawPhone.slice(2, 12) : rawPhone.slice(0, 10);
 
+          const preset = CATEGORY_PRESETS[category] || CATEGORY_PRESETS.bakery;
+
           reset({
             business_name: bus.name || 'My Business',
             category: category,
             whatsapp_number: tenDigitPhone,
-            hours: configMap.hours || 'Mon - Sun, 9:00 AM - 9:00 PM',
-            menu_items: configMap.menu_items || [
-              { name: 'Fresh Chocolate Truffle Cake (1kg)', price: 650, unit: 'kg' },
-              { name: 'Red Velvet Pastry', price: 120, unit: 'pcs' },
-              { name: 'Butter Croissant', price: 80, unit: 'pcs' },
-            ],
-            services: configMap.services || [
-              { name: 'Deluxe Haircut & Blowdry', price: 450, duration: '45 mins' },
-            ],
-            gym_plans: configMap.gym_plans || [
-              { name: 'Monthly Membership', price: 1000, duration: '1 Month' },
-              { name: 'Yearly Membership', price: 8000, duration: '1 Year' },
-            ],
-            cafe_menu: configMap.cafe_menu || [
-              { name: 'Cold Brew Coffee', price: 150, category: 'Beverage' },
-              { name: 'Avocado Toast', price: 220, category: 'Food' },
-            ],
-            staff: configMap.staff || [{ name: 'Trainer/Stylist' }],
-            courses: configMap.course_list || [
-              { name: 'Class 10th CBSE Mathematics', fee: '₹2,500/month', batch_timing: 'Mon-Fri 5:00 PM' },
-            ],
-            admission_process: configMap.admission_process || 'Free trial demo class available.',
-            faqs: configMap.faqs || [
-              { question: 'What are your working hours?', answer: '9:00 AM to 9:00 PM.' },
-            ],
+            hours: configMap.hours || preset.hours || 'Mon - Sun, 9:00 AM - 9:00 PM',
+            menu_items: configMap.menu_items || preset.menu_items || [],
+            services: configMap.services || preset.services || [],
+            gym_plans: configMap.gym_plans || preset.gym_plans || [],
+            cafe_menu: configMap.cafe_menu || preset.cafe_menu || [],
+            staff: configMap.staff || preset.staff || [],
+            courses: configMap.course_list || preset.courses || [],
+            admission_process: configMap.admission_process || preset.admission_process || '',
+            faqs: configMap.faqs || preset.faqs || [],
             upi_id: configMap.upi_id || '',
             auto_send_payment_link: configMap.auto_send_payment_link !== false,
             payment_note: configMap.payment_note || 'Please pay via GPay, PhonePe, or Paytm.',
@@ -127,27 +117,27 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
 
   // Handle Save / Update via server API
   const onSaveConfig = async (formData: OnboardingWizardFormData) => {
-    setSaving(true);
-    setErrorMessage(null);
-    setShowSuccessToast(false);
-
     try {
+      setSaving(true);
+      setErrorMessage(null);
+
+      // Build updates array
       const updates: Array<{ config_key: string; config_value: any }> = [
         { config_key: 'hours', config_value: formData.hours || '' },
         { config_key: 'faqs', config_value: formData.faqs || [] },
         { config_key: 'upi_id', config_value: formData.upi_id || '' },
-        { config_key: 'auto_send_payment_link', config_value: formData.auto_send_payment_link ?? true },
+        { config_key: 'auto_send_payment_link', config_value: formData.auto_send_payment_link !== false },
         { config_key: 'payment_note', config_value: formData.payment_note || '' },
         { config_key: 'gst_number', config_value: formData.gst_number || '' },
         { config_key: 'store_address', config_value: formData.store_address || '' },
-        { config_key: 'enable_reminders', config_value: formData.enable_reminders ?? true },
-        { config_key: 'reminder_days', config_value: formData.reminder_days || 27 },
+        { config_key: 'enable_reminders', config_value: formData.enable_reminders !== false },
+        { config_key: 'reminder_days', config_value: formData.reminder_days || 7 },
         { config_key: 'reminder_template', config_value: formData.reminder_template || '' },
       ];
 
       if (category === 'bakery') {
         updates.push({ config_key: 'menu_items', config_value: formData.menu_items || [] });
-      } else if (category === 'salon') {
+      } else if (category === 'salon' || category === 'clinic' || category === 'real_estate' || category === 'custom') {
         updates.push({ config_key: 'services', config_value: formData.services || [] });
         updates.push({ config_key: 'staff', config_value: formData.staff || [] });
       } else if (category === 'gym') {
@@ -158,6 +148,9 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
       } else if (category === 'tuition') {
         updates.push({ config_key: 'course_list', config_value: formData.courses || [] });
         updates.push({ config_key: 'admission_process', config_value: formData.admission_process || '' });
+      } else if (category === 'retail') {
+        updates.push({ config_key: 'menu_items', config_value: formData.menu_items || [] });
+        updates.push({ config_key: 'staff', config_value: formData.staff || [] });
       }
 
       const cleanDigits = (formData.whatsapp_number || '').replace(/\D/g, '').replace(/^91/, '');
@@ -446,8 +439,12 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
                 {category === 'bakery' && <BakeryForm />}
                 {category === 'cafe' && <CafeForm />}
                 {category === 'salon' && <SalonForm />}
+                {category === 'clinic' && <ClinicForm />}
                 {category === 'gym' && <GymForm />}
                 {category === 'tuition' && <TuitionForm />}
+                {category === 'retail' && <RetailForm />}
+                {category === 'real_estate' && <RealEstateForm />}
+                {category === 'custom' && <SalonForm />}
               </div>
 
               {/* Save CTA Button */}

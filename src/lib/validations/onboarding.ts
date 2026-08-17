@@ -43,9 +43,12 @@ export const staffItemSchema = z.object({
 export const onboardingWizardSchema = z.object({
   // Step 1
   business_name: z.string().min(2, 'Please enter your business name'),
-  category: z.enum(['bakery', 'cafe', 'salon', 'gym', 'tuition'], {
-    required_error: 'Please select a business category',
-  }),
+  category: z.enum(
+    ['bakery', 'cafe', 'salon', 'gym', 'tuition', 'clinic', 'retail', 'real_estate', 'custom'],
+    {
+      required_error: 'Please select a business category',
+    }
+  ),
 
   // Step 2 Bakery
   menu_items: z.array(bakeryItemSchema).optional(),
