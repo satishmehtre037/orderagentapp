@@ -138,42 +138,42 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       {/* 2. Apple iOS Frosted Glass Confirmation Alert Modal */}
       {confirmDialog && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
           <div
-            className="w-full max-w-sm rounded-[28px] backdrop-blur-3xl bg-white/88 dark:bg-slate-900/90 text-slate-900 dark:text-white border border-white/50 dark:border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.3)] p-6 space-y-4 text-center transform scale-100 transition-all select-none"
+            className="w-full max-w-sm rounded-[32px] backdrop-blur-3xl bg-[#1E2024]/95 text-white border border-white/20 shadow-[0_30px_70px_rgba(0,0,0,0.6)] p-6 space-y-4 text-center transform scale-100 transition-all select-none"
             style={{
-              boxShadow: '0 32px 64px -16px rgba(0, 0, 0, 0.4), inset 0 1px 2px 0 rgba(255, 255, 255, 0.6)',
+              boxShadow: '0 32px 64px -16px rgba(0, 0, 0, 0.7), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25)',
             }}
           >
             {/* Dialog Icon */}
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-amber-500 shadow-inner">
-              <AlertTriangle className="w-6 h-6" />
+            <div className="mx-auto w-14 h-14 rounded-3xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shadow-inner">
+              <AlertTriangle className="w-7 h-7" />
             </div>
 
             {/* Title & Body */}
-            <div className="space-y-1.5">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-white tracking-tight">
                 {confirmDialog.options.title}
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed font-normal px-1">
                 {confirmDialog.options.message}
               </p>
             </div>
 
             {/* iOS Action Buttons */}
-            <div className="grid grid-cols-2 gap-2.5 pt-2">
+            <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={() => handleConfirmAction(false)}
-                className="w-full py-3 px-4 rounded-2xl bg-slate-200/70 hover:bg-slate-300/70 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all active:scale-98 shadow-sm"
+                className="w-full py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-bold transition-all active:scale-98 border border-white/10"
               >
                 {confirmDialog.options.cancelText || 'Cancel'}
               </button>
               <button
                 onClick={() => handleConfirmAction(true)}
-                className={`w-full py-3 px-4 rounded-2xl text-xs font-bold text-white transition-all active:scale-98 shadow-md ${
+                className={`w-full py-3.5 px-4 rounded-2xl text-xs font-bold text-white transition-all active:scale-98 shadow-lg ${
                   confirmDialog.options.isDestructive
-                    ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/25'
-                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/25'
+                    ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30'
+                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'
                 }`}
               >
                 {confirmDialog.options.confirmText || 'Confirm'}
