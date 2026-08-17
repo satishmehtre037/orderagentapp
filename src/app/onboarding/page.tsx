@@ -111,8 +111,7 @@ export default function OnboardingPage() {
       const valid = await trigger(['business_name', 'category']);
       if (valid) setCurrentStep(2);
     } else if (currentStep === 2) {
-      const valid = await trigger(['hours', 'faqs']);
-      if (valid) setCurrentStep(3);
+      setCurrentStep(3);
     } else if (currentStep === 3) {
       const valid = await trigger(['whatsapp_number']);
       if (valid) setCurrentStep(4);
@@ -170,22 +169,24 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#F8FAFC] py-4 sm:py-10 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900 overflow-x-hidden max-w-full pt-[max(env(safe-area-inset-top),1rem)] pb-safe">
+    <main className="min-h-[100dvh] bg-[#F8FAFC] py-6 sm:py-10 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900 overflow-x-hidden max-w-full pt-[max(env(safe-area-inset-top),2.5rem)] pb-safe">
       <div className="max-w-4xl mx-auto space-y-5 sm:space-y-6">
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img
-              src="/logo.png"
-              alt="Agento AI"
-              className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 shadow-sm flex-shrink-0 p-0.5"
-            />
+            <div className="w-11 h-11 rounded-2xl bg-slate-950 border border-white/20 shadow-md flex items-center justify-center p-1.5 flex-shrink-0">
+              <img
+                src="/logo.png"
+                alt="Agento AI"
+                className="w-full h-full object-contain"
+              />
+            </div>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">Agento AI</h1>
-              <p className="text-[11px] sm:text-xs text-slate-500">Autonomous WhatsApp AI Setup</p>
+              <h1 className="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">Agento AI</h1>
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium">Autonomous WhatsApp AI Setup</p>
             </div>
           </div>
-          <span className="text-xs font-medium px-2.5 py-1 bg-slate-200/70 text-slate-700 rounded-full border border-slate-300/60 flex-shrink-0">
+          <span className="text-xs font-bold px-3 py-1 bg-slate-200/80 text-slate-700 rounded-full border border-slate-300/70 flex-shrink-0">
             Step {currentStep} of 4
           </span>
         </div>
@@ -203,7 +204,15 @@ export default function OnboardingPage() {
 
         {/* Form Body */}
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmitWizard)} className="space-y-6">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (currentStep < 4) {
+                handleNextStep();
+              }
+            }}
+            className="space-y-6"
+          >
             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-8 shadow-sm">
               {/* STEP 1 */}
               {currentStep === 1 && (
