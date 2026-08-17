@@ -12,6 +12,7 @@ import {
   Phone,
   ShieldCheck,
   CheckCheck,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface ConversationsTabProps {
@@ -234,9 +235,9 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
       </div>
 
       {/* Main Studio Split Layout */}
-      <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[600px]">
-        {/* Left Sidebar: Threads List */}
-        <div className="md:col-span-4 border-r border-slate-200/80 flex flex-col h-full bg-slate-50/50">
+      <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden md:grid md:grid-cols-12 min-h-[550px]">
+        {/* Left Sidebar: Threads List (Visible on desktop or when no chat is selected on mobile) */}
+        <div className={`md:col-span-4 border-r border-slate-200/80 flex flex-col h-full bg-slate-50/50 ${selectedCustomerNumber ? 'hidden md:flex' : 'flex'}`}>
           {/* Thread Search Box */}
           <div className="p-3 border-b border-slate-200/80 bg-white">
             <div className="relative">
@@ -252,7 +253,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
           </div>
 
           {/* Threads List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 max-h-[600px]">
             {loading ? (
               <div className="p-4 space-y-3">
                 <ConversationThreadSkeleton />
@@ -296,13 +297,20 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
           </div>
         </div>
 
-        {/* Right Area: Active Chat Transcript & Live Takeover Input */}
-        <div className="md:col-span-8 flex flex-col h-full bg-white">
+        {/* Right Area: Active Chat Transcript & Live Takeover Input (Visible on desktop or when a chat is selected on mobile) */}
+        <div className={`md:col-span-8 flex flex-col h-full bg-white ${selectedCustomerNumber ? 'flex' : 'hidden md:flex'}`}>
           {activeThread ? (
             <>
               {/* Chat Header */}
-              <div className="px-6 py-3.5 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-3.5 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between">
                 <div className="flex items-center space-x-2.5">
+                  <button
+                    onClick={() => setSelectedCustomerNumber(null)}
+                    className="md:hidden p-1.5 -ml-1.5 mr-0.5 rounded-lg hover:bg-slate-200 text-slate-700 transition-colors"
+                    title="Back to inbox"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
                   <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono font-bold text-xs">
                     WA
                   </div>
@@ -317,7 +325,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
 
                 <div className="flex items-center space-x-2">
                   <span className="text-[11px] px-2.5 py-0.5 bg-white rounded-md border border-slate-200 text-slate-600 font-medium">
-                    {activeThread.messages.length} messages
+                    {activeThread.messages.length} msgs
                   </span>
                 </div>
               </div>

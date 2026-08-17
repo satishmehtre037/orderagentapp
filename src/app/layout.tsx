@@ -1,9 +1,18 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#0f172a',
+};
 
 export const metadata: Metadata = {
   title: 'BizBot OS | Autonomous WhatsApp AI Commerce Platform',
-  description: 'Self-serve WhatsApp AI commerce agent for bakeries, cafes, salons, gyms, and tuition centers.',
+  description: 'Self-serve WhatsApp AI commerce agent for bakeries, cafes, salons, gyms, clinics, real estate, and retail businesses.',
 };
 
 export default function RootLayout({

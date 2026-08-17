@@ -15,8 +15,8 @@ const STEPS = [
 
 export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onStepClick }) => {
   return (
-    <div className="w-full bg-slate-50/80 border-b border-slate-200/80 p-3 sm:p-4 rounded-t-xl">
-      <div className="flex items-center justify-between overflow-x-auto gap-2 scrollbar-none">
+    <div className="w-full bg-slate-50/80 border-b border-slate-200/80 p-2.5 sm:p-4 rounded-t-xl">
+      <div className="flex items-center justify-between overflow-x-auto gap-2 no-scrollbar">
         {STEPS.map((step) => {
           const isCurrent = step.id === currentStep;
           const isCompleted = step.id < currentStep;

@@ -225,9 +225,9 @@ export default function DashboardPage() {
       )}
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 pb-28 sm:pb-10">
         {/* Metric Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* Card 1: Subscription Status */}
           <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center justify-between">
             <div className="space-y-1">
@@ -301,8 +301,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Modern Segmented Navigation Tabs */}
-        <div className="bg-slate-200/60 p-1 rounded-xl flex items-center space-x-1 overflow-x-auto">
+        {/* Desktop & Tablet Segmented Navigation Tabs */}
+        <div className="hidden sm:flex bg-slate-200/60 p-1 rounded-xl items-center space-x-1 overflow-x-auto">
           <button
             onClick={() => setActiveTab('orders')}
             className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
@@ -387,8 +387,59 @@ export default function DashboardPage() {
         </div>
       </main>
 
+      {/* Mobile Native Bottom Navigation Bar */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-around pb-safe">
+        <button
+          onClick={() => setActiveTab('orders')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+            activeTab === 'orders'
+              ? 'text-slate-950 font-semibold scale-105'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <ShoppingBag className={`w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className="text-[10px] tracking-tight">{captureTypeLabel}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('conversations')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+            activeTab === 'conversations'
+              ? 'text-slate-950 font-semibold scale-105'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <MessageSquare className={`w-5 h-5 mb-0.5 ${activeTab === 'conversations' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className="text-[10px] tracking-tight">Live Chats</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('edit_info')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+            activeTab === 'edit_info'
+              ? 'text-slate-950 font-semibold scale-105'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Settings className={`w-5 h-5 mb-0.5 ${activeTab === 'edit_info' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className="text-[10px] tracking-tight">Store Info</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('billing')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+            activeTab === 'billing'
+              ? 'text-slate-950 font-semibold scale-105'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <CreditCard className={`w-5 h-5 mb-0.5 ${activeTab === 'billing' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className="text-[10px] tracking-tight">Plan</span>
+        </button>
+      </nav>
+
       {/* Clean Modern Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-16 py-6 text-xs text-slate-500">
+      <footer className="hidden sm:block bg-white border-t border-slate-200 mt-16 py-6 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <span className="font-semibold text-slate-700">BizBot OS</span>
