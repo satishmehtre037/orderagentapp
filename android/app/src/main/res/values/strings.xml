@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">BizBot OS</string>
-    <string name="title_activity_main">BizBot OS</string>
-    <string name="package_name">com.bizbot.os</string>
-    <string name="custom_url_scheme">com.bizbot.os</string>
+    <string name="app_name">Agento AI</string>
+    <string name="title_activity_main">Agento AI</string>
+    <string name="package_name">com.agento.ai</string>
+    <string name="custom_url_scheme">com.agento.ai</string>
 </resources>
