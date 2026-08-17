@@ -62,7 +62,7 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased text-slate-900">
+    <main className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col justify-start sm:justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 pt-[max(env(safe-area-inset-top),1.5rem)] font-sans antialiased text-slate-900 pb-safe">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="inline-flex items-center justify-center mb-4">
           <img
