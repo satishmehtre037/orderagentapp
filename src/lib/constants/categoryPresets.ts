@@ -204,6 +204,48 @@ export const CATEGORY_PRESETS: Record<BusinessCategory, CategoryPresetData> = {
 };
 
 /**
+ * Intelligently resolves category from explicit type or business name hints
+ */
+export const resolveCategoryFromNameOrType = (
+  category?: string,
+  businessName?: string
+): BusinessCategory => {
+  const name = (businessName || '').toLowerCase();
+  
+  if (category && category !== 'bakery' && category !== 'custom') {
+    return category as BusinessCategory;
+  }
+
+  // If category is default/fallback, detect accurately from business name
+  if (/boutique|retail|fashion|apparel|clothing|saree|garment|kurti|dress|wear|collection|store/i.test(name)) {
+    return 'retail';
+  }
+  if (/real\s*estate|property|properties|builder|realty|housing|developer|realtor|estates/i.test(name)) {
+    return 'real_estate';
+  }
+  if (/clinic|hospital|doctor|dr\.|dentist|dental|care|health|pharma|physician|ayurved/i.test(name)) {
+    return 'clinic';
+  }
+  if (/gym|fitness|workout|crossfit|iron|physique|muscle|training/i.test(name)) {
+    return 'gym';
+  }
+  if (/tuition|coaching|classes|academy|institute|learning|education|school|tutorial/i.test(name)) {
+    return 'tuition';
+  }
+  if (/salon|parlour|parlor|spa|beauty|barber|hair|makeup|nails|glow/i.test(name)) {
+    return 'salon';
+  }
+  if (/cafe|coffee|bistro|tea|brew|roasters|lounge|espresso|restro/i.test(name)) {
+    return 'cafe';
+  }
+  if (/cake|bake|bakery|pastry|dessert|sweets|patisserie|chocolat/i.test(name)) {
+    return 'bakery';
+  }
+
+  return (category as BusinessCategory) || 'bakery';
+};
+
+/**
  * Generates rich, vertical-specific WhatsApp reminder and re-engagement messages
  */
 export const getCategoryReminderMessage = (
@@ -212,15 +254,21 @@ export const getCategoryReminderMessage = (
   lastItem?: string,
   customTemplate?: string
 ): string => {
-  if (customTemplate && customTemplate.trim().length > 0) {
-    return customTemplate
-      .replace(/{business_name}/gi, businessName)
-      .replace(/{item}/gi, lastItem || 'your last order/service');
-  }
-
+  const resolvedCategory = resolveCategoryFromNameOrType(category, businessName);
   const cleanName = businessName.trim() || 'Our Business';
 
-  switch (category) {
+  if (customTemplate && customTemplate.trim().length > 0) {
+    // If the custom template contains stale bakery default but business is not bakery, ignore it
+    if (resolvedCategory !== 'bakery' && /craving your favorites|fresh specials/i.test(customTemplate)) {
+      // Ignore stale bakery default template
+    } else {
+      return customTemplate
+        .replace(/{business_name}/gi, cleanName)
+        .replace(/{item}/gi, lastItem || 'your last order/service');
+    }
+  }
+
+  switch (resolvedCategory) {
     case 'real_estate':
       return `🏢 *Exclusive Property Updates from ${cleanName}*\n\nHi! Thank you for connecting with *${cleanName}* regarding our premium property developments.\n\nWe have newly opened unit configurations and special site visit opportunities available this week${lastItem ? ` related to ${lastItem}` : ''}.\n\nWould you like to schedule a private site tour or receive our updated price sheet on WhatsApp?`;
 

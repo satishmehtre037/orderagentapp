@@ -33,7 +33,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-import { getCategoryReminderMessage } from '../../lib/constants/categoryPresets';
+import { getCategoryReminderMessage, resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
 
 interface OrdersLedgerTabProps {
   businessId: string;
@@ -106,6 +106,10 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
   category,
   businessName = 'Our Business',
 }) => {
+  const effectiveCategory = useMemo(() => {
+    return resolveCategoryFromNameOrType(category, businessName);
+  }, [category, businessName]);
+
   const [orders, setOrders] = useState<OrderBookingLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -119,7 +123,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
   // Manual Order Form State
   const [manualForm, setManualForm] = useState({
     customer_number: '',
-    type: category === 'salon' ? 'booking' : category === 'tuition' ? 'lead' : 'order',
+    type: (effectiveCategory === 'salon' || effectiveCategory === 'clinic') ? 'booking' : (effectiveCategory === 'tuition' || effectiveCategory === 'real_estate') ? 'lead' : 'order',
     itemName: '',
     quantity: 1,
     price: 100,
@@ -272,7 +276,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
     setSendingReminder(customerNumber);
     try {
       const msg = getCategoryReminderMessage(
-        category,
+        effectiveCategory,
         businessName || 'Our Business',
         lastItem
       );
@@ -531,19 +535,19 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-slate-100 rounded-lg text-slate-700 flex-shrink-0">
               {React.createElement(
-                (CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).icon,
+                (CATEGORY_HEADER_CONFIG[effectiveCategory] || CATEGORY_HEADER_CONFIG.bakery).icon,
                 { className: 'w-5 h-5' }
               )}
             </div>
             <div>
               <h2 className="text-base font-semibold text-slate-900 flex items-center space-x-2">
-                <span>{(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).title}</span>
+                <span>{(CATEGORY_HEADER_CONFIG[effectiveCategory] || CATEGORY_HEADER_CONFIG.bakery).title}</span>
                 <span className="text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full">
                   {filteredOrders.length}
                 </span>
               </h2>
               <p className="text-xs text-slate-500">
-                {(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).subtitle}
+                {(CATEGORY_HEADER_CONFIG[effectiveCategory] || CATEGORY_HEADER_CONFIG.bakery).subtitle}
               </p>
             </div>
           </div>
@@ -565,7 +569,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
               className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium shadow-sm transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>{(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).recordLabel}</span>
+              <span>{(CATEGORY_HEADER_CONFIG[effectiveCategory] || CATEGORY_HEADER_CONFIG.bakery).recordLabel}</span>
             </button>
 
             <button
@@ -855,21 +859,21 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                           <span>
                             {sendingReminder === order.customer_number
                               ? 'Sending...'
-                              : category === 'real_estate'
+                              : effectiveCategory === 'real_estate'
                               ? 'Send WhatsApp Site Visit / Property Nudge'
-                              : category === 'clinic'
+                              : effectiveCategory === 'clinic'
                               ? 'Send WhatsApp Health Checkup Reminder'
-                              : category === 'gym'
+                              : effectiveCategory === 'gym'
                               ? 'Send WhatsApp Membership Renewal Nudge'
-                              : category === 'salon'
+                              : effectiveCategory === 'salon'
                               ? 'Send WhatsApp Grooming Refresh Nudge'
-                              : category === 'tuition'
+                              : effectiveCategory === 'tuition'
                               ? 'Send WhatsApp Batch & Admission Update'
-                              : category === 'retail'
+                              : effectiveCategory === 'retail'
                               ? 'Send WhatsApp New Collection Nudge'
-                              : category === 'cafe'
+                              : effectiveCategory === 'cafe'
                               ? 'Send WhatsApp Special Menu Nudge'
-                              : category === 'bakery'
+                              : effectiveCategory === 'bakery'
                               ? 'Send WhatsApp Fresh Treat Nudge'
                               : 'Send WhatsApp Re-Engagement Nudge'}
                           </span>
@@ -892,7 +896,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
               <h3 className="text-sm font-semibold text-slate-900 flex items-center space-x-2">
                 <Plus className="w-4 h-4" />
                 <span>
-                  Record {(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).recordLabel.replace('Record ', '')}
+                  Record {(CATEGORY_HEADER_CONFIG[effectiveCategory] || CATEGORY_HEADER_CONFIG.bakery).recordLabel.replace('Record ', '')}
                 </span>
               </h3>
               <button
@@ -921,13 +925,13 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
-                    {category === 'salon' || category === 'clinic'
+                    {effectiveCategory === 'salon' || effectiveCategory === 'clinic'
                       ? 'Service / Doctor Name *'
-                      : category === 'real_estate'
+                      : effectiveCategory === 'real_estate'
                       ? 'Property / Unit Name *'
-                      : category === 'tuition'
+                      : effectiveCategory === 'tuition'
                       ? 'Course / Class Name *'
-                      : category === 'gym'
+                      : effectiveCategory === 'gym'
                       ? 'Plan / Pass Name *'
                       : 'Item / Product Name *'}
                   </label>
@@ -935,17 +939,17 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                     type="text"
                     required
                     placeholder={
-                      category === 'salon'
+                      effectiveCategory === 'salon'
                         ? 'e.g. Haircut & Styling'
-                        : category === 'clinic'
+                        : effectiveCategory === 'clinic'
                         ? 'e.g. General Consultation OPD'
-                        : category === 'real_estate'
+                        : effectiveCategory === 'real_estate'
                         ? 'e.g. 2 BHK Luxury Flat Visit'
-                        : category === 'gym'
+                        : effectiveCategory === 'gym'
                         ? 'e.g. Monthly Standard Pass'
-                        : category === 'tuition'
+                        : effectiveCategory === 'tuition'
                         ? 'e.g. Class 10 Math Admission'
-                        : category === 'retail'
+                        : effectiveCategory === 'retail'
                         ? 'e.g. Silk Kurti (M)'
                         : 'e.g. 1kg Truffle Cake'
                     }

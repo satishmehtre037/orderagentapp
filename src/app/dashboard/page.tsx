@@ -9,6 +9,7 @@ import { OrdersLedgerTab } from '../../components/dashboard/OrdersLedgerTab';
 import { ConversationsTab } from '../../components/dashboard/ConversationsTab';
 import { EditBusinessInfoTab } from '../../components/dashboard/EditBusinessInfoTab';
 import { BillingTab } from '../../components/dashboard/BillingTab';
+import { resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
 import {
   Bot,
   ShoppingBag,
@@ -76,9 +77,17 @@ export default function DashboardPage() {
       const resData = await res.json();
 
       if (resData.business) {
-        setBusiness(resData.business as Business);
+        const rawCat = resData.configs?.category || resData.business.category;
+        const resolvedCategory = resolveCategoryFromNameOrType(rawCat, resData.business.name);
+        const resolvedBiz = {
+          ...resData.business,
+          category: resolvedCategory,
+        };
+
+        setBusiness(resolvedBiz as Business);
         if (typeof window !== 'undefined') {
           localStorage.setItem('biz_id', resData.business.id);
+          localStorage.setItem('biz_category', resolvedCategory);
           if (resData.business.owner_email) {
             localStorage.setItem('biz_email', resData.business.owner_email);
           }

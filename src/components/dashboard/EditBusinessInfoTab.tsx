@@ -15,7 +15,7 @@ import { GymForm } from '../ledger/GymForm';
 import { TuitionForm } from '../ledger/TuitionForm';
 import { RetailForm } from '../ledger/RetailForm';
 import { RealEstateForm } from '../ledger/RealEstateForm';
-import { CATEGORY_PRESETS } from '../../lib/constants/categoryPresets';
+import { CATEGORY_PRESETS, resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
 import { FormSkeleton } from './SkeletonLoaders';
 import {
   Save,
@@ -80,11 +80,12 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
           const rawPhone = bus.whatsapp_number ? bus.whatsapp_number.replace(/\D/g, '') : '';
           const tenDigitPhone = rawPhone.startsWith('91') && rawPhone.length > 10 ? rawPhone.slice(2, 12) : rawPhone.slice(0, 10);
 
-          const preset = CATEGORY_PRESETS[category] || CATEGORY_PRESETS.bakery;
+          const effectiveCategory = resolveCategoryFromNameOrType(configMap.category || bus.category || category, bus.name);
+          const preset = CATEGORY_PRESETS[effectiveCategory] || CATEGORY_PRESETS.bakery;
 
           reset({
             business_name: bus.name || 'My Business',
-            category: category,
+            category: effectiveCategory,
             whatsapp_number: tenDigitPhone,
             hours: configMap.hours || preset.hours || 'Mon - Sun, 9:00 AM - 9:00 PM',
             menu_items: configMap.menu_items || preset.menu_items || [],

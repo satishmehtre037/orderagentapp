@@ -68,6 +68,10 @@ export async function GET(req: Request) {
       configMap[item.config_key] = item.config_value;
     });
 
+    if (configMap.category) {
+      business.category = configMap.category;
+    }
+
     return NextResponse.json({ business, configs: configMap });
   } catch (err: any) {
     console.error('[API Business Exception]:', err);
