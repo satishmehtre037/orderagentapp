@@ -43,16 +43,20 @@ export default function DashboardPage() {
   const [pauseLoading, setPauseLoading] = useState(false);
 
   const toggleBotPause = async () => {
-    if (!business?.id) return;
     try {
       setPauseLoading(true);
       const nextPausedState = !isBotPaused;
       setIsBotPaused(nextPausedState);
+
+      const bizId = business?.id || (typeof window !== 'undefined' ? localStorage.getItem('biz_id') : null);
+      const bizEmail = business?.owner_email || (typeof window !== 'undefined' ? localStorage.getItem('biz_email') : null);
+
       await fetch('/api/business', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessId: business.id,
+          businessId: bizId,
+          email: bizEmail,
           configs: [{ config_key: 'bot_paused', config_value: nextPausedState }],
         }),
       });
@@ -199,7 +203,28 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Quick Bot Toggle */}
+            <button
+              onClick={toggleBotPause}
+              disabled={pauseLoading}
+              className={`inline-flex items-center space-x-1.5 text-xs font-medium px-2.5 sm:px-3 py-1.5 rounded-md border transition-all ${
+                isBotPaused
+                  ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+              }`}
+              title="Click to pause or activate AI agent replies"
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isBotPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
+                }`}
+              />
+              <span className="hidden xs:inline sm:inline">
+                {pauseLoading ? 'Updating...' : isBotPaused ? 'Agent Paused' : 'Agent Active'}
+              </span>
+            </button>
+
             <a
               href="https://web.whatsapp.com"
               target="_blank"

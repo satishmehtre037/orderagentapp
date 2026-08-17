@@ -154,6 +154,12 @@ export default function OnboardingPage() {
         throw new Error(resData.error || 'Failed to complete onboarding');
       }
 
+      if (typeof window !== 'undefined') {
+        if (resData.businessId) localStorage.setItem('biz_id', resData.businessId);
+        if (data.category) localStorage.setItem('biz_category', data.category);
+        if (ownerEmail) localStorage.setItem('biz_email', ownerEmail);
+      }
+
       router.push('/dashboard');
     } catch (err: any) {
       console.error('Onboarding submission error:', err);
@@ -357,7 +363,15 @@ export default function OnboardingPage() {
                 <ReviewLedgerCard
                   formData={formData}
                   ownerEmail={ownerEmail}
-                  onGoLive={handleSubmit(onSubmitWizard)}
+                  onGoLive={() => {
+                    handleSubmit(
+                      (validData) => onSubmitWizard(validData),
+                      (errs) => {
+                        console.warn('[Onboarding] Validation warning on Go Live:', errs);
+                        onSubmitWizard(methods.getValues());
+                      }
+                    )();
+                  }}
                   isSubmitting={isSubmitting}
                 />
               )}

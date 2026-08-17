@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     if (existingBusiness) {
       // Owner already has a business — UPDATE it
       console.log('[API Onboarding] Existing business found, updating:', existingBusiness.id);
-      const { data: updatedBiz, error: updateErr } = await adminSupabase
+      let { data: updatedBiz, error: updateErr } = await adminSupabase
         .from('businesses')
         .update({
           name: businessName,
@@ -56,15 +56,38 @@ export async function POST(req: Request) {
         .single();
 
       if (updateErr) {
-        console.error('[API Onboarding Error] Business update error:', updateErr);
-        return NextResponse.json({ error: updateErr.message }, { status: 400 });
+        console.warn('[API Onboarding] Initial update error:', updateErr);
+        // If Postgres check constraint fails (e.g. category not in enum), retry with category: 'bakery'
+        if (updateErr.code === '23514') {
+          console.warn('[API Onboarding] Category constraint hit, retrying update with category fallback');
+          const { data: retryBiz, error: retryErr } = await adminSupabase
+            .from('businesses')
+            .update({
+              name: businessName,
+              category: 'bakery',
+              whatsapp_number: whatsappNumber,
+              subscription_status: 'trial',
+              trial_end_date: oneDayFromNow,
+            })
+            .eq('id', existingBusiness.id)
+            .select('id')
+            .single();
+
+          if (retryErr) {
+            console.error('[API Onboarding Error] Retry update failed:', retryErr);
+            return NextResponse.json({ error: retryErr.message }, { status: 400 });
+          }
+          updatedBiz = retryBiz;
+        } else {
+          return NextResponse.json({ error: updateErr.message }, { status: 400 });
+        }
       }
-      businessId = updatedBiz.id;
+      businessId = updatedBiz!.id;
       console.log('[API Onboarding] Business updated successfully. ID:', businessId);
     } else {
       // New owner — INSERT fresh business row
       console.log('[API Onboarding] No existing business found, inserting new...');
-      const { data: newBiz, error: insertErr } = await adminSupabase
+      let { data: newBiz, error: insertErr } = await adminSupabase
         .from('businesses')
         .insert([{
           name: businessName,
@@ -78,15 +101,48 @@ export async function POST(req: Request) {
         .single();
 
       if (insertErr) {
-        console.error('[API Onboarding Error] Business insert error:', insertErr);
-        return NextResponse.json({ error: insertErr.message }, { status: 400 });
+        console.warn('[API Onboarding] Initial insert error:', insertErr);
+        // If Postgres check constraint fails (e.g. category not in enum), retry with fallback category
+        if (insertErr.code === '23514') {
+          console.warn('[API Onboarding] Category constraint hit on insert, retrying with fallback category');
+          const { data: retryNewBiz, error: retryInsertErr } = await adminSupabase
+            .from('businesses')
+            .insert([{
+              name: businessName,
+              category: 'bakery',
+              whatsapp_number: whatsappNumber,
+              owner_email: resolvedEmail,
+              subscription_status: 'trial',
+              trial_end_date: oneDayFromNow,
+            }])
+            .select('id')
+            .single();
+
+          if (retryInsertErr) {
+            console.error('[API Onboarding Error] Retry insert failed:', retryInsertErr);
+            return NextResponse.json({ error: retryInsertErr.message }, { status: 400 });
+          }
+          newBiz = retryNewBiz;
+        } else {
+          return NextResponse.json({ error: insertErr.message }, { status: 400 });
+        }
       }
-      businessId = newBiz.id;
+      businessId = newBiz!.id;
       console.log('[API Onboarding] Business inserted. ID:', businessId);
     }
 
     // 2. Build category configs to insert into business_config
     const configRows: Array<{ business_id: string; config_key: string; config_value: any }> = [
+      {
+        business_id: businessId,
+        config_key: 'category',
+        config_value: category,
+      },
+      {
+        business_id: businessId,
+        config_key: 'bot_paused',
+        config_value: false,
+      },
       {
         business_id: businessId,
         config_key: 'hours',

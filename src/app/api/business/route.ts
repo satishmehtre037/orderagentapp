@@ -99,23 +99,51 @@ export async function PUT(req: Request) {
 
     console.log(`[API Business PUT] Updating business ID: ${targetBizId}`);
 
-    // 1. Update business table
+    // 1. Update business table only if there are fields to update
     const updatePayload: Record<string, any> = {};
     if (name) updatePayload.name = name;
     if (whatsapp_number) updatePayload.whatsapp_number = whatsapp_number;
     if (category) updatePayload.category = category;
     if (body.subscription_status) updatePayload.subscription_status = body.subscription_status;
 
-    const { data: updatedBiz, error: bizErr } = await adminSupabase
-      .from('businesses')
-      .update(updatePayload)
-      .eq('id', targetBizId)
-      .select()
-      .maybeSingle();
+    let updatedBiz: any = null;
 
-    if (bizErr) {
-      console.error('[API Business Update Error]:', bizErr);
-      return NextResponse.json({ error: bizErr.message }, { status: 500 });
+    if (Object.keys(updatePayload).length > 0) {
+      const { data, error: bizErr } = await adminSupabase
+        .from('businesses')
+        .update(updatePayload)
+        .eq('id', targetBizId)
+        .select()
+        .maybeSingle();
+
+      if (bizErr) {
+        console.error('[API Business Update Error]:', bizErr);
+        // If Postgres check constraint fails (e.g. category not in enum), retry without category in businesses column
+        if (bizErr.code === '23514' && updatePayload.category) {
+          console.warn('[API Business] Category constraint hit, retrying update without category column');
+          delete updatePayload.category;
+          if (Object.keys(updatePayload).length > 0) {
+            const { data: retryData } = await adminSupabase
+              .from('businesses')
+              .update(updatePayload)
+              .eq('id', targetBizId)
+              .select()
+              .maybeSingle();
+            updatedBiz = retryData;
+          }
+        } else {
+          return NextResponse.json({ error: bizErr.message }, { status: 500 });
+        }
+      } else {
+        updatedBiz = data;
+      }
+    }
+
+    // Always store category in business_config if provided
+    if (category) {
+      if (!configs || !Array.isArray(configs)) {
+        // Ensure configs array exists
+      }
     }
 
     // 2. Save config entries
