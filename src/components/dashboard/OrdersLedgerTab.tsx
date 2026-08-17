@@ -8,6 +8,10 @@ import {
   Scissors,
   Dumbbell,
   GraduationCap,
+  Cake,
+  Stethoscope,
+  Building2,
+  Sparkles,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -34,6 +38,66 @@ interface OrdersLedgerTabProps {
   category: BusinessCategory;
   businessName?: string;
 }
+
+const CATEGORY_HEADER_CONFIG: Record<
+  BusinessCategory,
+  { title: string; subtitle: string; icon: React.ElementType; recordLabel: string }
+> = {
+  bakery: {
+    title: 'Bakery Orders & Deliveries',
+    subtitle: 'Fresh bakery orders, cake weights & delivery addresses captured by AI',
+    icon: Cake,
+    recordLabel: 'Record Order',
+  },
+  cafe: {
+    title: 'Cafe Orders & Reservations',
+    subtitle: 'Food orders, table reservations & takeaways captured by AI',
+    icon: Coffee,
+    recordLabel: 'Record Order',
+  },
+  salon: {
+    title: 'Salon Appointments & Services',
+    subtitle: 'Stylist bookings, haircuts, spa & grooming appointments captured by AI',
+    icon: Scissors,
+    recordLabel: 'Record Appointment',
+  },
+  clinic: {
+    title: 'Clinic OPD & Doctor Appointments',
+    subtitle: 'Patient consultations, doctor appointments & health checkups captured by AI',
+    icon: Stethoscope,
+    recordLabel: 'Record Appointment',
+  },
+  gym: {
+    title: 'Gym Memberships & Passes',
+    subtitle: 'Member passes, trial inquiries & renewal plans captured by AI',
+    icon: Dumbbell,
+    recordLabel: 'Record Pass / Lead',
+  },
+  tuition: {
+    title: 'Tuition Inquiries & Admissions',
+    subtitle: 'Student admissions, batch timings & demo class leads captured by AI',
+    icon: GraduationCap,
+    recordLabel: 'Record Inquiry',
+  },
+  retail: {
+    title: 'Boutique & Retail Shopping Orders',
+    subtitle: 'Apparel orders, product inquiries & home delivery requests captured by AI',
+    icon: ShoppingBag,
+    recordLabel: 'Record Order',
+  },
+  real_estate: {
+    title: 'Property Inquiries & Site Visits',
+    subtitle: 'Buyer leads, property visits & brochure requests captured by AI',
+    icon: Building2,
+    recordLabel: 'Record Site Visit',
+  },
+  custom: {
+    title: 'Client Inquiries & Bookings',
+    subtitle: 'Custom business requests, leads & appointments captured by AI',
+    icon: Sparkles,
+    recordLabel: 'Record Entry',
+  },
+};
 
 export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
   businessId,
@@ -461,39 +525,24 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
       {/* Main Ledger Card */}
       <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
         {/* Header Toolbar */}
-        <div className="px-6 py-4 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="p-4 sm:px-6 sm:py-4 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-slate-100 rounded-lg text-slate-700">
-              {category === 'bakery' ? (
-                <ShoppingBag className="w-5 h-5" />
-              ) : category === 'cafe' ? (
-                <Coffee className="w-5 h-5" />
-              ) : category === 'salon' ? (
-                <Scissors className="w-5 h-5" />
-              ) : category === 'gym' ? (
-                <Dumbbell className="w-5 h-5" />
-              ) : (
-                <GraduationCap className="w-5 h-5" />
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-700 flex-shrink-0">
+              {React.createElement(
+                (CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).icon,
+                { className: 'w-5 h-5' }
               )}
             </div>
             <div>
               <h2 className="text-base font-semibold text-slate-900 flex items-center space-x-2">
-                <span>
-                  {category === 'bakery'
-                    ? 'Bakery Orders & Deliveries'
-                    : category === 'cafe'
-                    ? 'Cafe Orders & Reservations'
-                    : category === 'salon'
-                    ? 'Salon Appointments & Services'
-                    : category === 'gym'
-                    ? 'Gym Memberships & Passes'
-                    : 'Tuition Inquiries & Admissions'}
-                </span>
+                <span>{(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).title}</span>
                 <span className="text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full">
                   {filteredOrders.length}
                 </span>
               </h2>
-              <p className="text-xs text-slate-500">Structured transactions captured automatically by your WhatsApp AI</p>
+              <p className="text-xs text-slate-500">
+                {(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).subtitle}
+              </p>
             </div>
           </div>
 
@@ -514,7 +563,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
               className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium shadow-sm transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Record Order</span>
+              <span>{(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).recordLabel}</span>
             </button>
 
             <button
@@ -820,7 +869,9 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900 flex items-center space-x-2">
                 <Plus className="w-4 h-4" />
-                <span>Record Walk-in / Phone Order</span>
+                <span>
+                  Record {(CATEGORY_HEADER_CONFIG[category] || CATEGORY_HEADER_CONFIG.bakery).recordLabel.replace('Record ', '')}
+                </span>
               </h3>
               <button
                 onClick={() => setIsManualModalOpen(false)}
@@ -848,12 +899,34 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Item / Service Name *
+                    {category === 'salon' || category === 'clinic'
+                      ? 'Service / Doctor Name *'
+                      : category === 'real_estate'
+                      ? 'Property / Unit Name *'
+                      : category === 'tuition'
+                      ? 'Course / Class Name *'
+                      : category === 'gym'
+                      ? 'Plan / Pass Name *'
+                      : 'Item / Product Name *'}
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 1kg Truffle Cake"
+                    placeholder={
+                      category === 'salon'
+                        ? 'e.g. Haircut & Styling'
+                        : category === 'clinic'
+                        ? 'e.g. General Consultation OPD'
+                        : category === 'real_estate'
+                        ? 'e.g. 2 BHK Luxury Flat Visit'
+                        : category === 'gym'
+                        ? 'e.g. Monthly Standard Pass'
+                        : category === 'tuition'
+                        ? 'e.g. Class 10 Math Admission'
+                        : category === 'retail'
+                        ? 'e.g. Silk Kurti (M)'
+                        : 'e.g. 1kg Truffle Cake'
+                    }
                     value={manualForm.itemName}
                     onChange={(e) => setManualForm({ ...manualForm, itemName: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900"

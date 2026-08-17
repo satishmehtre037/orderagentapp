@@ -25,6 +25,12 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
+  Stethoscope,
+  Building2,
+  Scissors,
+  Dumbbell,
+  GraduationCap,
+  Coffee,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -140,11 +146,34 @@ export default function DashboardPage() {
     (business?.subscription_status === 'trial' && isTrialEnded);
 
   const captureTypeLabel =
-    business?.category === 'salon'
+    business?.category === 'salon' || business?.category === 'clinic'
       ? 'Appointments'
       : business?.category === 'tuition'
       ? 'Inquiries'
+      : business?.category === 'real_estate'
+      ? 'Site Visits'
+      : business?.category === 'gym'
+      ? 'Passes & Plans'
       : 'Orders';
+
+  const renderCategoryIcon = (cls: string) => {
+    switch (business?.category) {
+      case 'clinic':
+        return <Stethoscope className={cls} />;
+      case 'real_estate':
+        return <Building2 className={cls} />;
+      case 'salon':
+        return <Scissors className={cls} />;
+      case 'gym':
+        return <Dumbbell className={cls} />;
+      case 'tuition':
+        return <GraduationCap className={cls} />;
+      case 'cafe':
+        return <Coffee className={cls} />;
+      default:
+        return <ShoppingBag className={cls} />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col antialiased text-slate-900 font-sans">
@@ -158,44 +187,29 @@ export default function DashboardPage() {
               </div>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h1 className="text-sm font-semibold text-slate-900 leading-none">
-                    {loading ? 'Loading...' : business?.name}
+                  <h1 className="text-sm font-bold text-slate-900 leading-tight">
+                    {business?.name || 'BizBot OS Store'}
                   </h1>
-                  <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded capitalize border border-slate-200/60">
-                    {business?.category || 'Store'}
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded-md font-semibold">
+                    {business?.category || 'bakery'}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1">WhatsApp Commerce Console</p>
+                <p className="text-xs text-slate-500">Autonomous WhatsApp AI Concierge</p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Agent Live / Paused Status Toggle */}
-            <button
-              onClick={toggleBotPause}
-              disabled={pauseLoading}
-              className={`inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-md border transition-all ${
-                isBotPaused
-                  ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-              }`}
+            <a
+              href="https://web.whatsapp.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:inline-flex items-center space-x-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md border border-emerald-200 transition-colors"
             >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isBotPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
-                }`}
-              />
-              <span>{pauseLoading ? 'Updating...' : isBotPaused ? 'AI Agent Paused' : 'AI Agent Active'}</span>
-            </button>
-
-            {/* Connected Number Pill */}
-            {business?.whatsapp_number && (
-              <div className="hidden sm:flex items-center space-x-1.5 text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-md border border-slate-200">
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                <span className="font-mono text-[11px]">{business.whatsapp_number}</span>
-              </div>
-            )}
+              <Phone className="w-3.5 h-3.5" />
+              <span>WhatsApp Web</span>
+              <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
+            </a>
 
             <button
               onClick={handleLogout}
@@ -311,7 +325,7 @@ export default function DashboardPage() {
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
-            <ShoppingBag className="w-4 h-4" />
+            {renderCategoryIcon('w-4 h-4')}
             <span>{captureTypeLabel} & Ledger</span>
           </button>
 
@@ -397,7 +411,9 @@ export default function DashboardPage() {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          <ShoppingBag className={`w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          {renderCategoryIcon(
+            `w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`
+          )}
           <span className="text-[10px] tracking-tight">{captureTypeLabel}</span>
         </button>
 
