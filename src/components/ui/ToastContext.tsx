@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { CheckCircle2, AlertCircle, Info, MessageSquare, X, AlertTriangle } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'info' | 'whatsapp';
@@ -34,25 +34,42 @@ export const useToast = () => useContext(ToastContext);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<(ToastOptions & { id: number }) | null>(null);
+  const [isExiting, setIsExiting] = useState(false);
+  const dismissTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const [confirmDialog, setConfirmDialog] = useState<{
     options: ConfirmOptions;
     resolve: (value: boolean) => void;
   } | null>(null);
 
+  const dismissToast = useCallback(() => {
+    setIsExiting(true);
+    if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    if (autoHideTimeoutRef.current) clearTimeout(autoHideTimeoutRef.current);
+
+    dismissTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      setIsExiting(false);
+    }, 320);
+  }, []);
+
   const showToast = useCallback((options: ToastOptions | string, type: ToastType = 'info') => {
+    if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    if (autoHideTimeoutRef.current) clearTimeout(autoHideTimeoutRef.current);
+
     const toastData: ToastOptions = typeof options === 'string'
       ? { message: options, type }
       : { type: 'info', ...options };
 
     const id = Date.now();
+    setIsExiting(false);
     setToast({ ...toastData, id });
 
-    const timeout = setTimeout(() => {
-      setToast((current) => (current?.id === id ? null : current));
-    }, toastData.duration || 3800);
-
-    return () => clearTimeout(timeout);
-  }, []);
+    autoHideTimeoutRef.current = setTimeout(() => {
+      dismissToast();
+    }, toastData.duration || 4000);
+  }, [dismissToast]);
 
   const showConfirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -67,20 +84,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const dismissToast = () => setToast(null);
-
   return (
     <ToastContext.Provider value={{ showToast, showConfirm }}>
       {children}
 
       {/* 1. Apple iPhone Dynamic Island / Frosted Glass Push Toast Notification */}
       {toast && (
-        <div className="fixed top-4 left-0 right-0 z-[9999] flex justify-center px-4 pointer-events-none animate-in fade-in slide-in-from-top-6 duration-300">
+        <div className="fixed top-2 sm:top-4 left-0 right-0 z-[9999] flex justify-center px-4 pointer-events-none pt-[max(env(safe-area-inset-top),1.5rem)]">
           <div
             onClick={dismissToast}
-            className="pointer-events-auto cursor-pointer w-full max-w-sm sm:max-w-md rounded-3xl backdrop-blur-3xl bg-slate-900/90 text-white border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.45)] p-4 flex items-start space-x-3.5 transition-all transform active:scale-98 select-none"
+            className={`pointer-events-auto cursor-pointer w-full max-w-sm sm:max-w-md rounded-3xl backdrop-blur-3xl bg-slate-900/95 text-white border border-white/20 p-4 flex items-start space-x-3.5 select-none transition-all duration-300 transform ${
+              isExiting
+                ? '-translate-y-16 opacity-0 scale-95 pointer-events-none ease-in'
+                : 'translate-y-0 opacity-100 scale-100 ease-out active:scale-98'
+            }`}
             style={{
-              boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25)',
+              boxShadow: '0 28px 60px -12px rgba(0, 0, 0, 0.65), inset 0 1px 2px 0 rgba(255, 255, 255, 0.3)',
+              transitionTimingFunction: isExiting ? 'cubic-bezier(0.4, 0, 1, 1)' : 'cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             {/* Notification App Icon */}
