@@ -59,17 +59,6 @@ input, textarea, select {
   padding-top: max(1.5rem, env(safe-area-inset-top, 1.5rem));
 }
 
-/* Razorpay Checkout Modal Safe Area Fixes */
-.razorpay-container,
-.razorpay-backdrop,
-#razorpay-checkout-frame,
-iframe[name^="razorpay"],
-iframe.razorpay-checkout-frame {
-  top: max(env(safe-area-inset-top, 0px), 36px) !important;
-  height: calc(100% - max(env(safe-area-inset-top, 0px), 36px)) !important;
-  box-sizing: border-box !important;
-}
-
 /* Hide scrollbar for clean horizontal tab lists */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

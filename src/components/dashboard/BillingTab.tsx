@@ -290,24 +290,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({
 
       rzp.open();
 
-      // Ensure Razorpay container has safe-area top offset on Android
-      const applySafeTop = () => {
-        const containers = document.querySelectorAll(
-          '.razorpay-container, .razorpay-backdrop, #razorpay-checkout-frame, iframe[name^="razorpay"], iframe.razorpay-checkout-frame'
-        );
-        containers.forEach((el: any) => {
-          if (el && el.style) {
-            el.style.setProperty('top', '40px', 'important');
-            el.style.setProperty('height', 'calc(100% - 40px)', 'important');
-          }
-        });
-      };
-
-      setTimeout(applySafeTop, 50);
-      setTimeout(applySafeTop, 200);
-      setTimeout(applySafeTop, 500);
-      setTimeout(applySafeTop, 1000);
-
       // Auto-reset loading state after modal opens so button is never stuck
       setTimeout(() => {
         setLoading(false);
