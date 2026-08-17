@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 
 import { getCategoryReminderMessage, resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
+import { useToast } from '../ui/ToastContext';
 
 interface OrdersLedgerTabProps {
   businessId: string;
@@ -110,6 +111,7 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
     return resolveCategoryFromNameOrType(category, businessName);
   }, [category, businessName]);
 
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<OrderBookingLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -295,12 +297,24 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
       const resData = await res.json();
 
       if (res.ok && resData.success) {
-        alert(`✅ WhatsApp reminder successfully dispatched to ${customerNumber} for ${businessName || 'your business'}!`);
+        showToast({
+          title: 'WhatsApp Nudge Dispatched',
+          message: `Sent to ${customerNumber} for ${businessName || 'your business'}`,
+          type: 'whatsapp',
+        });
       } else {
-        alert(resData.error || 'Failed to dispatch reminder.');
+        showToast({
+          title: 'Dispatch Failed',
+          message: resData.error || 'Failed to dispatch reminder.',
+          type: 'error',
+        });
       }
     } catch (err: any) {
-      alert(`Error sending reminder: ${err.message}`);
+      showToast({
+        title: 'Error Sending Reminder',
+        message: err.message,
+        type: 'error',
+      });
     } finally {
       setSendingReminder(null);
     }
@@ -310,7 +324,11 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
   const handleCreateManualOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualForm.customer_number || !manualForm.itemName) {
-      alert('Please enter a customer number and item name.');
+      showToast({
+        title: 'Missing Required Fields',
+        message: 'Please enter a customer number and item name.',
+        type: 'error',
+      });
       return;
     }
 
@@ -351,6 +369,11 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
 
       if (resData.order) {
         setOrders((prev) => [resData.order, ...prev]);
+        showToast({
+          title: 'Order Created Successfully',
+          message: `Recorded for customer ${manualForm.customer_number}.`,
+          type: 'success',
+        });
       }
 
       setIsManualModalOpen(false);
@@ -365,7 +388,11 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
       });
     } catch (err: any) {
       console.error('Manual order creation error:', err);
-      alert(`Error: ${err.message}`);
+      showToast({
+        title: 'Order Creation Error',
+        message: err.message,
+        type: 'error',
+      });
     } finally {
       setCreatingOrder(false);
     }
@@ -374,7 +401,11 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
   // Export Orders to CSV
   const handleExportCSV = () => {
     if (orders.length === 0) {
-      alert('No transactions to export.');
+      showToast({
+        title: 'Empty Ledger',
+        message: 'No transactions found to export.',
+        type: 'info',
+      });
       return;
     }
 

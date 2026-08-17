@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastProvider } from '../components/ui/ToastContext';
+
 export default function RootLayout({
   children,
 }: {
@@ -31,7 +33,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-slate-900 selection:text-white font-sans">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

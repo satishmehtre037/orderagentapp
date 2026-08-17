@@ -14,12 +14,14 @@ import {
   CheckCheck,
   ArrowLeft,
 } from 'lucide-react';
+import { useToast } from '../ui/ToastContext';
 
 interface ConversationsTabProps {
   businessId: string;
 }
 
 export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }) => {
+  const { showToast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -200,7 +202,11 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
       }
     } catch (err: any) {
       console.error('Manual reply error:', err);
-      alert(`Error sending message: ${err.message}`);
+      showToast({
+        title: 'WhatsApp Send Error',
+        message: err.message,
+        type: 'error',
+      });
     } finally {
       setSendingReply(false);
     }

@@ -31,6 +31,7 @@ import {
   Building2,
   ShieldAlert,
 } from 'lucide-react';
+import { useToast } from '../ui/ToastContext';
 
 interface EditBusinessInfoTabProps {
   businessId: string;
@@ -43,6 +44,7 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
   category,
   onUpdated,
 }) => {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -205,7 +207,11 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
       await supabaseClient.auth.signOut();
       window.location.href = '/signup';
     } catch (err: any) {
-      alert(`Delete failed: ${err.message}`);
+      showToast({
+        title: 'Delete Failed',
+        message: err.message,
+        type: 'error',
+      });
       setDeleting(false);
     }
   };

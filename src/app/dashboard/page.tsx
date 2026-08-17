@@ -158,19 +158,21 @@ export default function DashboardPage() {
     business?.subscription_status === 'expired' ||
     (business?.subscription_status === 'trial' && isTrialEnded);
 
+  const effectiveCategory = resolveCategoryFromNameOrType(business?.category, business?.name);
+
   const captureTypeLabel =
-    business?.category === 'salon' || business?.category === 'clinic'
+    effectiveCategory === 'salon' || effectiveCategory === 'clinic'
       ? 'Appointments'
-      : business?.category === 'tuition'
+      : effectiveCategory === 'tuition'
       ? 'Inquiries'
-      : business?.category === 'real_estate'
+      : effectiveCategory === 'real_estate'
       ? 'Site Visits'
-      : business?.category === 'gym'
+      : effectiveCategory === 'gym'
       ? 'Passes & Plans'
       : 'Orders';
 
   const renderCategoryIcon = (cls: string) => {
-    switch (business?.category) {
+    switch (effectiveCategory) {
       case 'clinic':
         return <Stethoscope className={cls} />;
       case 'real_estate':
@@ -189,27 +191,27 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col antialiased text-slate-900 font-sans">
-      {/* Sleek Top Navigation Bar */}
-      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col antialiased text-slate-900 font-sans">
+      {/* Sleek iOS Frosted Top Navigation Bar */}
+      <header className="backdrop-blur-2xl bg-white/75 border-b border-slate-200/60 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2.5">
               <img
                 src="/logo.png"
                 alt="Agento AI"
-                className="w-9 h-9 rounded-xl object-contain bg-white border border-slate-200/80 shadow-sm p-0.5"
+                className="w-9 h-9 rounded-2xl object-contain bg-slate-900 border border-white/20 shadow-md p-1"
               />
               <div>
                 <div className="flex items-center space-x-2">
                   <h1 className="text-sm font-bold text-slate-900 leading-tight">
                     {business?.name || 'Agento AI Store'}
                   </h1>
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded-md font-semibold">
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-slate-200/60 border border-slate-300/60 text-slate-700 rounded-lg font-semibold">
                     {business?.category || 'bakery'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500">24/7 Autonomous WhatsApp AI Staff</p>
+                <p className="text-xs text-slate-500 font-medium">24/7 WhatsApp AI Staff</p>
               </div>
             </div>
           </div>
@@ -219,10 +221,10 @@ export default function DashboardPage() {
             <button
               onClick={toggleBotPause}
               disabled={pauseLoading}
-              className={`inline-flex items-center space-x-1.5 text-xs font-medium px-2.5 sm:px-3 py-1.5 rounded-md border transition-all ${
+              className={`inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all shadow-sm active:scale-95 ${
                 isBotPaused
-                  ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                  ? 'bg-amber-500/10 text-amber-800 border-amber-300/50 hover:bg-amber-500/20'
+                  : 'bg-emerald-500/10 text-emerald-800 border-emerald-300/50 hover:bg-emerald-500/20'
               }`}
               title="Click to pause or activate AI agent replies"
             >
@@ -240,7 +242,7 @@ export default function DashboardPage() {
               href="https://web.whatsapp.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center space-x-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md border border-emerald-200 transition-colors"
+              className="hidden md:inline-flex items-center space-x-1.5 text-xs font-semibold text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-300/50 transition-all shadow-sm"
             >
               <Phone className="w-3.5 h-3.5" />
               <span>WhatsApp Web</span>
@@ -249,7 +251,7 @@ export default function DashboardPage() {
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center space-x-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 transition-colors"
+              className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white/80 hover:bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 transition-all shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5 text-slate-400" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -260,7 +262,7 @@ export default function DashboardPage() {
 
       {/* Trial Expired Alert Banner */}
       {isTrialExpired && business?.subscription_status !== 'active' && (
-        <div className="bg-amber-500 text-white py-2.5 px-4 text-center text-xs font-medium flex items-center justify-center space-x-2">
+        <div className="backdrop-blur-md bg-amber-500/90 text-white py-2.5 px-4 text-center text-xs font-semibold flex items-center justify-center space-x-2 shadow-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>
             Your 24-hour free trial has expired. WhatsApp replies are currently paused.
@@ -276,18 +278,18 @@ export default function DashboardPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 pb-28 sm:pb-10">
-        {/* Metric Stat Cards */}
+        {/* Metric Stat Cards with Frosted Glass */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* Card 1: Subscription Status */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center justify-between">
+          <div className="backdrop-blur-xl bg-white/75 border border-white/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md">
             <div className="space-y-1">
               <span className="text-xs font-medium text-slate-500">Plan & Subscription</span>
               <div className="flex items-baseline space-x-2">
-                <span className="text-lg font-semibold text-slate-900">
+                <span className="text-lg font-bold text-slate-900">
                   {business?.subscription_status === 'active' ? 'Pro Plan Active' : 'Free Trial'}
                 </span>
                 {business?.subscription_status !== 'active' && (
-                  <span className="text-xs font-mono font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  <span className="text-xs font-mono font-medium text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-300/50">
                     {countdownStr}
                   </span>
                 )}
@@ -296,22 +298,22 @@ export default function DashboardPage() {
                 {business?.subscription_status === 'active' ? '₹1/mo unlimited access' : 'Full access to WhatsApp automation'}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-300/40 flex items-center justify-center shadow-inner">
               <Clock className="w-5 h-5" />
             </div>
           </div>
 
           {/* Card 2: WhatsApp Automation Status */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center justify-between">
+          <div className="backdrop-blur-xl bg-white/75 border border-white/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md">
             <div className="space-y-1">
               <span className="text-xs font-medium text-slate-500">WhatsApp Automation</span>
               <div className="flex items-center space-x-2">
                 <span
-                  className={`w-2 h-2 rounded-full ${
+                  className={`w-2.5 h-2.5 rounded-full ${
                     isBotPaused ? 'bg-amber-500' : isTrialExpired ? 'bg-red-500' : 'bg-emerald-500'
                   }`}
                 />
-                <span className="text-lg font-semibold text-slate-900">
+                <span className="text-lg font-bold text-slate-900">
                   {isBotPaused
                     ? 'Paused'
                     : isTrialExpired
@@ -320,32 +322,34 @@ export default function DashboardPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                {business?.whatsapp_number ? `Bound to ${business.whatsapp_number}` : 'Awaiting number config'}
+                {isBotPaused ? 'Replies stopped' : 'Auto taking orders & inquiries'}
               </p>
             </div>
-            <button
-              onClick={toggleBotPause}
-              disabled={pauseLoading}
-              className={`p-2.5 rounded-lg border text-xs font-medium transition-all ${
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-inner ${
                 isBotPaused
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                  : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                  ? 'bg-amber-500/10 text-amber-600 border-amber-300/40'
+                  : 'bg-emerald-500/10 text-emerald-600 border-emerald-300/40'
               }`}
             >
-              {isBotPaused ? <PlayCircle className="w-5 h-5" /> : <PauseCircle className="w-5 h-5" />}
-            </button>
+              {renderCategoryIcon('w-5 h-5')}
+            </div>
           </div>
 
-          {/* Card 3: AI Engine Health */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
+          {/* Card 3: Business Vertical Category */}
+          <div className="backdrop-blur-xl bg-white/75 border border-white/60 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between sm:col-span-2 lg:col-span-1 transition-all hover:shadow-md">
             <div className="space-y-1">
-              <span className="text-xs font-medium text-slate-500">Intelligence Engine</span>
-              <div className="flex items-center space-x-1.5">
-                <span className="text-lg font-semibold text-slate-900">Groq Whisper + LLaMA</span>
+              <span className="text-xs font-medium text-slate-500">Operating Category</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-bold text-slate-900 capitalize">
+                  {effectiveCategory.replace('_', ' ')}
+                </span>
               </div>
-              <p className="text-xs text-slate-500">Voice Notes, Hinglish, UPI Links & PDF Bills</p>
+              <p className="text-xs text-slate-500">
+                AI customized for {effectiveCategory.replace('_', ' ')} workflow
+              </p>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-600 border border-indigo-300/40 flex items-center justify-center shadow-inner">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
@@ -437,56 +441,56 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Mobile Native Bottom Navigation Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-around pb-safe">
+      {/* Mobile Native Bottom Navigation Bar (iOS Frosted Glass) */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/80 border-t border-slate-200/60 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] px-3 py-2 flex items-center justify-around pb-safe">
         <button
           onClick={() => setActiveTab('orders')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'orders'
-              ? 'text-slate-950 font-semibold scale-105'
+              ? 'text-slate-950 font-bold scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           {renderCategoryIcon(
             `w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`
           )}
-          <span className="text-[10px] tracking-tight">{captureTypeLabel}</span>
+          <span className="text-[10px] tracking-tight font-medium">{captureTypeLabel}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('conversations')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'conversations'
-              ? 'text-slate-950 font-semibold scale-105'
+              ? 'text-slate-950 font-bold scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <MessageSquare className={`w-5 h-5 mb-0.5 ${activeTab === 'conversations' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">Live Chats</span>
+          <span className="text-[10px] tracking-tight font-medium">Live Chats</span>
         </button>
 
         <button
           onClick={() => setActiveTab('edit_info')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'edit_info'
-              ? 'text-slate-950 font-semibold scale-105'
+              ? 'text-slate-950 font-bold scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <Settings className={`w-5 h-5 mb-0.5 ${activeTab === 'edit_info' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">Store Info</span>
+          <span className="text-[10px] tracking-tight font-medium">Store Info</span>
         </button>
 
         <button
           onClick={() => setActiveTab('billing')}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             activeTab === 'billing'
-              ? 'text-slate-950 font-semibold scale-105'
+              ? 'text-slate-950 font-bold scale-105'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <CreditCard className={`w-5 h-5 mb-0.5 ${activeTab === 'billing' ? 'text-slate-950 stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight">Plan</span>
+          <span className="text-[10px] tracking-tight font-medium">Plan</span>
         </button>
       </nav>
 
