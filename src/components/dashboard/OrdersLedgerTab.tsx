@@ -26,6 +26,7 @@ import {
   FileText,
   CreditCard,
   BellRing,
+  RefreshCw,
 } from 'lucide-react';
 
 interface OrdersLedgerTabProps {
@@ -61,10 +62,13 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
   });
   const [creatingOrder, setCreatingOrder] = useState(false);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Fetch orders from API
-  const fetchOrders = async () => {
+  const fetchOrders = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      else setIsRefreshing(true);
       const res = await fetch(`/api/orders?businessId=${encodeURIComponent(businessId)}`);
       const data = await res.json();
 
@@ -74,12 +78,21 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+      else setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchOrders();
+
+    // Auto poll every 8 seconds to guarantee fresh state
+    const pollInterval = setInterval(() => {
+      fetchOrders(true);
+    }, 8000);
+
+    const onFocus = () => fetchOrders(true);
+    window.addEventListener('focus', onFocus);
 
     const channel = supabaseClient
       .channel(`realtime-orders-${businessId}`)
@@ -111,6 +124,8 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', onFocus);
       supabaseClient.removeChannel(channel);
     };
   }, [businessId]);
@@ -484,6 +499,16 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
 
           {/* Action CTAs */}
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => fetchOrders(false)}
+              disabled={isRefreshing || loading}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium shadow-sm transition-colors disabled:opacity-50"
+              title="Refresh Orders"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+
             <button
               onClick={() => setIsManualModalOpen(true)}
               className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium shadow-sm transition-colors"

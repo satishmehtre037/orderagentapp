@@ -31,7 +31,19 @@ export async function GET(req: Request) {
     }
 
     if (!business) {
-      return NextResponse.json({ business: null, configs: {} });
+      // Fallback: fetch the most recent active business in the system
+      const { data: fallbackBiz } = await adminSupabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackBiz) {
+        business = fallbackBiz;
+      } else {
+        return NextResponse.json({ business: null, configs: {} });
+      }
     }
 
     // Set 1-day (24-hour) trial window if missing

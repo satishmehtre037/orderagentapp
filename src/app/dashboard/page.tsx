@@ -60,13 +60,19 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      const userEmail = session?.user?.email || 'owner@bizbotos.in';
+      const userEmail = session?.user?.email || (typeof window !== 'undefined' ? localStorage.getItem('biz_email') : null) || 'owner@bizbotos.in';
 
       const res = await fetch(`/api/business?email=${encodeURIComponent(userEmail)}`);
       const resData = await res.json();
 
       if (resData.business) {
         setBusiness(resData.business as Business);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('biz_id', resData.business.id);
+          if (resData.business.owner_email) {
+            localStorage.setItem('biz_email', resData.business.owner_email);
+          }
+        }
         setIsBotPaused(resData.configs?.bot_paused === true || resData.configs?.bot_paused === 'true');
       } else {
         setBusiness({
