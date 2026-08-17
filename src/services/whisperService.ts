@@ -1,4 +1,4 @@
-import { groq } from '../config/groq';
+import { groq, getGroqClient } from '../config/groq';
 import { ENV } from '../config/env';
 
 /**
@@ -49,9 +49,7 @@ export async function transcribeAudioWithGroq(
   audioBuffer: Buffer,
   filename: string = 'voicenote.ogg'
 ): Promise<string> {
-  if (!ENV.GROQ_API_KEY) {
-    throw new Error('[Whisper Service Error] GROQ_API_KEY is not configured in environment.');
-  }
+  const groqClient = getGroqClient() || groq;
 
   console.log(`[Whisper Service] 🎙️ Processing audio buffer (${audioBuffer.byteLength} bytes) with Groq Whisper...`);
 
@@ -65,7 +63,7 @@ export async function transcribeAudioWithGroq(
   for (const model of whisperModels) {
     try {
       console.log(`[Whisper Service] Sending audio to Groq model: ${model}...`);
-      const transcription: any = await groq.audio.transcriptions.create({
+      const transcription: any = await groqClient.audio.transcriptions.create({
         file,
         model,
         prompt:

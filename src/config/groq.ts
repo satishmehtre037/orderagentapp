@@ -1,10 +1,14 @@
 import { Groq } from 'groq-sdk';
 import { ENV } from './env';
 
-if (!ENV.GROQ_API_KEY) {
-  console.warn('⚠️ [Groq] GROQ_API_KEY missing in .env');
+export function getGroqClient(): Groq | null {
+  const apiKey = process.env.GROQ_API_KEY || ENV.GROQ_API_KEY;
+  if (!apiKey || apiKey === 'placeholder-api-key') {
+    return null;
+  }
+  return new Groq({ apiKey });
 }
 
 export const groq = new Groq({
-  apiKey: ENV.GROQ_API_KEY || 'placeholder-api-key',
+  apiKey: process.env.GROQ_API_KEY || ENV.GROQ_API_KEY || 'placeholder-api-key',
 });

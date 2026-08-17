@@ -1,4 +1,4 @@
-import { groq } from '../config/groq';
+import { groq, getGroqClient } from '../config/groq';
 import { ENV } from '../config/env';
 import { ConversationMessage } from '../types/index';
 
@@ -33,7 +33,8 @@ export async function getResponse(
   }
 
   // Execute with Groq Llama 3.3 / Llama 3.1
-  if (ENV.GROQ_API_KEY) {
+  const groqClient = getGroqClient();
+  if (groqClient) {
     const groqModels = [
       process.env.GROQ_MODEL,
       'llama-3.3-70b-versatile',
@@ -44,7 +45,7 @@ export async function getResponse(
     for (const model of groqModels) {
       try {
         console.log(`[Groq AI Service] Requesting model: ${model}...`);
-        const completion = await groq.chat.completions.create({
+        const completion = await groqClient.chat.completions.create({
           model,
           messages: [
             {
@@ -66,11 +67,11 @@ export async function getResponse(
           return reply;
         }
       } catch (groqErr: any) {
-        console.warn(`[Groq AI Warning] Model "${model}" failed:`, groqErr?.message || groqErr);
+        console.error(`[Groq AI Error] Model "${model}" failed (Status: ${groqErr?.status || 'unknown'}):`, groqErr?.message || groqErr);
       }
     }
   } else {
-    console.warn(`[Groq AI Warning] GROQ_API_KEY is not set in .env.`);
+    console.error(`[Groq AI Error] GROQ_API_KEY is missing or invalid in environment.`);
   }
 
   // Smart local fallback responses if offline or key not yet set
