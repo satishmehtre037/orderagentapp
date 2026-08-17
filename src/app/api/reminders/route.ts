@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendMessage } from '@/services/whatsappService';
 import { saveConversationMessage } from '@/services/businessService';
+import { getCategoryReminderMessage } from '@/lib/constants/categoryPresets';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -36,11 +37,18 @@ export async function GET(req: Request) {
       configMap[c.config_key] = c.config_value;
     });
 
+    const category = configMap.category || business?.category || 'bakery';
+    const businessName = business?.name || 'Our Business';
+
     const defaultDays =
-      business?.category === 'salon'
+      category === 'salon'
         ? 25
-        : business?.category === 'gym'
+        : category === 'gym'
         ? 27
+        : category === 'tuition'
+        ? 30
+        : category === 'real_estate'
+        ? 14
         : 7;
 
     const reminderDays = configMap.reminder_days ? Number(configMap.reminder_days) : defaultDays;
@@ -59,17 +67,14 @@ export async function GET(req: Request) {
       if (!customerMap[o.customer_number]) {
         const orderDate = new Date(o.created_at);
         const daysAgo = Math.floor((Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        let defaultMsg = '';
-        if (business?.category === 'gym') {
-          defaultMsg = `🏋️ *Membership Renewal Reminder*\n\nHi! Your membership with *${business.name}* is up for renewal soon. Would you like to renew today and keep your fitness streak going?`;
-        } else if (business?.category === 'salon') {
-          defaultMsg = `✂️ *Time for your Monthly Refresh!*\n\nHi! It's been ${daysAgo} days since your last salon visit with *${business.name}*. We have open appointment slots available this week!`;
-        } else {
-          defaultMsg = `🥐 *Craving your Favorites?*\n\nHi from *${business.name}*! We are serving fresh specials today. Would you like to place a quick order for delivery or pickup?`;
-        }
+        const lastItem = o.details?.items?.[0]?.name || o.details?.service || o.details?.notes || '';
 
-        const customTemplate = configMap.reminder_template || defaultMsg;
+        const suggestedMessage = getCategoryReminderMessage(
+          category,
+          businessName,
+          lastItem,
+          configMap.reminder_template
+        );
 
         customerMap[o.customer_number] = {
           customerNumber: o.customer_number,
@@ -77,8 +82,8 @@ export async function GET(req: Request) {
           lastOrderDate: o.created_at,
           daysAgo,
           type: o.type,
-          lastItem: o.details?.items?.[0]?.name || o.details?.service || o.details?.notes || 'Store item',
-          suggestedMessage: customTemplate,
+          lastItem: lastItem || 'Store Item',
+          suggestedMessage,
           isDue: daysAgo >= reminderDays,
         };
       }
@@ -104,17 +109,47 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { businessId, customerNumber, message } = body;
+    const { businessId, customerNumber, message, lastItem } = body;
 
-    if (!businessId || !customerNumber || !message) {
-      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    if (!businessId || !customerNumber) {
+      return NextResponse.json({ error: 'Missing required parameters (businessId, customerNumber)' }, { status: 400 });
     }
 
-    console.log(`[API Reminders] 🔄 Sending re-engagement WhatsApp nudge to ${customerNumber}...`);
-    await sendMessage(customerNumber, '', message);
-    await saveConversationMessage(businessId, customerNumber, 'outbound', message);
+    let finalMessage = message;
 
-    return NextResponse.json({ success: true, deliveredTo: customerNumber });
+    if (!finalMessage) {
+      const { data: business } = await adminSupabase
+        .from('businesses')
+        .select('*')
+        .eq('id', businessId)
+        .maybeSingle();
+
+      const { data: configsData } = await adminSupabase
+        .from('business_config')
+        .select('config_key, config_value')
+        .eq('business_id', businessId);
+
+      const configMap: Record<string, any> = {};
+      (configsData || []).forEach((c) => {
+        configMap[c.config_key] = c.config_value;
+      });
+
+      const category = configMap.category || business?.category || 'bakery';
+      const businessName = business?.name || 'Our Business';
+
+      finalMessage = getCategoryReminderMessage(
+        category,
+        businessName,
+        lastItem,
+        configMap.reminder_template
+      );
+    }
+
+    console.log(`[API Reminders] 🔄 Sending tailored WhatsApp reminder to ${customerNumber} for business ${businessId}...`);
+    await sendMessage(customerNumber, '', finalMessage);
+    await saveConversationMessage(businessId, customerNumber, 'outbound', finalMessage);
+
+    return NextResponse.json({ success: true, deliveredTo: customerNumber, message: finalMessage });
   } catch (err: any) {
     console.error('[API Reminders Dispatch Error]:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -202,3 +202,50 @@ export const CATEGORY_PRESETS: Record<BusinessCategory, CategoryPresetData> = {
     ],
   },
 };
+
+/**
+ * Generates rich, vertical-specific WhatsApp reminder and re-engagement messages
+ */
+export const getCategoryReminderMessage = (
+  category: string = 'bakery',
+  businessName: string = 'Our Business',
+  lastItem?: string,
+  customTemplate?: string
+): string => {
+  if (customTemplate && customTemplate.trim().length > 0) {
+    return customTemplate
+      .replace(/{business_name}/gi, businessName)
+      .replace(/{item}/gi, lastItem || 'your last order/service');
+  }
+
+  const cleanName = businessName.trim() || 'Our Business';
+
+  switch (category) {
+    case 'real_estate':
+      return `🏢 *Exclusive Property Updates from ${cleanName}*\n\nHi! Thank you for connecting with *${cleanName}* regarding our premium property developments.\n\nWe have newly opened unit configurations and special site visit opportunities available this week${lastItem ? ` related to ${lastItem}` : ''}.\n\nWould you like to schedule a private site tour or receive our updated price sheet on WhatsApp?`;
+
+    case 'clinic':
+      return `🩺 *Health Consultation & Follow-Up Reminder*\n\nHi from *${cleanName}*! It's time for your regular health checkup or doctor consultation${lastItem ? ` (${lastItem})` : ''}.\n\nWe have convenient appointment slots available with our specialist doctors this week. Would you like us to book a consultation slot for you?`;
+
+    case 'tuition':
+      return `🎓 *Academic Batch & Admission Update from ${cleanName}*\n\nHi! New study batches and trial demo sessions${lastItem ? ` for ${lastItem}` : ''} are starting this week at *${cleanName}*.\n\nWould you like to check available timings, course syllabus, or book a free trial class?`;
+
+    case 'retail':
+      return `🛍️ *New Arrivals & Exclusive Offers at ${cleanName}*\n\nHi! We just restocked fresh trending styles and collections${lastItem ? ` like ${lastItem}` : ''} at *${cleanName}*!\n\nWould you like to browse our latest catalog with priority home delivery and member savings?`;
+
+    case 'cafe':
+      return `☕ *Special Treat from ${cleanName}*\n\nHi! Craving your favorite brews and fresh specials${lastItem ? ` like ${lastItem}` : ''}?\n\nWe're serving delicious items today at *${cleanName}*! Reply here to reserve a table or place a quick takeaway order on WhatsApp.`;
+
+    case 'bakery':
+      return `🎂 *Fresh Gourmet Treats from ${cleanName}*\n\nHi! Looking to celebrate or craving fresh gourmet cakes and bakery items${lastItem ? ` like ${lastItem}` : ''}?\n\nLet us know what you'd like to order today from *${cleanName}* for fresh doorstep delivery!`;
+
+    case 'gym':
+      return `🏋️ *Membership Renewal Reminder from ${cleanName}*\n\nHi! Your fitness pass with *${cleanName}* is up for renewal.\n\nWould you like to renew today and lock in your workout slots and member privileges?`;
+
+    case 'salon':
+      return `✂️ *Time for your Grooming Refresh at ${cleanName}!*\n\nHi! Ready for your regular haircut, styling, or spa session${lastItem ? ` (${lastItem})` : ''}?\n\nWe have priority slots available this week at *${cleanName}*. Reply to reserve your preferred timing!`;
+
+    default:
+      return `✨ *Special Update from ${cleanName}*\n\nHi from *${cleanName}*! Following up to see if we can help you with any inquiries, orders, or services this week. Reply here to connect directly with us!`;
+  }
+};

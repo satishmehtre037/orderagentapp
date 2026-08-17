@@ -33,6 +33,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { getCategoryReminderMessage } from '../../lib/constants/categoryPresets';
+
 interface OrdersLedgerTabProps {
   businessId: string;
   category: BusinessCategory;
@@ -269,14 +271,11 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
     if (!customerNumber) return;
     setSendingReminder(customerNumber);
     try {
-      let msg = '';
-      if (category === 'gym') {
-        msg = `🏋️ *Membership Renewal Reminder*\n\nHi! Your membership with *${businessName}* is up for renewal soon. Would you like to renew today and keep your fitness streak going?`;
-      } else if (category === 'salon') {
-        msg = `✂️ *Time for your Monthly Refresh!*\n\nHi! Time for your regular trim or grooming at *${businessName}*? We have open appointment slots available this week!`;
-      } else {
-        msg = `🥐 *Craving your Favorites?*\n\nHi from *${businessName}*! We are serving fresh specials today. Would you like to place a quick order for delivery or pickup?`;
-      }
+      const msg = getCategoryReminderMessage(
+        category,
+        businessName || 'Our Business',
+        lastItem
+      );
 
       const res = await fetch('/api/reminders', {
         method: 'POST',
@@ -285,16 +284,19 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
           businessId,
           customerNumber,
           message: msg,
+          lastItem,
         }),
       });
 
-      if (res.ok) {
-        alert(`✅ Re-engagement reminder successfully sent to ${customerNumber}!`);
+      const resData = await res.json();
+
+      if (res.ok && resData.success) {
+        alert(`✅ WhatsApp reminder successfully dispatched to ${customerNumber} for ${businessName || 'your business'}!`);
       } else {
-        alert('Failed to dispatch reminder.');
+        alert(resData.error || 'Failed to dispatch reminder.');
       }
     } catch (err: any) {
-      alert(`Error: ${err.message}`);
+      alert(`Error sending reminder: ${err.message}`);
     } finally {
       setSendingReminder(null);
     }
@@ -850,7 +852,27 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
                           className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 text-xs font-medium shadow-sm transition-colors disabled:opacity-50"
                         >
                           <BellRing className="w-3.5 h-3.5 text-amber-600" />
-                          <span>{sendingReminder === order.customer_number ? 'Sending...' : 'Send WhatsApp Refill / Renewal Nudge'}</span>
+                          <span>
+                            {sendingReminder === order.customer_number
+                              ? 'Sending...'
+                              : category === 'real_estate'
+                              ? 'Send WhatsApp Site Visit / Property Nudge'
+                              : category === 'clinic'
+                              ? 'Send WhatsApp Health Checkup Reminder'
+                              : category === 'gym'
+                              ? 'Send WhatsApp Membership Renewal Nudge'
+                              : category === 'salon'
+                              ? 'Send WhatsApp Grooming Refresh Nudge'
+                              : category === 'tuition'
+                              ? 'Send WhatsApp Batch & Admission Update'
+                              : category === 'retail'
+                              ? 'Send WhatsApp New Collection Nudge'
+                              : category === 'cafe'
+                              ? 'Send WhatsApp Special Menu Nudge'
+                              : category === 'bakery'
+                              ? 'Send WhatsApp Fresh Treat Nudge'
+                              : 'Send WhatsApp Re-Engagement Nudge'}
+                          </span>
                         </button>
                       </div>
                     </div>
