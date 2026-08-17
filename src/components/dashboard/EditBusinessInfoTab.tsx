@@ -44,7 +44,7 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
   category,
   onUpdated,
 }) => {
-  const { showToast } = useToast();
+  const { showToast, showConfirm } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -189,9 +189,13 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
   };
 
   const handleDeleteBusiness = async () => {
-    const confirmed = window.confirm(
-      'Are you absolutely sure? This will permanently wipe all orders, catalog items, and customer conversations.'
-    );
+    const confirmed = await showConfirm({
+      title: 'Delete Business Account?',
+      message: 'Are you absolutely sure? This will permanently wipe all orders, catalog items, and customer conversations.',
+      confirmText: 'Delete Permanently',
+      cancelText: 'Cancel',
+      isDestructive: true,
+    });
     if (!confirmed) return;
 
     try {
