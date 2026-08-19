@@ -41,11 +41,14 @@ export default function LeadHunterPage() {
 
   // 2. Search & Lead Scraper State
   const [selectedCategory, setSelectedCategory] = useState('clinic');
-  const [city, setCity] = useState('Pune');
+  const [city, setCity] = useState('Thane');
+  const [leadVolume, setLeadVolume] = useState<number>(25);
   const [customSearchQuery, setCustomSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [leads, setLeads] = useState<ScrapedLead[]>([]);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [showPasteModal, setShowPasteModal] = useState(false);
+  const [pastedNumbersText, setPastedNumbersText] = useState('');
 
   // 3. Multi-Service Pitch Arsenal State
   const [pitchType, setPitchType] = useState<'all_in_one' | 'whatsapp_ai' | 'web_mobile' | 'local_seo' | 'custom'>('all_in_one');
@@ -99,6 +102,7 @@ export default function LeadHunterPage() {
         body: JSON.stringify({
           category: selectedCategory,
           city: city.trim(),
+          count: leadVolume,
           customQuery: customSearchQuery.trim() || undefined,
         }),
       });
@@ -114,6 +118,62 @@ export default function LeadHunterPage() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  // Quick Import Pasted Numbers
+  const handleImportPastedNumbers = () => {
+    if (!pastedNumbersText.trim()) return;
+    const lines = pastedNumbersText.split('\n');
+    const imported: ScrapedLead[] = [];
+
+    lines.forEach((line, idx) => {
+      const clean = line.trim();
+      if (!clean) return;
+      // Extract phone digits
+      const digits = clean.replace(/\D/g, '');
+      if (digits.length >= 10) {
+        const phone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
+        imported.push({
+          id: `lead_pasted_${Date.now()}_${idx}`,
+          business_name: clean.includes(',') ? clean.split(',')[0].trim() : `Business Contact (${digits.slice(-4)})`,
+          category: selectedCategory,
+          city: city || 'Local',
+          phone_number: phone,
+          rating: 4.5,
+          reviews_count: 50,
+          address: `${city || 'Local Area'} Directory Contact`,
+          status: 'pending',
+        });
+      }
+    });
+
+    if (imported.length > 0) {
+      setLeads((prev) => [...imported, ...prev]);
+      setSelectedLeadIds((prev) => [...imported.map((l) => l.id), ...prev]);
+      addLog(`📥 Imported ${imported.length} custom contact numbers.`, 'success');
+      setShowPasteModal(false);
+      setPastedNumbersText('');
+    } else {
+      alert('No valid 10-digit phone numbers detected in text.');
+    }
+  };
+
+  // Quick Add Personal Test Lead
+  const handleAddMyNumberTestLead = () => {
+    const myTestLead: ScrapedLead = {
+      id: `lead_my_test_${Date.now()}`,
+      business_name: 'Satish Mehtre (WebCore Demo Lead)',
+      category: selectedCategory,
+      city: city || 'Thane',
+      phone_number: '+918779841346',
+      rating: 5.0,
+      reviews_count: 120,
+      address: `${city || 'Thane'} HQ (Personal Test Lead)`,
+      status: 'pending',
+    };
+    setLeads((prev) => [myTestLead, ...prev.filter((l) => l.phone_number !== '+918779841346')]);
+    setSelectedLeadIds((prev) => [myTestLead.id, ...prev]);
+    addLog(`📱 Added your personal test lead (+918779841346). Click "Send Pitch" to test live!`, 'success');
   };
 
   // Add Log Entry
@@ -335,7 +395,7 @@ export default function LeadHunterPage() {
             <h2 className="text-base font-bold text-white">1. Search & Extract Local Businesses</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-1.5">Target Industry / Category</label>
               <select
@@ -358,7 +418,7 @@ export default function LeadHunterPage() {
               <label className="text-xs font-bold text-slate-300 block mb-1.5">Target City / Area</label>
               <input
                 type="text"
-                placeholder="e.g. Pune, Andheri Mumbai, Bangalore"
+                placeholder="e.g. Thane, Pune, Mumbai, Bangalore"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -366,10 +426,24 @@ export default function LeadHunterPage() {
             </div>
 
             <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1.5">Extract Volume</label>
+              <select
+                value={leadVolume}
+                onChange={(e) => setLeadVolume(Number(e.target.value))}
+                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value={25}>⚡ 25 High-Intent Leads</option>
+                <option value={50}>🚀 50 Leads (Daily Campaign)</option>
+                <option value={100}>🔥 100 Bulk Leads</option>
+                <option value={150}>💎 150 Mega Batch</option>
+              </select>
+            </div>
+
+            <div>
               <label className="text-xs font-bold text-slate-300 block mb-1.5">Custom Query (Optional)</label>
               <input
                 type="text"
-                placeholder="e.g. Dental implant clinics in Kothrud"
+                placeholder="e.g. CA firms near Naupada / Panchpakhadi"
                 value={customSearchQuery}
                 onChange={(e) => setCustomSearchQuery(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -377,14 +451,32 @@ export default function LeadHunterPage() {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={handleAddMyNumberTestLead}
+                className="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white font-bold text-xs rounded-xl border border-emerald-500/30 transition flex items-center space-x-1.5"
+              >
+                <span>📱 Add My Number (+918779841346) as Test Lead</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowPasteModal(true)}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs rounded-xl border border-slate-700 transition flex items-center space-x-1.5"
+              >
+                <span>📥 Paste / Upload List</span>
+              </button>
+            </div>
+
             <button
               onClick={handleSearchLeads}
               disabled={isSearching}
               className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center space-x-2"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isSearching ? 'animate-spin' : ''}`} />
-              <span>{isSearching ? 'Extracting Google Maps Leads...' : 'Search & Extract Leads'}</span>
+              <span>{isSearching ? `Extracting ${leadVolume} Leads...` : `Search & Extract ${leadVolume} Leads`}</span>
             </button>
           </div>
         </div>
@@ -730,6 +822,54 @@ export default function LeadHunterPage() {
           </div>
         </div>
       </main>
+
+      {/* Paste / Bulk Import Modal */}
+      {showPasteModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 text-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                <span>📥 Paste External Phone List / CSV</span>
+              </h3>
+              <button
+                onClick={() => setShowPasteModal(false)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Paste phone numbers (one per line, e.g. from Excel, Justdial, or Google Maps). You can optionally prefix with business name: <code className="text-indigo-300">Dr. Sharma Clinic, 9820123456</code>.
+            </p>
+
+            <textarea
+              rows={8}
+              placeholder={`Mehta CA & Associates, 9822123456\nDr. Amit Dental Clinic, 9890987654\n9850112233\n9881445566`}
+              value={pastedNumbersText}
+              onChange={(e) => setPastedNumbersText(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed"
+            />
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPasteModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleImportPastedNumbers}
+                className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition"
+              >
+                Import Contacts into Outreach Queue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
