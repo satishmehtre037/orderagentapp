@@ -17,37 +17,41 @@ export interface VapiCallResult {
   success: boolean;
   callId?: string;
   error?: string;
-  mode: 'live' | 'simulation';
+  mode: "live" | "simulation";
 }
 
-export async function triggerVapiCall(options: VapiCallOptions): Promise<VapiCallResult> {
+export async function triggerVapiCall(
+  options: VapiCallOptions,
+): Promise<VapiCallResult> {
   const apiKey = (
     process.env.VAPI_API_KEY ||
     process.env.VAPI_PRIVATE_API_KEY ||
     process.env.VAPI_KEY ||
-    ''
+    ""
   ).trim();
 
   // If no API key, gracefully fallback to simulation mode
   if (!apiKey) {
-    console.log('[Vapi Service] No VAPI_API_KEY found. Running in simulation mode.');
+    console.log(
+      "[Vapi Service] No VAPI_API_KEY found. Running in simulation mode.",
+    );
     return {
       success: true,
-      mode: 'simulation',
+      mode: "simulation",
       callId: `sim_vapi_${Date.now()}`,
     };
   }
 
   // Format clean international phone number (+91XXXXXXXXXX)
-  let cleanNumber = options.phoneNumber.replace(/[^\d+]/g, '');
-  if (!cleanNumber.startsWith('+')) {
-    const digits = cleanNumber.replace(/\D/g, '');
+  let cleanNumber = options.phoneNumber.replace(/[^\d+]/g, "");
+  if (!cleanNumber.startsWith("+")) {
+    const digits = cleanNumber.replace(/\D/g, "");
     cleanNumber = digits.length === 10 ? `+91${digits}` : `+${digits}`;
   }
 
-  const hospitalName = options.hospitalName || 'MediCare Hospital';
-  const doctorName = options.doctorName || 'Attending Specialist';
-  const appointmentTime = options.appointmentTime || 'upcoming scheduled time';
+  const hospitalName = options.hospitalName || "MediCare Hospital";
+  const doctorName = options.doctorName || "Attending Specialist";
+  const appointmentTime = options.appointmentTime || "upcoming scheduled time";
 
   const systemPrompt =
     options.promptTask ||
@@ -66,7 +70,9 @@ Keep the conversation brief, empathetic, polite, and professional.`;
   const phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID;
 
   try {
-    console.log(`[Vapi Service] 📞 Initiating live AI phone call to ${cleanNumber} (${options.patientName})...`);
+    console.log(
+      `[Vapi Service] 📞 Initiating live AI phone call to ${cleanNumber} (${options.patientName})...`,
+    );
 
     const payload: Record<string, any> = {
       customer: {
@@ -94,55 +100,63 @@ Keep the conversation brief, empathetic, polite, and professional.`;
       payload.assistant = {
         firstMessage,
         model: {
-          provider: 'openai',
-          model: 'gpt-4o-mini',
+          provider: "openai",
+          model: "gpt-4o-mini",
           messages: [
             {
-              role: 'system',
+              role: "system",
               content: systemPrompt,
             },
           ],
         },
         voice: {
-          provider: '11labs',
-          voiceId: '21m00Tcm4TlvDq8ikWAM',
+          provider: "11labs",
+          voiceId: "21m00Tcm4TlvDq8ikWAM",
         },
       };
     }
 
-    const res = await fetch('https://api.vapi.ai/call/phone', {
-      method: 'POST',
+    const res = await fetch("https://api.vapi.ai/call/phone", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
 
     const data = await res.json();
-    console.log('[Vapi Service] Response:', data);
+    console.log("[Vapi Service] Response:", data);
 
-    if (data.id || data.status === 'queued' || data.status === 'in-progress') {
+    if (data.id || data.status === "queued" || data.status === "in-progress") {
       return {
         success: true,
         callId: data.id,
-        mode: 'live',
+        mode: "live",
       };
     } else {
-      console.warn('[Vapi Service] Live call dispatch rejected, falling back to simulated log:', data.message || data.error);
+      console.warn(
+        "[Vapi Service] Live call dispatch rejected, falling back to simulated log:",
+        data.message || data.error,
+      );
       return {
         success: true,
         callId: `sim_vapi_${Date.now()}`,
-        mode: 'simulation',
-        error: data.message || (Array.isArray(data.message) ? data.message.join(', ') : data.error) || 'Call could not be queued',
+        mode: "simulation",
+        error:
+          data.message ||
+          (Array.isArray(data.message)
+            ? data.message.join(", ")
+            : data.error) ||
+          "Call could not be queued",
       };
     }
   } catch (err: any) {
-    console.error('[Vapi Service Exception]:', err.message || err);
+    console.error("[Vapi Service Exception]:", err.message || err);
     return {
       success: true,
       callId: `sim_vapi_err_${Date.now()}`,
-      mode: 'simulation',
+      mode: "simulation",
       error: err.message,
     };
   }
