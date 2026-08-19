@@ -20,11 +20,13 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // Form State for Add Compliance
+  const [selectedClientId, setSelectedClientId] = useState('');
   const [formClientName, setFormClientName] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formType, setFormType] = useState<CAComplianceType>('GST-3B');
   const [formDueDate, setFormDueDate] = useState('');
+  const [clients, setClients] = useState<Array<{ id: string; client_name: string; phone: string; email?: string }>>([]);
 
   const fetchCompliances = async () => {
     setLoading(true);
@@ -40,6 +42,23 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
       setLoading(false);
     }
   };
+
+  const fetchClients = async () => {
+    try {
+      const res = await fetch('/api/ca/clients');
+      const data = await res.json();
+      if (data.clients) {
+        setClients(data.clients);
+      }
+    } catch (err) {
+      console.error('Failed to fetch clients:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompliances();
+    fetchClients();
+  }, []);
 
   const handleDeleteCompliance = async (id: string) => {
     if (!confirm('Are you sure you want to delete this compliance record?')) return;
@@ -440,6 +459,37 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
             </div>
 
             <form onSubmit={handleAddCompliance} className="space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Select Client {clients.length > 0 ? `(${clients.length} available)` : ''}
+                </label>
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => {
+                    const selId = e.target.value;
+                    setSelectedClientId(selId);
+                    const found = clients.find((c) => c.id === selId);
+                    if (found) {
+                      setFormClientName(found.client_name);
+                      setFormPhone(found.phone);
+                      setFormEmail(found.email || '');
+                    } else {
+                      setFormClientName('');
+                      setFormPhone('');
+                      setFormEmail('');
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white mb-2 text-sm"
+                >
+                  <option value="">-- Choose from Registered Clients & Leads --</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      👤 {c.client_name} ({c.phone})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Client Name *</label>
                 <input

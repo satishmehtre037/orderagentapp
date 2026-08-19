@@ -8,25 +8,54 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
 
-    let query = supabase
+    // 1. Fetch registered clients from ca_clients
+    const { data: clientsData } = await supabase
       .from('ca_clients')
       .select('*')
       .order('client_name', { ascending: true });
 
-    if (businessId && businessId !== 'demo-business-id') {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(businessId)) {
-        query = query.eq('business_id', businessId);
+    // 2. Fetch leads from ca_leads (e.g. prospects and converted leads)
+    const { data: leadsData } = await supabase
+      .from('ca_leads')
+      .select('*')
+      .order('name', { ascending: true });
+
+    // 3. Merge & Deduplicate by normalized 10-digit phone
+    const clientMap = new Map<string, any>();
+
+    for (const c of (clientsData || [])) {
+      const cleanPhone = (c.phone || '').replace(/\D/g, '').slice(-10);
+      if (cleanPhone) {
+        clientMap.set(cleanPhone, {
+          id: c.id,
+          client_name: c.client_name,
+          phone: c.phone,
+          email: c.email,
+          entity_type: c.entity_type || 'Proprietorship',
+          status: c.status || 'Active',
+        });
       }
     }
 
-    const { data, error } = await query;
-    if (error) {
-      console.warn('[CA Clients API] Fetch notice:', error.message);
-      return NextResponse.json({ clients: [] });
+    for (const l of (leadsData || [])) {
+      const cleanPhone = (l.phone || '').replace(/\D/g, '').slice(-10);
+      if (cleanPhone && !clientMap.has(cleanPhone)) {
+        clientMap.set(cleanPhone, {
+          id: l.id,
+          client_name: l.name || 'Valued Client',
+          phone: l.phone,
+          email: l.email,
+          entity_type: l.business_type || 'Proprietorship',
+          status: l.status === 'Converted' ? 'Active' : 'Lead',
+        });
+      }
     }
 
-    return NextResponse.json({ clients: data || [] });
+    const mergedClients = Array.from(clientMap.values()).sort((a, b) =>
+      a.client_name.localeCompare(b.client_name)
+    );
+
+    return NextResponse.json({ clients: mergedClients });
   } catch (err: any) {
     console.error('[CA Clients API Error]:', err);
     return NextResponse.json({ clients: [] });

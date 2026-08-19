@@ -433,50 +433,59 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
             </div>
 
             <form onSubmit={handleSendDocRequest} className="space-y-4 text-sm">
-              {clients.length > 0 ? (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Select Registered Client</label>
-                  <select
-                    value={formClientId}
-                    onChange={(e) => setFormClientId(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white mb-2"
-                  >
-                    <option value="">-- Or enter new client below --</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.client_name} ({c.phone})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Select Client {clients.length > 0 ? `(${clients.length} available)` : ''}
+                </label>
+                <select
+                  value={formClientId}
+                  onChange={(e) => {
+                    const selId = e.target.value;
+                    setFormClientId(selId);
+                    const found = clients.find((c) => c.id === selId);
+                    if (found) {
+                      setManualClientName(found.client_name);
+                      setManualPhone(found.phone);
+                    } else {
+                      setManualClientName('');
+                      setManualPhone('');
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white mb-2 text-sm"
+                >
+                  <option value="">-- Choose from Registered Clients & Leads --</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      👤 {c.client_name} ({c.phone})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              {!formClientId && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Client Name *</label>
-                    <input
-                      type="text"
-                      required={!formClientId}
-                      placeholder="e.g. Apex Enterprises"
-                      value={manualClientName}
-                      onChange={(e) => setManualClientName(e.target.value)}
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">WhatsApp Phone *</label>
-                    <input
-                      type="text"
-                      required={!formClientId}
-                      placeholder="919876543210"
-                      value={manualPhone}
-                      onChange={(e) => setManualPhone(e.target.value)}
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Client Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Apex Enterprises"
+                    value={manualClientName}
+                    onChange={(e) => setManualClientName(e.target.value)}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">WhatsApp Phone *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="919876543210"
+                    value={manualPhone}
+                    onChange={(e) => setManualPhone(e.target.value)}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Compliance Area *</label>
