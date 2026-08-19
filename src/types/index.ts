@@ -106,7 +106,15 @@ export type DashboardTab =
   | 'ca_leads'
   | 'ca_invoices'
   | 'ca_agent'
-  | 'ca_automation';
+  | 'ca_automation'
+  | 'hospital_dashboard'
+  | 'hospital_appointments'
+  | 'hospital_patients'
+  | 'hospital_reports'
+  | 'hospital_voice'
+  | 'hospital_feedback'
+  | 'hospital_agent'
+  | 'hospital_automation';
 
 // ==========================================
 // CA Firm Automation Suite Models
@@ -217,4 +225,118 @@ export interface CAQueryLog {
   ai_response: string;
   created_at?: string;
 }
+
+// ==========================================
+// Hospital & Clinic Automation Suite Models
+// ==========================================
+
+export interface HospitalPatient {
+  id: string;
+  business_id?: string;
+  name: string;
+  phone: string;
+  email?: string;
+  gender?: 'Male' | 'Female' | 'Other';
+  age?: number;
+  blood_group?: string;
+  emergency_contact?: string;
+  address?: string;
+  medical_history?: string;
+  last_message_at?: string;
+  last_visit?: string;
+  status?: 'Active' | 'Inactive';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface HospitalDoctor {
+  id: string;
+  business_id?: string;
+  name: string;
+  department: string;
+  specialization?: string;
+  fee?: number;
+  available_days?: string;
+  start_time?: string;
+  end_time?: string;
+  slot_duration_minutes?: number;
+  status?: 'Active' | 'Inactive';
+  created_at?: string;
+}
+
+export type HospitalAppointmentStatus = 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'missed';
+
+export interface HospitalAppointment {
+  id: string;
+  business_id?: string;
+  patient_id?: string;
+  doctor_id?: string;
+  patient_name: string;
+  patient_phone: string;
+  doctor_name?: string;
+  department?: string;
+  slot_time: string;
+  token_number?: number;
+  status: HospitalAppointmentStatus;
+  type?: 'OPD' | 'Video Consult' | 'Emergency' | 'Follow-up';
+  source?: 'whatsapp' | 'web' | 'call' | 'walk_in';
+  reminder_24h_sent?: boolean;
+  reminder_2h_sent?: boolean;
+  rescheduled?: boolean;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface HospitalReport {
+  id: string;
+  business_id?: string;
+  patient_id?: string;
+  patient_name: string;
+  patient_phone: string;
+  doctor_name?: string;
+  report_type: string;
+  file_url?: string;
+  ai_summary?: string;
+  is_critical?: boolean;
+  status: 'Pending' | 'Ready' | 'Delivered';
+  delivered_via_wa?: boolean;
+  delivered_at?: string;
+  test_date?: string;
+  created_at?: string;
+}
+
+export interface HospitalVoiceCall {
+  id: string;
+  business_id?: string;
+  patient_id?: string;
+  appointment_id?: string;
+  patient_name: string;
+  patient_phone: string;
+  call_type: 'appointment_reminder' | 'missed_followup' | 'critical_report_alert' | 'patient_requested';
+  status: 'queued' | 'in_progress' | 'completed' | 'failed' | 'no_answer';
+  outcome: 'confirmed' | 'reschedule_requested' | 'cancelled' | 'no_answer' | 'failed';
+  duration_seconds?: number;
+  transcript_summary?: string;
+  recording_url?: string;
+  created_at?: string;
+}
+
+export interface HospitalFeedback {
+  id: string;
+  business_id?: string;
+  patient_id?: string;
+  appointment_id?: string;
+  patient_name: string;
+  patient_phone: string;
+  doctor_name?: string;
+  rating?: number; // 1 to 5
+  comment?: string;
+  status: 'pending' | 'responded' | 'escalated';
+  google_review_requested?: boolean;
+  apology_sent?: boolean;
+  requested_at?: string;
+  responded_at?: string;
+}
+
 

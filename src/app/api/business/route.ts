@@ -204,6 +204,13 @@ export async function DELETE(req: Request) {
 
     if (businessId && businessId !== 'all' && businessId !== 'demo-business-id') {
       // 1. Delete associated data for this specific business
+      await adminSupabase.from('hospital_escalations').delete().eq('business_id', businessId);
+      await adminSupabase.from('hospital_feedback').delete().eq('business_id', businessId);
+      await adminSupabase.from('hospital_voice_calls').delete().eq('business_id', businessId);
+      await adminSupabase.from('hospital_reports').delete().eq('business_id', businessId);
+      await adminSupabase.from('hospital_appointments').delete().eq('business_id', businessId);
+      await adminSupabase.from('hospital_doctors').delete().eq('business_id', businessId);
+      await adminSupabase.from('hospital_patients').delete().eq('business_id', businessId);
       await adminSupabase.from('ca_compliance_calendar').delete().eq('business_id', businessId);
       await adminSupabase.from('ca_documents_tracker').delete().eq('business_id', businessId);
       await adminSupabase.from('ca_leads').delete().eq('business_id', businessId);
@@ -216,6 +223,13 @@ export async function DELETE(req: Request) {
       await adminSupabase.from('businesses').delete().eq('id', businessId);
     } else {
       // Clean everything from database
+      await adminSupabase.from('hospital_escalations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('hospital_feedback').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('hospital_voice_calls').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('hospital_reports').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('hospital_appointments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('hospital_doctors').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('hospital_patients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await adminSupabase.from('ca_compliance_calendar').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await adminSupabase.from('ca_documents_tracker').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await adminSupabase.from('ca_leads').delete().neq('id', '00000000-0000-0000-0000-000000000000');

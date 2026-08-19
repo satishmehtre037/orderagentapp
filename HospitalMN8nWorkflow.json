@@ -1,0 +1,4215 @@
+{
+  "name": "Hospital AI Automation — Appointments + WhatsApp Support + Voice Calls + Reports + Feedback",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🏥 Hospital AI Automation — End-to-End Workflow (5 Use Cases)\nPriority order match: 1) Appointment+Follow-up  2) WhatsApp AI Support  3) AI Voice Calling (via apna Server API)  4) Reports/Prescription  5) Feedback+Review\n\n**IMPORTANT — is JSON ko n8n me import karne ke baad:**\n1. Settings gear (top-right) → Variables/Environment me neeche di gayi ENV VARS set karo (ya n8n instance ke .env me).\n2. WhatsApp send/AI Agent tool nodes me koi bhi red/warning aaye to sirf URL/credential dobara select karo — logic touch mat karo.\n3. Sabse neeche \" SEPARATE ERROR WORKFLOW\" section hai — usse copy karke NAYI workflow me paste karo, phir is main workflow ki Settings → Error Workflow me select karo.\n4. Supabase me neeche di gayi tables banao (chat reply me poora SQL diya hai).\n5. Meta Business Manager me WhatsApp message TEMPLATES approve karwao (naam is workflow me hi likhe hain — chat reply me exact text diya hai).\n\nIs ek hi workflow ke andar 4 trigger points hain (independent, ek doosre ko block nahi karte): WhatsApp Webhook, Voice-Call-Status Webhook, Report-Ready Webhook, aur 3 Schedule Triggers.",
+        "height": 280,
+        "width": 3900
+      },
+      "id": "c121488b",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -560
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1️⃣ + 2️⃣ SECTION A — WhatsApp Inbound Router + AI Agent (Appointment Booking + 24x7 Patient Support)\nSingle entry point ek hi Webhook path \"/whatsapp-webhook\" par (GET = Meta verification handshake, POST = actual messages).\nHar inbound message pehle classify hota hai: (a) pending feedback ka 1-5 rating reply? → Feedback Handler | (b) baaki sab → AI Agent (booking + FAQ + escalation).\nAI Agent Note: neeche AI Agent ke paas 8 tools hain, ek dedicated system prompt (Hinglish support) aur per-patient memory hai — poora detail agent ke paas wale chhote sticky note me hai.",
+        "height": 200,
+        "width": 3900
+      },
+      "id": "2ae39126",
+      "name": "A-header",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "whatsapp-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cec107ec",
+      "name": "WA Verify (GET) — Meta App Setup",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "7a72df75",
+              "leftValue": "={{ $json.query && $json.query['hub.verify_token'] === $env.WA_VERIFY_TOKEN }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "45d11eb9",
+      "name": "Verify Token Match?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ $json.query['hub.challenge'] }}"
+      },
+      "id": "5861d29c",
+      "name": "Return Challenge (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 403
+        },
+        "responseBody": "={{ { error: 'forbidden', message: 'hub.verify_token mismatch' } }}"
+      },
+      "id": "6274ea07",
+      "name": "Reject Verify (403)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4bbc6976",
+      "name": "WhatsApp Inbound (POST)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "28885de6",
+              "leftValue": "={{ $json.body && $json.body.entry && $json.body.entry[0] && $json.body.entry[0].changes && $json.body.entry[0].changes[0] && $json.body.entry[0].changes[0].value && $json.body.entry[0].changes[0].value.messages && $json.body.entry[0].changes[0].value.messages.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ca0c77c9",
+      "name": "Has Incoming Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'ignored' } }}"
+      },
+      "id": "2b2dc700",
+      "name": "Ack Non-Message Event (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const value = $json.body.entry[0].changes[0].value;\nconst msg = value.messages[0];\nconst contact = (value.contacts && value.contacts[0]) || {};\n\nlet text = '';\nlet buttonPayload = null;\n\nif (msg.type === 'text') {\n  text = msg.text.body;\n} else if (msg.type === 'interactive' && msg.interactive.type === 'button_reply') {\n  text = msg.interactive.button_reply.title;\n  buttonPayload = msg.interactive.button_reply.id;\n} else if (msg.type === 'interactive' && msg.interactive.type === 'list_reply') {\n  text = msg.interactive.list_reply.title;\n  buttonPayload = msg.interactive.list_reply.id;\n} else if (msg.type === 'button') {\n  text = msg.button.text;\n  buttonPayload = msg.button.payload;\n} else {\n  text = '[unsupported message type: ' + msg.type + ']';\n}\n\nreturn [{\n  json: {\n    from: msg.from,\n    wa_message_id: msg.id,\n    contact_name: contact.profile ? contact.profile.name : '',\n    text: text,\n    button_payload: buttonPayload,\n    message_type: msg.type,\n    timestamp: msg.timestamp\n  }\n}];"
+      },
+      "id": "9711c17d",
+      "name": "Extract WhatsApp Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/patients",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "on_conflict",
+              "value": "phone"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ phone: $json.from, name: $json.contact_name || 'Patient', last_message_at: new Date().toISOString() }]) }}"
+      },
+      "id": "501b3883",
+      "name": "Upsert Patient (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        260
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/feedback",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "patient_phone",
+              "value": "=eq.{{ $('Extract WhatsApp Message').item.json.from }}"
+            },
+            {
+              "name": "rating",
+              "value": "is.null"
+            },
+            {
+              "name": "order",
+              "value": "requested_at.desc"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            },
+            {
+              "name": "select",
+              "value": "id,appointment_id"
+            }
+          ]
+        }
+      },
+      "id": "aa005fd7",
+      "name": "Check Pending Feedback Request (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        260
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "7046c391",
+              "leftValue": "={{ (Array.isArray($json) && $json.length > 0) && /^[1-5]$/.test((($('Extract WhatsApp Message').item.json.text) || '').trim()) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d610c18e",
+      "name": "Is Numeric Rating Reply With Pending Feedback?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1260,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Feedback Reply Handler** — jab patient pending feedback request par 1-5 reply kare, seedha yahi handle karta hai (AI Agent ko involve nahi karta, taaki rating misread na ho).",
+        "height": 160,
+        "width": 900
+      },
+      "id": "8d9997e1",
+      "name": "A-feedback-note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rating = parseInt((($('Extract WhatsApp Message').item.json.text) || '').trim(), 10);\nconst pending = $json[0];\nreturn [{\n  json: {\n    feedback_id: pending.id,\n    appointment_id: pending.appointment_id,\n    patient_phone: $('Extract WhatsApp Message').item.json.from,\n    rating: rating\n  }\n}];"
+      },
+      "id": "3dfe9fec",
+      "name": "Parse Feedback Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/feedback",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.feedback_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ rating: $json.rating, responded_at: new Date().toISOString() }) }}"
+      },
+      "id": "4cae9690",
+      "name": "Update Feedback Record (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "f0ada10b",
+              "leftValue": "={{ $('Parse Feedback Reply').item.json.rating <= 3 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "da6b4952",
+      "name": "Rating Is 3 Or Below?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2040,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ALERT_FROM_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "=⚠️ Unhappy Patient Feedback ({{ $('Parse Feedback Reply').item.json.rating }}/5)",
+        "text": "=Patient phone: {{ $('Parse Feedback Reply').item.json.patient_phone }}\nAppointment ID: {{ $('Parse Feedback Reply').item.json.appointment_id }}\nRating: {{ $('Parse Feedback Reply').item.json.rating }}/5\n\nPlease follow up with this patient within a few hours.",
+        "options": {}
+      },
+      "id": "6ecb281c",
+      "name": "Alert Front Desk — Unhappy Patient",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2300,
+        100
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_SMTP_CRED",
+          "name": "SMTP Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Parse Feedback Reply').item.json.patient_phone, type: 'text', text: { body: 'Humein khed hai ki aapka experience accha nahi raha 🙏 Hamari team jald aapse contact karegi. Aap chahein to abhi apni concern yahin likh sakte hain.' } }) }}"
+      },
+      "id": "5fce7fca",
+      "name": "Send Apology + Assurance (WhatsApp)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2560,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'escalated' } }}"
+      },
+      "id": "4cd164d5",
+      "name": "Feedback Ack — Escalated (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2820,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Parse Feedback Reply').item.json.patient_phone, type: 'text', text: { body: 'Bahut bahut dhanyawad ⭐ Aapka feedback hamare liye matter karta hai. Agar aapko hamari service pasand aayi to kya aap 30 second nikaal kar Google par ek review chhod sakte hain?\\n' + ($env.GOOGLE_REVIEW_LINK || '') } }) }}"
+      },
+      "id": "53815176",
+      "name": "Send Google Review Request (WhatsApp)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2300,
+        340
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'review_requested' } }}"
+      },
+      "id": "0d9cc2e0",
+      "name": "Feedback Ack — Review Requested (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2560,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 🤖 AI AGENT NOTE — \"Patient WhatsApp AI Agent\"\n**Model:** Google Gemini Chat Model (credential = Gemini/PaLM API key). Agar Gemini node red dikhe, isi ai_languageModel connection par OpenAI Chat Model node se swap kar sakte ho — baaki kuch touch nahi karna padega.\n**Memory:** per-patient (sessionKey = patient ka WhatsApp number) — 20 messages tak context yaad rakhta hai.\n**Tools (8):** Doctor/Dept info • Doctor's booked slots • Book appointment • Reschedule • Cancel • My report status • Request AI voice call • Escalate to front desk. Har tool ka naam+description hi model ka \"menu\" hai — inhe mat generic karna.\n**Security:** patient_id/phone tools me hidden(plumbed) hai, agent kabhi doosre patient ka data touch nahi kar sakta — agent sirf apna khud ka appointment book/cancel/reschedule kar sakta hai.\n**Guardrails:** system prompt me clearly likha hai — koi diagnosis/medicine advice nahi, sirf appointment + info + routing.\n**maxIterations:** 25 (multi-tool agent, low default bahut jaldi \"max iterations\" error deta).\n**Optional 9th tool:** Supabase MCP Client Tool — aapke connected Supabase MCP (mcp.supabase.com) se seedha live DB access deta hai. Yeh naya n8n node hai — agar import ke baad iska field name match na kare to bas isse delete kar do, baaki 8 tools se poora system chal jayega.",
+        "height": 340,
+        "width": 2000
+      },
+      "id": "86d9ef09",
+      "name": "A-agent-note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "c104fe5f",
+      "name": "Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        1000
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REPLACE_GEMINI_CRED",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Extract WhatsApp Message').item.json.from }}",
+        "contextWindowLength": 20
+      },
+      "id": "ec5394d3",
+      "name": "Conversation Memory (per patient)",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/doctors",
+        "authentication": "none",
+        "toolDescription": "Returns the full list of doctors with their department, consultation fee, working days and working hours. Use this FIRST whenever the patient asks about departments, doctors, timings, fees, or before booking an appointment (to get the correct doctor_id). Takes no parameters — always returns the complete list.",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "id,name,department,fee,available_days,start_time,end_time,slot_duration_minutes"
+            }
+          ]
+        }
+      },
+      "id": "291605ec",
+      "name": "Get Hospital And Doctor Info",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1840,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "toolDescription": "Returns already-booked appointment times for one doctor on one date, so you can compare against that doctor's working hours (from Get Hospital and Doctor Info) and suggest a free slot to the patient. Always call this before Book Appointment.",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "doctor_id",
+              "value": "=eq.{{ $fromAI('doctor_id', 'Numeric ID of the doctor, obtained from Get Hospital and Doctor Info', 'string') }}"
+            },
+            {
+              "name": "slot_time",
+              "value": "=gte.{{ $fromAI('date', 'Date to check, format YYYY-MM-DD, e.g. 2026-08-20', 'string') }}T00:00:00"
+            },
+            {
+              "name": "slot_time",
+              "value": "=lte.{{ $fromAI('date', 'Date to check, format YYYY-MM-DD, e.g. 2026-08-20', 'string') }}T23:59:59"
+            },
+            {
+              "name": "status",
+              "value": "=neq.cancelled"
+            },
+            {
+              "name": "select",
+              "value": "slot_time"
+            }
+          ]
+        }
+      },
+      "id": "1c8ea1b6",
+      "name": "Check Doctor's Booked Slots For A Date",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "toolDescription": "Books a new confirmed appointment for THIS patient (patient identity is handled automatically — you never need to and cannot book for another patient). Only call after confirming department/doctor and an available slot with the patient.",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ patient_id: $('Upsert Patient (Supabase)').item.json.id, doctor_id: $fromAI('doctor_id', 'Numeric ID of the doctor to book, from Get Hospital and Doctor Info', 'string'), slot_time: $fromAI('slot_time', 'Confirmed appointment date-time in ISO 8601, e.g. 2026-08-20T10:30:00', 'string'), status: 'confirmed', source: 'whatsapp', reminder_24h_sent: false, reminder_2h_sent: false, created_at: new Date().toISOString() }]) }}"
+      },
+      "id": "c9cfcfa2",
+      "name": "Book Appointment",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "toolDescription": "Moves THIS patient's existing appointment to a new date/time. Requires the appointment_id (ask the patient, or find it via My Appointment / Report Status lookups mentioned earlier in the conversation).",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $fromAI('appointment_id', 'The appointment ID to reschedule', 'string') }}"
+            },
+            {
+              "name": "patient_id",
+              "value": "=eq.{{ $('Upsert Patient (Supabase)').item.json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ slot_time: $fromAI('new_slot_time', 'New confirmed date-time in ISO 8601, e.g. 2026-08-22T11:00:00', 'string'), status: 'confirmed', rescheduled: true }) }}"
+      },
+      "id": "5fb63081",
+      "name": "Reschedule Appointment",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2320,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "toolDescription": "Cancels THIS patient's existing appointment. Requires the appointment_id. Always confirm with the patient before cancelling.",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $fromAI('appointment_id', 'The appointment ID to cancel', 'string') }}"
+            },
+            {
+              "name": "patient_id",
+              "value": "=eq.{{ $('Upsert Patient (Supabase)').item.json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'cancelled' }) }}"
+      },
+      "id": "3c301614",
+      "name": "Cancel Appointment",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2480,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/reports",
+        "authentication": "none",
+        "toolDescription": "Tells you whether THIS patient has any lab reports on file and their type/date — use this to answer 'is my report ready' type questions. Does NOT return the download link (links are sent automatically via WhatsApp when a report becomes ready).",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "patient_id",
+              "value": "=eq.{{ $('Upsert Patient (Supabase)').item.json.id }}"
+            },
+            {
+              "name": "order",
+              "value": "created_at.desc"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "select",
+              "value": "report_type,created_at,is_critical"
+            }
+          ]
+        }
+      },
+      "id": "edfa7ad3",
+      "name": "Check My Report Status",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2640,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.VOICE_API_BASE_URL }}/api/v1/calls",
+        "authentication": "none",
+        "toolDescription": "Schedules an outbound AI voice call to THIS patient via our calling server. Use only when the patient explicitly asks to be called, or when a matter genuinely needs a voice conversation instead of chat.",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.VOICE_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ patient_phone: $('Extract WhatsApp Message').item.json.from, patient_id: $('Upsert Patient (Supabase)').item.json.id, call_type: 'patient_requested', context: $fromAI('reason', 'Short note on why the patient wants a call / what to discuss', 'string'), callback_url: $execution.resumeUrl || '' }) }}"
+      },
+      "id": "605689ef",
+      "name": "Request AI Voice Call For This Patient",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2800,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/escalations",
+        "authentication": "none",
+        "toolDescription": "Hands off to a human front-desk staff member for anything you cannot or should not resolve yourself — complaints, billing disputes, emergencies, or clinical questions. Always tell the patient a team member will reach out.",
+        "descriptionType": "manual",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ patient_phone: $('Extract WhatsApp Message').item.json.from, reason: $fromAI('reason', 'What the patient needs that requires human help', 'string'), urgency: $fromAI('urgency', 'One of: normal, urgent', 'string', 'normal'), resolved: false, created_at: new Date().toISOString() }]) }}"
+      },
+      "id": "273269ec",
+      "name": "Escalate To Front Desk (Human Handoff)",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2960,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://mcp.supabase.com/mcp",
+        "serverTransport": "httpStreamable",
+        "authentication": "none",
+        "include": "all"
+      },
+      "id": "866d6557",
+      "name": "Supabase MCP — Live Hospital Data (optional)",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extract WhatsApp Message').item.json.text }}",
+        "options": {
+          "systemMessage": "=Aap ek hospital ke liye 24x7 WhatsApp patient-support aur appointment-booking assistant ho. Patient jis language me likhe (Hindi/Hinglish/English) usi me concise, warm, respectful reply do.\n\nCurrent date-time: {{ $now.format('DDDD, dd LLLL yyyy, HH:mm') }} (IST)\nPatient's WhatsApp number (mat poochna, already pata hai): {{ $('Extract WhatsApp Message').item.json.from }}\n\n## Tumhara scope\n1. Appointment book karna, reschedule karna, cancel karna.\n2. Doctor/department/timing/fee/location jaise common sawaalon ke jawab dena.\n3. Patient ka apna report/appointment status batana.\n4. Agar patient bole \"mujhe call chahiye\" ya complex/urgent lage, to voice-call tool use karo.\n5. Kuch bhi jo tum handle nahi kar sakte (clinical judgement, complaints, billing dispute, emergency) — turant Escalate tool use karo aur patient ko bata do ki team jald contact karegi.\n\n## SAKHT RULES (kabhi mat todna)\n- Kabhi bhi diagnosis, dawai ki dose, ya medical advice mat do. Har clinical sawaal par bolo: \"Yeh sawaal doctor se discuss karna zaroori hai\" aur appointment book karne ka offer do.\n- Agar koi emergency jaisa lage (chest pain, severe bleeding, breathing issue, etc.) turant bolo: \"Yeh emergency lag rahi hai, kripya turant nearest emergency room jaayein ya ambulance call karein\" — aur Escalate tool bhi turant call karo.\n- Appointment book/reschedule/cancel karne se pehle patient se department/doctor aur preferred date/time confirm karo — kabhi khud se guess karke book mat karo.\n- Kabhi kisi report ka secure link ya token khud mat banao ya bolo — reports automatically WhatsApp par bheje jaate hain jab ready hote hain; agar patient poochhe, sirf status batao.\n- Har reply short rakho (WhatsApp message — 2-5 lines), zaroorat ho tabhi bullet points use karo.\n\n## Tool selection tips\n- Pehle \"Get Hospital and Doctor Info\" se doctor_id/department confirm karo, phir \"Check Doctor's Booked Slots\" se free slot dhoondo, tabhi \"Book Appointment\" call karo.\n- Cancel/Reschedule tools sirf isi patient ke appointment par kaam karte hain (already secured) — appointment_id patient khud bata sakta hai ya tum \"check status\" se pehle nikaal sakte ho.\n",
+          "maxIterations": 25
+        }
+      },
+      "id": "b89ca316",
+      "name": "Patient WhatsApp AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1780,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Extract WhatsApp Message').item.json.from, type: 'text', text: { body: $('Patient WhatsApp AI Agent').item.json.output } }) }}"
+      },
+      "id": "20393895",
+      "name": "Send WhatsApp AI Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        720
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'replied' } }}"
+      },
+      "id": "0d275aa4",
+      "name": "AI Reply Sent (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2360,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/error_log",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ source: 'send_whatsapp_ai_reply', patient_phone: $('Extract WhatsApp Message').item.json.from, error_detail: JSON.stringify($json).slice(0,2000), created_at: new Date().toISOString() }]) }}"
+      },
+      "id": "8391d3a0",
+      "name": "Log WA Send Failure (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2360,
+        820
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'processed_send_failed' } }}"
+      },
+      "id": "92c470c4",
+      "name": "AI Reply Ack Despite Send Fail (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2620,
+        820
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3️⃣ SECTION B — AI Voice Calling for Follow-ups (Server API)\nYahan har jagah HAMARA APNA \"Voice Calling Server API\" call hota hai (LiveKit/Sarvam-based apna backend) — n8n sirf trigger deta hai aur result webhook se wapas leta hai.\n**Contract Dev's server ko implement karna hoga:**\n`POST {VOICE_API_BASE_URL}/api/v1/calls` — body: {patient_phone, patient_name, call_type, appointment_id, context, callback_url}. Header: `Authorization: Bearer {VOICE_API_KEY}`.\nCall complete hone par server WAPAS is workflow ke `voice-call-callback` webhook par POST kare: {call_id, appointment_id, patient_phone, status, outcome, transcript_summary, requested_new_time}. outcome ek in me se: confirmed | reschedule_requested | cancelled | no_answer | failed.",
+        "height": 220,
+        "width": 3300
+      },
+      "id": "5c06afaf",
+      "name": "B-header",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        1240
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "780d2324",
+      "name": "Reminder Scanner (Every 15 min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -40,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "=eq.confirmed"
+            },
+            {
+              "name": "slot_time",
+              "value": "=gte.{{ new Date().toISOString() }}"
+            },
+            {
+              "name": "slot_time",
+              "value": "=lte.{{ new Date(Date.now()+26*3600*1000).toISOString() }}"
+            },
+            {
+              "name": "select",
+              "value": "id,slot_time,reminder_24h_sent,reminder_2h_sent,patient:patients(id,name,phone),doctor:doctors(id,name,department)"
+            }
+          ]
+        }
+      },
+      "id": "b5c3b7db",
+      "name": "Get Appointments Needing Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1500
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nconst now = Date.now();\nconst out = [];\nfor (const item of items) {\n  const j = item.json;\n  const slot = new Date(j.slot_time).getTime();\n  const hours = (slot - now) / 3600000;\n  let type = null;\n  if (hours <= 25 && hours >= 23 && !j.reminder_24h_sent) type = '24h';\n  else if (hours <= 3 && hours >= 1 && !j.reminder_2h_sent) type = '2h';\n  if (type) out.push({ json: { ...j, reminder_type: type } });\n}\nreturn out;"
+      },
+      "id": "f72ed3ce",
+      "name": "Classify Reminder Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "2bc45dd9",
+                    "leftValue": "={{ $json.reminder_type === '24h' }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "24h"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "4ddd4eb6",
+                    "leftValue": "={{ $json.reminder_type === '2h' }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "2h"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Skip"
+        }
+      },
+      "id": "7d7455c9",
+      "name": "Route Reminder Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        740,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.patient.phone, type: 'template', template: { name: 'appointment_reminder_24h', language: { code: 'en' }, components: [ { type: 'body', parameters: [ { type: 'text', text: $json.patient.name }, { type: 'text', text: $json.doctor.name }, { type: 'text', text: new Date($json.slot_time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) } ] } ] } }) }}"
+      },
+      "id": "6c3bb3e9",
+      "name": "Send WhatsApp 24h Reminder Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        1380
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ reminder_24h_sent: true }) }}"
+      },
+      "id": "f007f21d",
+      "name": "Mark 24h Reminder Sent (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        1380
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.patient.phone, type: 'template', template: { name: 'appointment_reminder_2h', language: { code: 'en' }, components: [ { type: 'body', parameters: [ { type: 'text', text: $json.patient.name }, { type: 'text', text: $json.doctor.name }, { type: 'text', text: new Date($json.slot_time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) } ] } ] } }) }}"
+      },
+      "id": "38a1b541",
+      "name": "Send WhatsApp 2h Reminder Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        1620
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.VOICE_API_BASE_URL }}/api/v1/calls",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.VOICE_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ patient_phone: $json.patient.phone, patient_name: $json.patient.name, appointment_id: $json.id, call_type: 'reminder_2h', context: 'Doctor: ' + $json.doctor.name + ', Time: ' + $json.slot_time, callback_url: $env.N8N_BASE_URL + '/webhook/voice-call-callback' }) }}"
+      },
+      "id": "fc485b11",
+      "name": "Trigger AI Call — 2h Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        1620
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.patient ? $json.id : $json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ reminder_2h_sent: true }) }}"
+      },
+      "id": "1555f8fc",
+      "name": "Mark 2h Reminder Sent (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        1620
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "content": "**Missed Appointment Follow-up** — roz shaam ko check karta hai kaunse confirmed appointments ka time nikal gaya bina complete/cancel hue, unhe 'missed' mark karta hai aur AI call trigger karta hai.",
+        "height": 120,
+        "width": 1600
+      },
+      "id": "7c2df1bb",
+      "name": "B-missed-note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        1840
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "dc413d95",
+      "name": "Missed Appointment Sweep (Daily 7PM IST)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -40,
+        1960
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "=eq.confirmed"
+            },
+            {
+              "name": "slot_time",
+              "value": "=lt.{{ new Date().toISOString() }}"
+            },
+            {
+              "name": "select",
+              "value": "id,slot_time,patient:patients(id,name,phone),doctor:doctors(id,name)"
+            }
+          ]
+        }
+      },
+      "id": "64b38640",
+      "name": "Get Missed Appointments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1960
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'missed' }) }}"
+      },
+      "id": "f8241b78",
+      "name": "Mark Appointment Missed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        1960
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.VOICE_API_BASE_URL }}/api/v1/calls",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.VOICE_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ patient_phone: $json.patient.phone, patient_name: $json.patient.name, appointment_id: $json.id, call_type: 'missed_followup', context: 'Missed appointment with ' + $json.doctor.name + ' on ' + $json.slot_time, callback_url: $env.N8N_BASE_URL + '/webhook/voice-call-callback' }) }}"
+      },
+      "id": "9e0e75c2",
+      "name": "Trigger AI Follow-up Call (Missed)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        1960
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/call_logs",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ appointment_id: $json.appointment_id || $('Mark Appointment Missed').item.json.id, patient_phone: $('Mark Appointment Missed').item.json.patient.phone, call_type: 'missed_followup', status: 'queued', created_at: new Date().toISOString() }]) }}"
+      },
+      "id": "39f0926d",
+      "name": "Log Call Attempt (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        1960
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "content": "**Voice Call Status Callback** — Dev ka calling server har call complete hone ke baad yahan POST karega. Outcome ke hisaab se appointment record apne aap update hota hai.",
+        "height": 120,
+        "width": 1600
+      },
+      "id": "43ea03b2",
+      "name": "B-callback-note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-call-callback",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ecc175ff",
+      "name": "Voice Call Status Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b = $json.body || {};\nreturn [{\n  json: {\n    call_id: b.call_id || '',\n    appointment_id: b.appointment_id || null,\n    patient_phone: b.patient_phone || '',\n    status: b.status || 'unknown',\n    outcome: b.outcome || 'no_answer',\n    transcript_summary: b.transcript_summary || '',\n    requested_new_time: b.requested_new_time || null\n  }\n}];"
+      },
+      "id": "04a04274",
+      "name": "Parse Call Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/call_logs",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ appointment_id: $json.appointment_id, patient_phone: $json.patient_phone, call_type: 'status_callback', status: $json.status, outcome: $json.outcome, transcript_summary: $json.transcript_summary, created_at: new Date().toISOString() }]) }}"
+      },
+      "id": "ad0111a3",
+      "name": "Log Call Result (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        2320
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "81e8c20f",
+                    "leftValue": "={{ $('Parse Call Result').item.json.outcome === 'confirmed' }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "Confirmed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "2c9863a2",
+                    "leftValue": "={{ $('Parse Call Result').item.json.outcome === 'reschedule_requested' }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "Reschedule"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "2fcb7725",
+                    "leftValue": "={{ $('Parse Call Result').item.json.outcome === 'cancelled' }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "Cancelled"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "NoAnswerOrFailed"
+        }
+      },
+      "id": "2408349c",
+      "name": "Route By Call Outcome",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        740,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $('Parse Call Result').item.json.appointment_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ confirmed_via_call: true }) }}"
+      },
+      "id": "127a3267",
+      "name": "Mark Confirmed Via Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        2200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'ok' } }}"
+      },
+      "id": "8ba1db4b",
+      "name": "Callback Ack — Confirmed (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $('Parse Call Result').item.json.appointment_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'reschedule_pending' }) }}"
+      },
+      "id": "3aa9f789",
+      "name": "Mark Reschedule Pending",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        2320
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Parse Call Result').item.json.patient_phone, type: 'template', template: { name: 'reschedule_request', language: { code: 'en' }, components: [] } }) }}"
+      },
+      "id": "f7f70128",
+      "name": "Send WA — Ask Preferred New Slot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        2320
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'ok' } }}"
+      },
+      "id": "72432869",
+      "name": "Callback Ack — Reschedule (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $('Parse Call Result').item.json.appointment_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'cancelled' }) }}"
+      },
+      "id": "d2495125",
+      "name": "Mark Cancelled Via Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        2440
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'ok' } }}"
+      },
+      "id": "1072c0f6",
+      "name": "Callback Ack — Cancelled (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        2440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $('Parse Call Result').item.json.appointment_id }}"
+            },
+            {
+              "name": "select",
+              "value": "id,retry_count"
+            }
+          ]
+        }
+      },
+      "id": "1feb5a84",
+      "name": "Get Current Retry Count",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        2580
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const row = ($json[0]) || { retry_count: 0 };\nreturn [{ json: { id: row.id || $('Parse Call Result').item.json.appointment_id, retry_count: (row.retry_count || 0) + 1 } }];"
+      },
+      "id": "629bb7cf",
+      "name": "Compute New Retry Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        2580
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ retry_count: $json.retry_count }) }}"
+      },
+      "id": "4682eb6c",
+      "name": "Save New Retry Count",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        2580
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "96e93f5c",
+              "leftValue": "={{ $('Compute New Retry Count').item.json.retry_count >= 2 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "07319489",
+      "name": "Retry Count Reached Limit?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1780,
+        2580
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ALERT_FROM_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "=📞 Patient Unreachable After 2 AI Call Attempts",
+        "text": "=Appointment ID: {{ $('Parse Call Result').item.json.appointment_id }}\\nPatient phone: {{ $('Parse Call Result').item.json.patient_phone }}\\nPlease call manually to confirm/reschedule.",
+        "options": {}
+      },
+      "id": "8098963f",
+      "name": "Alert Front Desk — Manual Call Needed",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2040,
+        2520
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_SMTP_CRED",
+          "name": "SMTP Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'ok' } }}"
+      },
+      "id": "d6b01ceb",
+      "name": "Callback Ack — Alerted (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2300,
+        2520
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'ok' } }}"
+      },
+      "id": "d2cfcbab",
+      "name": "Callback Ack — Will Retry (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2040,
+        2640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 4️⃣ SECTION C — Reports & Prescription Notification\nTrigger: aapka Lab/EMR system (ya manual Postman call) is webhook par POST karega jab report ready ho.\nBody expected: { patient_phone OR patient_id, report_type, report_url, doctor_notes (optional), is_critical (optional bool) }.\nSecure link banta hai (random token + 7-din expiry) — asli report_url kabhi WhatsApp par directly share nahi hota, sirf secure_link jo aapke report-viewer page (REPORT_PORTAL_BASE_URL) par khulta hai.",
+        "height": 220,
+        "width": 3000
+      },
+      "id": "f79ff364",
+      "name": "C-header",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        2740
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "report-ready",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c98e46a5",
+      "name": "Report Ready (POST)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        3000
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "852db148",
+              "leftValue": "={{ $json.body && ($json.body.patient_phone || $json.body.patient_id) && $json.body.report_type && $json.body.report_url }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "08db96e3",
+      "name": "Validate Report Payload",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        3000
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 400
+        },
+        "responseBody": "={{ { error: 'validation_error', message: 'patient_phone or patient_id, report_type, and report_url are required' } }}"
+      },
+      "id": "2724e1db",
+      "name": "Reject Invalid Payload (400)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        3160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/patients",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "or",
+              "value": "=({{ $json.body.patient_id ? 'id.eq.' + $json.body.patient_id : 'phone.eq.' + encodeURIComponent($json.body.patient_phone) }})"
+            },
+            {
+              "name": "select",
+              "value": "id,name,phone"
+            }
+          ]
+        }
+      },
+      "id": "ee69da60",
+      "name": "Get Patient Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        3000
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function randToken(len) {\n  const chars = 'abcdef0123456789';\n  let s = '';\n  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];\n  return s;\n}\nconst token = randToken(48);\nconst expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();\nconst body = $('Report Ready (POST)').item.json.body;\nconst patient = ($input.first().json[0]) || {};\nreturn [{\n  json: {\n    patient_id: patient.id || body.patient_id,\n    patient_name: patient.name || 'Patient',\n    patient_phone: patient.phone || body.patient_phone,\n    report_type: body.report_type,\n    report_url: body.report_url,\n    doctor_notes: body.doctor_notes || '',\n    is_critical: body.is_critical === true,\n    secure_token: token,\n    expires_at: expiresAt,\n    secure_link: (($env.REPORT_PORTAL_BASE_URL || 'https://connect.iautomate.in') + '/reports/view?token=' + token)\n  }\n}];"
+      },
+      "id": "56f4287a",
+      "name": "Generate Secure Report Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        3000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/reports",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ patient_id: $json.patient_id, report_type: $json.report_type, report_url: $json.report_url, secure_token: $json.secure_token, expires_at: $json.expires_at, is_critical: $json.is_critical, doctor_notes: $json.doctor_notes, created_at: new Date().toISOString() }]) }}"
+      },
+      "id": "3bbd5cef",
+      "name": "Save Report Record (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        3000
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 500
+        },
+        "responseBody": "={{ { error: 'server_error', message: 'could not save report record' } }}"
+      },
+      "id": "fb4ca007",
+      "name": "Report Save Failed (500)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        3140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "08780fb1",
+              "leftValue": "={{ !!$json.doctor_notes || (Array.isArray($json) && $json[0] && !!$json[0].doctor_notes) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "038e2a95",
+      "name": "Doctor Notes Provided?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1260,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "a960f29a",
+      "name": "Report Summary Model (Gemini)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        2780
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REPLACE_GEMINI_CRED",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Doctor's notes for this report: {{ $('Generate Secure Report Token').item.json.doctor_notes }}",
+        "options": {
+          "systemMessage": "=Tum ek hospital ke report-notification assistant ho. Doctor ke clinical notes ko 2-3 short lines me simple Hinglish me samjhao — patient ko dara mat, sirf jaankari do. Kabhi diagnosis mat karo ya apni taraf se advice mat do. Reply ke aakhri line me hamesha likho: 'Detail me apni report doctor se hi discuss karein.'"
+        }
+      },
+      "id": "8ab0f7ff",
+      "name": "Generate Patient-Friendly Summary",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        1520,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Generate Secure Report Token').item.json.patient_phone, type: 'template', template: { name: 'report_ready', language: { code: 'en' }, components: [ { type: 'body', parameters: [ { type: 'text', text: $('Generate Secure Report Token').item.json.patient_name }, { type: 'text', text: $('Generate Secure Report Token').item.json.report_type }, { type: 'text', text: $('Generate Secure Report Token').item.json.secure_link } ] } ] } }) }}"
+      },
+      "id": "2ccedfaf",
+      "name": "Send WhatsApp Report Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        2960
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "02e8bfcb",
+              "leftValue": "={{ $('Generate Secure Report Token').item.json.is_critical === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9e809aaf",
+      "name": "Is Critical Report?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2040,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.VOICE_API_BASE_URL }}/api/v1/calls",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.VOICE_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ patient_phone: $('Generate Secure Report Token').item.json.patient_phone, patient_name: $('Generate Secure Report Token').item.json.patient_name, call_type: 'critical_report', context: 'Critical report ready: ' + $('Generate Secure Report Token').item.json.report_type, callback_url: $env.N8N_BASE_URL + '/webhook/voice-call-callback' }) }}"
+      },
+      "id": "d430af68",
+      "name": "Trigger AI Call — Critical Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2300,
+        2840
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ALERT_FROM_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "=🚨 Critical Report Ready — {{ $('Generate Secure Report Token').item.json.patient_name }}",
+        "text": "=Patient: {{ $('Generate Secure Report Token').item.json.patient_name }} ({{ $('Generate Secure Report Token').item.json.patient_phone }})\\nReport: {{ $('Generate Secure Report Token').item.json.report_type }}\\nPlease review urgently.",
+        "options": {}
+      },
+      "id": "eecb714f",
+      "name": "Alert Doctor/Admin — Critical Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2300,
+        3040
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_SMTP_CRED",
+          "name": "SMTP Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberOfInputs": 2
+      },
+      "id": "6c6ae517",
+      "name": "Merge Critical-Alert Branches",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2560,
+        2940
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        },
+        "responseBody": "={{ { status: 'notified', secure_link: $('Generate Secure Report Token').item.json.secure_link } }}"
+      },
+      "id": "c8c0db03",
+      "name": "Report Notified (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2820,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 5️⃣ SECTION D — Feedback & Review Automation (outbound trigger)\nHar ghante check karta hai ki kaunse appointments 2+ ghante pehle 'completed' mark ho chuke hain aur abhi tak feedback nahi maanga gaya. Unhe WhatsApp par \"1-5 reply karo\" bhejta hai.\n**Reply ka processing SECTION A me hota hai** (upar \"Is Numeric Rating Reply With Pending Feedback?\" branch) — rating<=3 par front-desk escalate, rating>=4 par Google review request.\nNOTE: `appointments.status = 'completed'` set karna aapke front-desk/EMR system ki responsibility hai (jab visit khatam ho).",
+        "height": 200,
+        "width": 2200
+      },
+      "id": "a4028d26",
+      "name": "D-header",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        3190
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "ed7403ad",
+      "name": "Feedback Request Scanner (Hourly)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -40,
+        3450
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "=eq.completed"
+            },
+            {
+              "name": "feedback_sent",
+              "value": "=eq.false"
+            },
+            {
+              "name": "completed_at",
+              "value": "=lte.{{ new Date(Date.now()-2*3600*1000).toISOString() }}"
+            },
+            {
+              "name": "select",
+              "value": "id,patient:patients(id,name,phone)"
+            }
+          ]
+        }
+      },
+      "id": "3057e31d",
+      "name": "Get Completed Appts Needing Feedback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        3450
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/feedback",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ appointment_id: $json.id, patient_id: $json.patient.id, patient_phone: $json.patient.phone, rating: null, requested_at: new Date().toISOString() }]) }}"
+      },
+      "id": "a047a28e",
+      "name": "Insert Feedback Placeholder (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        3450
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WA_PHONE_NUMBER_ID }}/messages",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WA_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Get Completed Appts Needing Feedback').item.json.patient.phone, type: 'template', template: { name: 'feedback_request', language: { code: 'en' }, components: [ { type: 'body', parameters: [ { type: 'text', text: $('Get Completed Appts Needing Feedback').item.json.patient.name } ] } ] } }) }}"
+      },
+      "id": "3be31cbe",
+      "name": "Send WhatsApp Feedback Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        3450
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $('Get Completed Appts Needing Feedback').item.json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ feedback_sent: true }) }}"
+      },
+      "id": "69e35b61",
+      "name": "Mark Feedback Sent (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        3450
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "content": "### 🔴 SEPARATE ERROR WORKFLOW — is 3-node group ko COPY karke ek NAYI empty workflow me PASTE karo, save karo,\nphir is MAIN workflow ki (upar wali) Settings ⚙️ → Error Workflow me us nayi workflow ko select karo.\n(n8n rule: ek workflow khud apna error-catcher nahi ho sakti — yeh UI-only setting hai, JSON import se set nahi hoti.)\nAlert jaan-boojh kar EMAIL par ja raha hai (WhatsApp nahi) — taaki agar WhatsApp/Meta API hi down ho to alert phir bhi mil jaaye.",
+        "height": 260,
+        "width": 2000
+      },
+      "id": "19c1df0a",
+      "name": "E-header",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        3600
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "c74e209c",
+      "name": "On Any Workflow Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        3800
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const exec = $json.execution || {};\nconst wf = $json.workflow || {};\nconst err = exec.error || {};\nreturn [{\n  json: {\n    subject: '🔴 n8n Workflow Failed: ' + (wf.name || 'Unknown'),\n    body: 'Workflow: ' + (wf.name || 'Unknown') + '\\nFailed node: ' + (exec.lastNodeExecuted || 'Unknown') + '\\nError: ' + (err.message || 'No message') + '\\nExecution URL: ' + (exec.url || '') + '\\nTime: ' + new Date().toISOString()\n  }\n}];"
+      },
+      "id": "badf5a8f",
+      "name": "Build Alert Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        3800
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ALERT_FROM_EMAIL }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "text": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "07ca459e",
+      "name": "Send Error Alert Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        3800
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_SMTP_CRED",
+          "name": "SMTP Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/error_log",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{ source: $json.headers ? ($json.headers['x-n8n-source'] || 'background_send') : 'background_send', error_detail: JSON.stringify($json).slice(0,2000), created_at: new Date().toISOString() }]) }}"
+      },
+      "id": "7801acd5",
+      "name": "Log Background Send Failure (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        3800
+      ]
+    }
+  ],
+  "connections": {
+    "WA Verify (GET) — Meta App Setup": {
+      "main": [
+        [
+          {
+            "node": "Verify Token Match?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Token Match?": {
+      "main": [
+        [
+          {
+            "node": "Return Challenge (200)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Verify (403)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Inbound (POST)": {
+      "main": [
+        [
+          {
+            "node": "Has Incoming Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Incoming Message?": {
+      "main": [
+        [
+          {
+            "node": "Extract WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ack Non-Message Event (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Upsert Patient (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Patient (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Check Pending Feedback Request (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Pending Feedback Request (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Is Numeric Rating Reply With Pending Feedback?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Numeric Rating Reply With Pending Feedback?": {
+      "main": [
+        [
+          {
+            "node": "Parse Feedback Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Feedback Reply": {
+      "main": [
+        [
+          {
+            "node": "Update Feedback Record (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Feedback Record (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Rating Is 3 Or Below?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rating Is 3 Or Below?": {
+      "main": [
+        [
+          {
+            "node": "Alert Front Desk — Unhappy Patient",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Google Review Request (WhatsApp)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Front Desk — Unhappy Patient": {
+      "main": [
+        [
+          {
+            "node": "Send Apology + Assurance (WhatsApp)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Apology + Assurance (WhatsApp)": {
+      "main": [
+        [
+          {
+            "node": "Feedback Ack — Escalated (200)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Google Review Request (WhatsApp)": {
+      "main": [
+        [
+          {
+            "node": "Feedback Ack — Review Requested (200)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory (per patient)": {
+      "ai_memory": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Hospital And Doctor Info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Doctor's Booked Slots For A Date": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Book Appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reschedule Appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel Appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check My Report Status": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request AI Voice Call For This Patient": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate To Front Desk (Human Handoff)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase MCP — Live Hospital Data (optional)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Patient WhatsApp AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Patient WhatsApp AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp AI Reply": {
+      "main": [
+        [
+          {
+            "node": "AI Reply Sent (200)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log WA Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log WA Send Failure (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "AI Reply Ack Despite Send Fail (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder Scanner (Every 15 min)": {
+      "main": [
+        [
+          {
+            "node": "Get Appointments Needing Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Appointments Needing Reminder": {
+      "main": [
+        [
+          {
+            "node": "Classify Reminder Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Reminder Window": {
+      "main": [
+        [
+          {
+            "node": "Route Reminder Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Reminder Type": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp 24h Reminder Template",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send WhatsApp 2h Reminder Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp 24h Reminder Template": {
+      "main": [
+        [
+          {
+            "node": "Mark 24h Reminder Sent (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp 2h Reminder Template": {
+      "main": [
+        [
+          {
+            "node": "Trigger AI Call — 2h Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger AI Call — 2h Reminder": {
+      "main": [
+        [
+          {
+            "node": "Mark 2h Reminder Sent (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Missed Appointment Sweep (Daily 7PM IST)": {
+      "main": [
+        [
+          {
+            "node": "Get Missed Appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Missed Appointments": {
+      "main": [
+        [
+          {
+            "node": "Mark Appointment Missed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Appointment Missed": {
+      "main": [
+        [
+          {
+            "node": "Trigger AI Follow-up Call (Missed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger AI Follow-up Call (Missed)": {
+      "main": [
+        [
+          {
+            "node": "Log Call Attempt (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Call Status Callback": {
+      "main": [
+        [
+          {
+            "node": "Parse Call Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Call Result": {
+      "main": [
+        [
+          {
+            "node": "Log Call Result (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Call Result (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Route By Call Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route By Call Outcome": {
+      "main": [
+        [
+          {
+            "node": "Mark Confirmed Via Call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Reschedule Pending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Cancelled Via Call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Current Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Confirmed Via Call": {
+      "main": [
+        [
+          {
+            "node": "Callback Ack — Confirmed (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Reschedule Pending": {
+      "main": [
+        [
+          {
+            "node": "Send WA — Ask Preferred New Slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WA — Ask Preferred New Slot": {
+      "main": [
+        [
+          {
+            "node": "Callback Ack — Reschedule (200)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Cancelled Via Call": {
+      "main": [
+        [
+          {
+            "node": "Callback Ack — Cancelled (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Current Retry Count": {
+      "main": [
+        [
+          {
+            "node": "Compute New Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute New Retry Count": {
+      "main": [
+        [
+          {
+            "node": "Save New Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save New Retry Count": {
+      "main": [
+        [
+          {
+            "node": "Retry Count Reached Limit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Count Reached Limit?": {
+      "main": [
+        [
+          {
+            "node": "Alert Front Desk — Manual Call Needed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Ack — Will Retry (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Front Desk — Manual Call Needed": {
+      "main": [
+        [
+          {
+            "node": "Callback Ack — Alerted (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Ready (POST)": {
+      "main": [
+        [
+          {
+            "node": "Validate Report Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Report Payload": {
+      "main": [
+        [
+          {
+            "node": "Get Patient Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Payload (400)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Patient Details": {
+      "main": [
+        [
+          {
+            "node": "Generate Secure Report Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Secure Report Token": {
+      "main": [
+        [
+          {
+            "node": "Save Report Record (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Report Record (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Doctor Notes Provided?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report Save Failed (500)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Doctor Notes Provided?": {
+      "main": [
+        [
+          {
+            "node": "Generate Patient-Friendly Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send WhatsApp Report Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Summary Model (Gemini)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Patient-Friendly Summary",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Patient-Friendly Summary": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Report Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Report Notification": {
+      "main": [
+        [
+          {
+            "node": "Is Critical Report?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Critical Report?": {
+      "main": [
+        [
+          {
+            "node": "Trigger AI Call — Critical Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Alert Doctor/Admin — Critical Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report Notified (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger AI Call — Critical Report": {
+      "main": [
+        [
+          {
+            "node": "Merge Critical-Alert Branches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Doctor/Admin — Critical Report": {
+      "main": [
+        [
+          {
+            "node": "Merge Critical-Alert Branches",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Critical-Alert Branches": {
+      "main": [
+        [
+          {
+            "node": "Report Notified (200)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback Request Scanner (Hourly)": {
+      "main": [
+        [
+          {
+            "node": "Get Completed Appts Needing Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Completed Appts Needing Feedback": {
+      "main": [
+        [
+          {
+            "node": "Insert Feedback Placeholder (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Feedback Placeholder (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Feedback Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Feedback Request": {
+      "main": [
+        [
+          {
+            "node": "Mark Feedback Sent (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Background Send Failure (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On Any Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Send Error Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "hospital-ai-automation"
+  }
+}

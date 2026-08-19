@@ -17,6 +17,17 @@ import CADashboardOverviewTab from '../../components/dashboard/ca/CADashboardOve
 import CAInvoicesTab from '../../components/dashboard/ca/CAInvoicesTab';
 import CAAIAgentTab from '../../components/dashboard/ca/CAAIAgentTab';
 import CANewClientModal from '../../components/dashboard/ca/CANewClientModal';
+import HospitalDashboardOverviewTab from '../../components/dashboard/hospital/HospitalDashboardOverviewTab';
+import HospitalAppointmentsTab from '../../components/dashboard/hospital/HospitalAppointmentsTab';
+import HospitalPatientsTab from '../../components/dashboard/hospital/HospitalPatientsTab';
+import HospitalReportsTab from '../../components/dashboard/hospital/HospitalReportsTab';
+import HospitalVoiceCallsTab from '../../components/dashboard/hospital/HospitalVoiceCallsTab';
+import HospitalFeedbackTab from '../../components/dashboard/hospital/HospitalFeedbackTab';
+import HospitalAIAgentTab from '../../components/dashboard/hospital/HospitalAIAgentTab';
+import HospitalAutomationTab from '../../components/dashboard/hospital/HospitalAutomationTab';
+import HospitalNewAppointmentModal from '../../components/dashboard/hospital/HospitalNewAppointmentModal';
+import HospitalNewPatientModal from '../../components/dashboard/hospital/HospitalNewPatientModal';
+import HospitalUploadReportModal from '../../components/dashboard/hospital/HospitalUploadReportModal';
 import { resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
 import { useToast } from '../../components/ui/ToastContext';
 import { ThemeToggle } from '../../components/ui/ThemeContext';
@@ -62,6 +73,9 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('orders');
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
   const [isMobileAllTabsOpen, setIsMobileAllTabsOpen] = useState(false);
+  const [isNewHospitalApptModalOpen, setIsNewHospitalApptModalOpen] = useState(false);
+  const [isNewHospitalPatientModalOpen, setIsNewHospitalPatientModalOpen] = useState(false);
+  const [isUploadHospitalReportModalOpen, setIsUploadHospitalReportModalOpen] = useState(false);
 
   const [isBotPaused, setIsBotPaused] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
@@ -120,6 +134,8 @@ export default function DashboardPage() {
         setBusiness(resolvedBiz as Business);
         if (resolvedCategory === 'ca_firm') {
           setActiveTab('ca_dashboard');
+        } else if (resolvedCategory === 'clinic' || resolvedCategory === 'hospital') {
+          setActiveTab('hospital_dashboard');
         }
         if (typeof window !== 'undefined') {
           localStorage.setItem('biz_id', resData.business.id);
@@ -202,9 +218,10 @@ export default function DashboardPage() {
     (business?.subscription_status === 'trial' && isTrialEnded);
 
   const effectiveCategory = business?.category || 'ca_firm';
+  const isHospital = effectiveCategory === 'clinic' || effectiveCategory === 'hospital';
 
   const captureTypeLabel =
-    effectiveCategory === 'clinic'
+    effectiveCategory === 'clinic' || effectiveCategory === 'hospital'
       ? 'Appointments'
       : effectiveCategory === 'real_estate'
       ? 'Site Visits'
@@ -219,6 +236,7 @@ export default function DashboardPage() {
   const renderCategoryIcon = (cls: string) => {
     switch (effectiveCategory) {
       case 'clinic':
+      case 'hospital':
         return <Stethoscope className={cls} />;
       case 'real_estate':
         return <Building2 className={cls} />;
@@ -250,11 +268,11 @@ export default function DashboardPage() {
             />
             <div className="min-w-0">
               <h1 className="text-sm font-extrabold text-slate-900 dark:text-white leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[280px]">
-                {business?.name || 'Sharma & Associates'}
+                {business?.name || 'MediCare Hospital & Research Centre'}
               </h1>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-slate-200/70 dark:bg-slate-800 border border-slate-300/70 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-md font-bold tracking-wider">
-                  {effectiveCategory === 'ca_firm' ? 'Chartered Accountant' : effectiveCategory}
+                  {effectiveCategory === 'ca_firm' ? 'Chartered Accountant' : isHospital ? 'Hospital & Clinic CRM' : effectiveCategory}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
                   24/7 AI Practice
@@ -275,6 +293,17 @@ export default function DashboardPage() {
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span className="hidden xs:inline">+ New Client</span>
+              </button>
+            )}
+
+            {/* Quick + Book Consultation button for Hospital */}
+            {isHospital && (
+              <button
+                onClick={() => setIsNewHospitalApptModalOpen(true)}
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 px-3 py-1.5 rounded-xl transition-all shadow-sm active:scale-95"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">+ Book OPD</span>
               </button>
             )}
 
@@ -456,7 +485,129 @@ export default function DashboardPage() {
 
         {/* Native Mobile & Desktop Horizontal Scrollable Tab Bar */}
         <div className="flex bg-slate-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl items-center space-x-1.5 overflow-x-auto no-scrollbar shadow-inner backdrop-blur-md">
-          {effectiveCategory === 'ca_firm' ? (
+          {isHospital ? (
+            <>
+              <button
+                onClick={() => setActiveTab('hospital_dashboard')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_dashboard'
+                    ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4 text-teal-500" />
+                <span>Overview</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital_appointments')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_appointments'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Calendar className="w-4 h-4 text-indigo-500" />
+                <span>Appointments</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital_patients')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_patients'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Users className="w-4 h-4 text-blue-500" />
+                <span>Patients</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital_reports')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_reports'
+                    ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <FileText className="w-4 h-4 text-teal-500" />
+                <span>Reports & Labs</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital_voice')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_voice'
+                    ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Phone className="w-4 h-4 text-rose-500" />
+                <span>Voice Calls</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital_feedback')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_feedback'
+                    ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Feedback</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital_agent')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_agent'
+                    ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Bot className="w-4 h-4 text-purple-500" />
+                <span>AI Agent Desk</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital_automation')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'hospital_automation'
+                    ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Zap className="w-4 h-4 text-emerald-500" />
+                <span>Cron Engines</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('conversations')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'conversations'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Chats</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('billing')}
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'billing'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold scale-[1.02]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Billing</span>
+              </button>
+            </>
+          ) : effectiveCategory === 'ca_firm' ? (
             <>
               <button
                 onClick={() => setActiveTab('ca_dashboard')}
@@ -680,6 +831,61 @@ export default function DashboardPage() {
             />
           )}
 
+          {/* Hospital & Clinic Suite Tabs */}
+          {activeTab === 'hospital_dashboard' && (
+            <HospitalDashboardOverviewTab
+              businessId={business?.id}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onOpenNewAppointment={() => setIsNewHospitalApptModalOpen(true)}
+            />
+          )}
+
+          {activeTab === 'hospital_appointments' && (
+            <HospitalAppointmentsTab
+              businessId={business?.id}
+              onOpenNewAppointment={() => setIsNewHospitalApptModalOpen(true)}
+            />
+          )}
+
+          {activeTab === 'hospital_patients' && (
+            <HospitalPatientsTab
+              businessId={business?.id}
+              onOpenNewPatient={() => setIsNewHospitalPatientModalOpen(true)}
+            />
+          )}
+
+          {activeTab === 'hospital_reports' && (
+            <HospitalReportsTab
+              businessId={business?.id}
+              onOpenUploadReport={() => setIsUploadHospitalReportModalOpen(true)}
+            />
+          )}
+
+          {activeTab === 'hospital_voice' && (
+            <HospitalVoiceCallsTab
+              businessId={business?.id}
+            />
+          )}
+
+          {activeTab === 'hospital_feedback' && (
+            <HospitalFeedbackTab
+              businessId={business?.id}
+            />
+          )}
+
+          {activeTab === 'hospital_agent' && (
+            <HospitalAIAgentTab
+              businessId={business?.id}
+              businessName={business?.name}
+            />
+          )}
+
+          {activeTab === 'hospital_automation' && (
+            <HospitalAutomationTab
+              businessId={business?.id}
+            />
+          )}
+
           {activeTab === 'conversations' && (
             <ConversationsTab businessId={business?.id || 'demo-business-id'} />
           )}
@@ -715,11 +921,104 @@ export default function DashboardPage() {
           businessId={business?.id}
           businessName={business?.name}
         />
+
+        {/* Hospital & Clinic Suite Modals */}
+        <HospitalNewAppointmentModal
+          isOpen={isNewHospitalApptModalOpen}
+          onClose={() => setIsNewHospitalApptModalOpen(false)}
+          onSuccess={() => {
+            setIsNewHospitalApptModalOpen(false);
+            loadDashboardData();
+          }}
+          businessId={business?.id}
+        />
+
+        <HospitalNewPatientModal
+          isOpen={isNewHospitalPatientModalOpen}
+          onClose={() => setIsNewHospitalPatientModalOpen(false)}
+          onSuccess={() => {
+            setIsNewHospitalPatientModalOpen(false);
+            loadDashboardData();
+          }}
+          businessId={business?.id}
+        />
+
+        <HospitalUploadReportModal
+          isOpen={isUploadHospitalReportModalOpen}
+          onClose={() => setIsUploadHospitalReportModalOpen(false)}
+          onSuccess={() => {
+            setIsUploadHospitalReportModalOpen(false);
+            loadDashboardData();
+          }}
+          businessId={business?.id}
+        />
       </main>
 
       {/* Mobile Native App Bottom Navigation Dock */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.1)] px-3 py-1.5 flex items-center justify-between pb-safe transition-colors duration-200">
-        {effectiveCategory === 'ca_firm' ? (
+        {isHospital ? (
+          <>
+            <button
+              onClick={() => setActiveTab('hospital_dashboard')}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+                activeTab === 'hospital_dashboard'
+                  ? 'text-teal-600 dark:text-teal-400 font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <BarChart3 className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Home</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('hospital_appointments')}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+                activeTab === 'hospital_appointments'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Calendar className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Appts</span>
+            </button>
+
+            {/* Floating Center Action Button: + Book OPD */}
+            <button
+              onClick={() => setIsNewHospitalApptModalOpen(true)}
+              className="flex flex-col items-center justify-center -mt-5"
+            >
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-teal-600 via-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-teal-500/30 border-2 border-white dark:border-slate-900 active:scale-95 transition-transform">
+                <Plus className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <span className="text-[9px] tracking-tight font-bold text-teal-600 dark:text-teal-400 mt-0.5">+ Book</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('conversations')}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+                activeTab === 'conversations'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <MessageSquare className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Chats</span>
+            </button>
+
+            {/* All Tabs / Menu Drawer Trigger */}
+            <button
+              onClick={() => setIsMobileAllTabsOpen(true)}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+                isMobileAllTabsOpen
+                  ? 'text-teal-600 dark:text-teal-400 font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <LayoutGrid className="w-5 h-5 mb-0.5 text-indigo-500" />
+              <span className="text-[10px] tracking-tight font-bold text-slate-800 dark:text-slate-200">All Tabs</span>
+            </button>
+          </>
+        ) : effectiveCategory === 'ca_firm' ? (
           <>
             <button
               onClick={() => setActiveTab('ca_dashboard')}
@@ -847,7 +1146,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center space-x-2">
                 <LayoutGrid className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">All Practice Modules</h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {isHospital ? 'All Hospital Modules' : 'All Practice Modules'}
+                </h3>
               </div>
               <button
                 onClick={() => setIsMobileAllTabsOpen(false)}
@@ -857,173 +1158,357 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-left">
-              <button
-                onClick={() => {
-                  setActiveTab('ca_dashboard');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'ca_dashboard'
-                    ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500/60 text-teal-900 dark:text-teal-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl w-fit mb-2">
-                  <BarChart3 className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Dashboard</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Practice overview & stats</div>
-              </button>
+            {isHospital ? (
+              <div className="grid grid-cols-2 gap-3 text-left">
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_dashboard');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_dashboard'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500/60 text-teal-900 dark:text-teal-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl w-fit mb-2">
+                    <BarChart3 className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Overview</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Hospital stats & alerts</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('ca_compliance');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'ca_compliance'
-                    ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl w-fit mb-2">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Compliance</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Statutory tax deadlines</div>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_appointments');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_appointments'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl w-fit mb-2">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Appointments</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">OPD & Tokens</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('ca_documents');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'ca_documents'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500/60 text-blue-900 dark:text-blue-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl w-fit mb-2">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Doc Hub</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Document collection & OCR</div>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_patients');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_patients'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500/60 text-blue-900 dark:text-blue-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl w-fit mb-2">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Patients</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Health directory</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('ca_leads');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'ca_leads'
-                    ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-500/60 text-rose-900 dark:text-rose-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl w-fit mb-2">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Leads CRM</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">4-Stage Kanban pipeline</div>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_reports');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_reports'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500/60 text-teal-900 dark:text-teal-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl w-fit mb-2">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Reports & Labs</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Diagnostic results</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('ca_invoices');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'ca_invoices'
-                    ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500/60 text-amber-900 dark:text-amber-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl w-fit mb-2">
-                  <Receipt className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Invoices & Fees</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Fee ledger & UPI links</div>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_voice');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_voice'
+                      ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-500/60 text-rose-900 dark:text-rose-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl w-fit mb-2">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Voice Calls</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">AI Follow-up calls</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('ca_agent');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'ca_agent'
-                    ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-500/60 text-purple-900 dark:text-purple-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl w-fit mb-2">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">AI Agent Desk</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Live WhatsApp test bot</div>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_feedback');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_feedback'
+                      ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500/60 text-amber-900 dark:text-amber-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl w-fit mb-2">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Feedback</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Ratings & Google reviews</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('ca_automation');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'ca_automation'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500/60 text-emerald-900 dark:text-emerald-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl w-fit mb-2">
-                  <Zap className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Cron Engines</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Background automations</div>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_agent');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_agent'
+                      ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-500/60 text-purple-900 dark:text-purple-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl w-fit mb-2">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">AI Agent Desk</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Medical AI simulator</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('conversations');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
-                  activeTab === 'conversations'
-                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 font-bold text-slate-900 dark:text-white shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="p-2 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl w-fit mb-2">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Live Chats</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">2-Way WhatsApp inbox</div>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('hospital_automation');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'hospital_automation'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500/60 text-emerald-900 dark:text-emerald-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl w-fit mb-2">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Cron Engines</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Background triggers</div>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('billing');
-                  setIsMobileAllTabsOpen(false);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all col-span-2 ${
-                  activeTab === 'billing'
-                    ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                <button
+                  onClick={() => {
+                    setActiveTab('conversations');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'conversations'
+                      ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 font-bold text-slate-900 dark:text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl w-fit mb-2">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Live Chats</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">2-Way WhatsApp inbox</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('billing');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    activeTab === 'billing'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl w-fit mb-2">
                     <CreditCard className="w-5 h-5" />
                   </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white">Plan & Subscription (Billing)</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Upgrade to Pro, invoices & danger zone</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Plan & Billing</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Pro subscriptions</div>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-left">
+                <button
+                  onClick={() => {
+                    setActiveTab('ca_dashboard');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'ca_dashboard'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500/60 text-teal-900 dark:text-teal-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl w-fit mb-2">
+                    <BarChart3 className="w-5 h-5" />
                   </div>
-                </div>
-              </button>
-            </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Dashboard</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Practice overview & stats</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('ca_compliance');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'ca_compliance'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl w-fit mb-2">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Compliance</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Statutory tax deadlines</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('ca_documents');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'ca_documents'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500/60 text-blue-900 dark:text-blue-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl w-fit mb-2">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Doc Hub</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Document collection & OCR</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('ca_leads');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'ca_leads'
+                      ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-500/60 text-rose-900 dark:text-rose-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl w-fit mb-2">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Leads CRM</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">4-Stage Kanban pipeline</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('ca_invoices');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'ca_invoices'
+                      ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500/60 text-amber-900 dark:text-amber-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl w-fit mb-2">
+                    <Receipt className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Invoices & Fees</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Fee ledger & UPI links</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('ca_agent');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'ca_agent'
+                      ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-500/60 text-purple-900 dark:text-purple-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl w-fit mb-2">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">AI Agent Desk</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Live WhatsApp test bot</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('ca_automation');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'ca_automation'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500/60 text-emerald-900 dark:text-emerald-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl w-fit mb-2">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Cron Engines</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Background automations</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('conversations');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    activeTab === 'conversations'
+                      ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 font-bold text-slate-900 dark:text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="p-2 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl w-fit mb-2">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Live Chats</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">2-Way WhatsApp inbox</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('billing');
+                    setIsMobileAllTabsOpen(false);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all col-span-2 ${
+                    activeTab === 'billing'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">Plan & Subscription (Billing)</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Upgrade to Pro, invoices & danger zone</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
