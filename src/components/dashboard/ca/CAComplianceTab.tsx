@@ -533,24 +533,66 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Compliance Area *</label>
                   <select
                     value={formType}
-                    onChange={(e) => setFormType(e.target.value as CAComplianceType)}
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    onChange={(e) => setFormType(e.target.value as any)}
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
                   >
-                    <option value="GST-3B">GST-3B Return</option>
-                    <option value="GSTR-1">GSTR-1 Outward</option>
-                    <option value="GSTR-9">GSTR-9 Annual</option>
-                    <option value="ITR-1">ITR-1 Sahaj</option>
-                    <option value="ITR-4">ITR-4 Sugam</option>
-                    <option value="ITR-6">ITR-6 (Companies)</option>
-                    <option value="Tax-Audit">Tax Audit (44AB)</option>
-                    <option value="TDS-26Q">TDS Return (26Q)</option>
-                    <option value="TDS-24Q">TDS Salary (24Q)</option>
-                    <option value="ROC-AOC4">ROC Financials (AOC-4)</option>
-                    <option value="ROC-MGT7">ROC Annual (MGT-7)</option>
-                    <option value="Advance-Tax-Q1">Advance Tax Q1</option>
-                    <option value="Advance-Tax-Q2">Advance Tax Q2</option>
-                    <option value="Advance-Tax-Q3">Advance Tax Q3</option>
-                    <option value="Advance-Tax-Q4">Advance Tax Q4</option>
+                    <optgroup label="🧾 GST Returns & Compliance">
+                      <option value="GST-3B">GST-3B Monthly Return</option>
+                      <option value="GSTR-1">GSTR-1 Outward Supplies</option>
+                      <option value="GSTR-9">GSTR-9 Annual Return & 9C</option>
+                      <option value="GST-Registration">GST Registration</option>
+                      <option value="GST-LUT">GST LUT Filing</option>
+                      <option value="GST-Notice">GST Notice Reply</option>
+                    </optgroup>
+
+                    <optgroup label="📊 Income Tax & ITR Filings">
+                      <option value="ITR-1">ITR-1 Sahaj (Salaried)</option>
+                      <option value="ITR-2">ITR-2 (Capital Gains)</option>
+                      <option value="ITR-3">ITR-3 (Business & Profession)</option>
+                      <option value="ITR-4">ITR-4 Sugam (Presumptive)</option>
+                      <option value="ITR-5">ITR-5 (Firms & LLPs)</option>
+                      <option value="ITR-6">ITR-6 (Companies / Pvt Ltd)</option>
+                      <option value="ITR-7">ITR-7 (Trusts & NGOs)</option>
+                      <option value="Advance-Tax-Q1">Advance Tax Q1 (June 15)</option>
+                      <option value="Advance-Tax-Q2">Advance Tax Q2 (Sept 15)</option>
+                      <option value="Advance-Tax-Q3">Advance Tax Q3 (Dec 15)</option>
+                      <option value="Advance-Tax-Q4">Advance Tax Q4 (March 15)</option>
+                      <option value="IT-Notice">Income Tax Notice Reply</option>
+                    </optgroup>
+
+                    <optgroup label="💸 TDS & Withholding Tax">
+                      <option value="TDS-26Q">TDS Return (26Q - Vendors)</option>
+                      <option value="TDS-24Q">TDS Salary (24Q - Payroll)</option>
+                      <option value="TDS-27Q">TDS Foreign (27Q - NRI)</option>
+                      <option value="TCS-27EQ">TCS Return (27EQ)</option>
+                    </optgroup>
+
+                    <optgroup label="🏛️ MCA / ROC & Corporate Secretarial">
+                      <option value="ROC-AOC4">ROC AOC-4 (Financials Filing)</option>
+                      <option value="ROC-MGT7">ROC MGT-7 (Annual Return)</option>
+                      <option value="Company-Incorporation">Company Incorporation (SPICe+)</option>
+                      <option value="LLP-Incorporation">LLP Incorporation & Annual Filing</option>
+                      <option value="DIR-3-KYC">Director Annual KYC (DIR-3)</option>
+                      <option value="DPT-3">DPT-3 Return of Deposits</option>
+                      <option value="MSME-Form-1">MSME Form 1</option>
+                      <option value="ROC-Change">Director / Office Change</option>
+                    </optgroup>
+
+                    <optgroup label="💼 Audit & Assurance">
+                      <option value="Tax-Audit">Tax Audit (Sec 44AB & 3CD)</option>
+                      <option value="Statutory-Audit">Statutory Company Audit</option>
+                      <option value="Internal-Audit">Internal Audit & System Review</option>
+                      <option value="Stock-Audit">Stock Audit & Inventory</option>
+                    </optgroup>
+
+                    <optgroup label="🚀 Startup, Licensing & Advisory">
+                      <option value="Startup-India">Startup India (DPIIT) & 80-IAC</option>
+                      <option value="MSME-Udyam">MSME / Udyam Registration</option>
+                      <option value="IEC-License">Import Export Code (IEC)</option>
+                      <option value="FSSAI-License">FSSAI Food License</option>
+                      <option value="Trademark">Trademark & IP Filing</option>
+                      <option value="Virtual-CFO">Virtual CFO & Monthly MIS</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div>

@@ -18,8 +18,157 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
   const [submitting, setSubmitting] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  // Statutory Compliance Document Presets Dictionary
+  // Comprehensive Statutory CA Compliance Document Presets Dictionary
   const COMPLIANCE_DOC_PRESETS: Record<string, string[]> = {
+    // 🧾 GST Returns & Compliance
+    'GST-3B': [
+      'Sales Register / Outward Tax Invoices for the Month',
+      'Purchase Register & Input Tax Credit (ITC) Bills',
+      'Bank Statements for the Tax Period',
+      'Tax Payment Challans / Cash Ledger Summary',
+    ],
+    'GSTR-1': [
+      'B2B Sales Invoices with GSTIN & HSN Codes',
+      'B2C Summary Invoices (State-wise Breakup)',
+      'Credit & Debit Notes Issued',
+      'Export Invoices / SEZ Supply Documents (with/without payment)',
+    ],
+    'GSTR-9': [
+      'Audited Financial Statements (Balance Sheet & P&L)',
+      'Monthly GSTR-1 vs GSTR-3B vs Books Reconciliation Statement',
+      'GSTR-2B Input Tax Credit (ITC) Annual Summary',
+      'Form 9C Reconciliation Statement & Auditor Certification',
+    ],
+    'GST-Registration': [
+      'PAN & Aadhaar Card of Promoters / Partners / Directors',
+      'Electricity Bill / Property Tax Receipt of Principal Business Place',
+      'Rent Agreement & NOC from Property Owner',
+      'Bank Account Proof (Cancelled Cheque / Front Page Statement)',
+      'Certificate of Incorporation / Partnership Deed / MOA & AOA',
+    ],
+    'GST-LUT': [
+      'GST Registration Certificate & Previous LUT Details',
+      'KYC (PAN & Aadhaar) of Authorized Signatory & 2 Witnesses',
+      'IEC (Import Export Code) Copy',
+    ],
+    'GST-Notice': [
+      'Copy of GST Notice received (Form DRC-01 / ASMT-10 / SCN)',
+      'Relevant Invoices, E-Way Bills & Delivery Challans in Dispute',
+      'GSTR-2B vs GSTR-3B ITC Reconciliation for the Period',
+      'Written Submissions / Factual Justification Note',
+    ],
+
+    // 📊 Income Tax & ITR Filings
+    'ITR-1': [
+      'Form 16 (Part A & Part B) from all Employers for the FY',
+      'Form 26AS & Annual Information Statement (AIS/TIS)',
+      'Bank Account Statements (All Savings / Current accounts for full FY)',
+      'Chapter VI-A Deductions Proofs (80C LIC/PPF, 80D Mediclaim, 80E, 80G)',
+      'Housing Loan Interest Certificate (for Self-Occupied property)',
+    ],
+    'ITR-2': [
+      'Capital Gains Statement from Mutual Funds / Stock Brokers (CAMS/Zerodha)',
+      'Property Purchase & Sale Deeds with Stamp Duty Valuations',
+      'Form 16, Form 26AS, AIS/TIS and Foreign Asset/Income disclosures',
+      'Bank Statements (All accounts active during the FY)',
+    ],
+    'ITR-3': [
+      'Balance Sheet & Profit & Loss Statement of Proprietary Business / Profession',
+      'Form 26AS & AIS / TIS Summary',
+      'Bank Statements for Business and Personal Accounts for full FY',
+      'Advance Tax & Self-Assessment Tax Challan Receipts',
+      'Depreciation & Capital Expenditure Bills',
+    ],
+    'ITR-4': [
+      'Bank Statements (Last 12 Months for FY)',
+      'Gross Receipts / Total Turnover Calculation (under Sec 44AD / 44ADA)',
+      'Form 26AS & AIS / TIS Summary',
+      'Advance Tax & Self-Assessment Tax Payment Challans',
+    ],
+    'ITR-5': [
+      'Audited / Final Balance Sheet & P&L of Partnership Firm / LLP',
+      'Partnership Deed / LLP Agreement with Partner Profit Sharing & Remuneration Ratio',
+      'Form 26AS, AIS/TIS & TDS Certificates (Form 16A)',
+      'Partner Capital Account Ledgers and Drawings Statements',
+    ],
+    'ITR-6': [
+      'Audited Balance Sheet & Profit & Loss Statement with All Schedules',
+      'Tax Audit Report (Form 3CA/3CB-3CD)',
+      'Corporate Form 26AS & AIS Reconciliation Report',
+      'Advance Tax Payment Receipts / Challans (Q1 to Q4)',
+      'Depreciation Schedule & Fixed Asset Addition / Deletion Invoices',
+      'Details of Shareholders owning > 10% voting power',
+    ],
+    'ITR-7': [
+      'Audited Financial Statements & Audit Report under Section 10B/10BB',
+      'Trust Deed / Registration Certificate under Section 12A/12AB / 80G',
+      'FCRA Registration & Bank Statements (if foreign contributions received)',
+      'Details of Accumulation of Income (Form 9A / Form 10)',
+    ],
+    'Advance-Tax-Q1': [
+      'Estimated Profit & Loss Summary for Q1 (April - June)',
+      'GST Sales & Purchase Registers for Q1',
+      'TDS Deducted by Clients / Form 26AS Q1 Summary',
+    ],
+    'Advance-Tax-Q2': [
+      'Cumulative Financials & Estimated Turnover for H1 (April - Sept)',
+      'Form 26AS TDS Credit Verified',
+      'Prior Q1 Advance Tax Paid Challan',
+    ],
+    'Advance-Tax-Q3': [
+      'Cumulative Financials for 9 Months (April - Dec)',
+      'Form 26AS TDS Reconciliation',
+      'Prior Q1 & Q2 Advance Tax Paid Challans',
+    ],
+    'Advance-Tax-Q4': [
+      'Estimated Full Year Financial Figures (April - March)',
+      'Form 26AS TDS Complete Reconciliation',
+      'Prior Advance Tax Paid Challans (Q1, Q2, Q3)',
+    ],
+    'IT-Notice': [
+      'Copy of Income Tax Notice received (Sec 143(1), 143(2), 148, or 139(9))',
+      'Original ITR Acknowledgement & Computation of Total Income for the AY',
+      'Bank Statements, Asset Invoices, and Source of Investment Explanations',
+      'Draft Written Reply / Reconciliation Note',
+    ],
+
+    // 💸 TDS & Withholding Tax
+    'TDS-26Q': [
+      'Vendor Payment Register with TDS Deducted (Sec 194C, 194J, 194I, 194H)',
+      'TDS Payment Challans (BSR Code, Challan No., CIN, Amount)',
+      'PAN of all Vendor Deductees with Concessional 197 Certificates (if any)',
+    ],
+    'TDS-24Q': [
+      'Monthly Salary Register & TDS Deducted from Employees',
+      'Salary TDS Challan Payment Receipts',
+      'Investment Proofs & Declarations submitted by Employees (Form 12BB)',
+      'PAN of all Employees',
+    ],
+    'TDS-27Q': [
+      'Foreign Remittance / Non-Resident Invoices & Form 15CA/CB',
+      'TDS Challans for Remittance to Foreign Vendors / NRIs',
+      'Tax Residency Certificate (TRC) and Form 10F (for DTAA benefits)',
+    ],
+    'TCS-27EQ': [
+      'Sales Ledger with TCS Collected (Sec 206C / 206C(1H) / Scrap / LRS)',
+      'TCS Payment Challan Receipts',
+      'PAN / Aadhaar of all Buyers / Collectees',
+    ],
+
+    // 🏛️ MCA / ROC & Corporate Secretarial
+    'ROC-AOC4': [
+      'Audited Balance Sheet, Profit & Loss Account & Cash Flow Statement',
+      'Notes to Accounts & Significant Accounting Policies',
+      'Auditor’s Report with Annexure (CARO if applicable)',
+      'Directors’ Report with Disclosures & Secretarial Audit (if applicable)',
+      'Notice & Minutes of Annual General Meeting (AGM)',
+    ],
+    'ROC-MGT7': [
+      'List of Shareholders and Debenture Holders as on FY End',
+      'Details of Share Transfers, Allotments, and Buyback during FY',
+      'Details of Board Meetings and General Meetings held with attendance',
+      'Remuneration details of Directors & Key Managerial Personnel (KMP)',
+    ],
     'ROC-Filing': [
       'Audited Financial Statements (Balance Sheet & P&L)',
       'Directors’ Report & Board Resolutions for AGM',
@@ -27,57 +176,107 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
       'Auditor’s Report with Notes to Accounts (Form AOC-4)',
       'Active DSC (Digital Signature Certificate) of Directors',
     ],
-    'GST-3B': [
-      'Sales Register / Outward Tax Invoices',
-      'Purchase Register & Input Tax Credit (ITC) Bills',
-      'Bank Statements for the Tax Period',
-      'Tax Payment Challans / Cash Ledger Summary',
-    ],
-    'GSTR-1': [
-      'B2B Sales Invoices with GSTIN & HSN',
-      'B2C Summary Invoices (State-wise)',
-      'Credit & Debit Notes Issued',
-      'Export Invoices / SEZ Supply Documents',
-    ],
-    'ITR-1': [
-      'Form 16 (Part A & Part B) from Employer',
-      'Form 26AS & Annual Information Statement (AIS/TIS)',
-      'Bank Statements (All Savings / Current accounts for FY)',
-      'Chapter VI-A Deductions (80C, 80D Mediclaim, Home Loan)',
-    ],
-    'ITR-4': [
-      'Bank Statements (Last 12 Months for FY)',
-      'Gross Receipts / Turnover Summary (Sec 44AD/ADA)',
-      'Form 26AS & AIS / TIS Summary',
-      'Advance Tax & Self-Assessment Tax Challans',
-    ],
-    'ITR-6': [
-      'Audited Balance Sheet & Profit & Loss Statement',
-      'Tax Audit Report (Form 3CA/3CB-3CD)',
-      'Corporate Form 26AS & AIS Reconciliation',
-      'Advance Tax Payment Receipts / Challans',
-      'Depreciation Schedule & Fixed Asset Additions',
-    ],
-    'Tax-Audit': [
-      'Final Trial Balance & General Ledgers',
-      'Closing Stock Valuation & Inventory Summary',
-      'Depreciation Schedule & Asset Purchase Invoices',
-      'Form 26AS & TDS 26Q Reconciliation',
-      'List of Loans/Deposits > ₹20,000 (Sec 269SS/T)',
-    ],
-    'GST-Registration': [
-      'PAN & Aadhaar of Promoters / Partners / Directors',
-      'Electricity Bill / Property Tax Receipt of Business Premise',
-      'Rent Agreement & NOC from Property Owner',
-      'Bank Account Proof (Cancelled Cheque / Statement)',
-      'Certificate of Incorporation / Partnership Deed',
-    ],
     'Company-Incorporation': [
-      'PAN & Aadhaar of all Directors & Subscribers',
-      'Identity Proof (Passport / Voter ID / Driving License)',
-      'Address Proof (Bank Statement / Electricity Bill < 2 Months old)',
-      'Registered Office Proof (Utility Bill + NOC + Rent Deed)',
-      'Proposed Company Name & Main Business Objects',
+      'PAN & Aadhaar Card of all Proposed Directors & Subscribers',
+      'Identity Proof (Passport / Voter ID / Driving License) of Directors',
+      'Residential Address Proof (Bank Statement / Utility Bill < 2 Months old)',
+      'Registered Office Proof (Electricity Bill + NOC + Rent Agreement)',
+      'Proposed Company Names (in order of preference) & Main Object Clause',
+      'Passport Size Photographs & Specimen Signatures',
+    ],
+    'LLP-Incorporation': [
+      'PAN & Aadhaar Card of Designated Partners',
+      'Address Proof of Partners (Bank Statement < 2 Months old)',
+      'Registered Office Address Proof (Utility Bill + NOC + Rent Deed)',
+      'Proposed LLP Name & Business Objectives',
+      'Draft LLP Agreement specifying contribution & profit-sharing ratios',
+    ],
+    'DIR-3-KYC': [
+      'PAN Card of Director (with matching DOB & Name)',
+      'Aadhaar Card of Director (linked with active mobile for OTP)',
+      'Personal Mobile Number & Personal Email Address',
+      'Passport (mandatory if Director is Foreign National or holds Passport)',
+    ],
+    'DPT-3': [
+      'Audited Balance Sheet & Outstanding Loan / Deposit Ledgers',
+      'Auditor’s Certificate on Deposits & Exempted Loans',
+      'List of Secured / Unsecured Loans received from Directors / Entities',
+    ],
+    'MSME-Form-1': [
+      'List of MSME Vendors with Dues Outstanding > 45 Days as on half-year end',
+      'Vendor Invoices, Delivery Challans, and Reasons for Delay in Payment',
+    ],
+    'ROC-Change': [
+      'Board Resolution approving Director Appointment / Resignation / Office Shift',
+      'Consent Form DIR-2 & Declaration in Form DIR-8 from New Director',
+      'Resignation Letter from Outgoing Director',
+      'New Registered Office Utility Bill + NOC + Rent Agreement (for INC-22)',
+    ],
+
+    // 💼 Audit & Assurance
+    'Tax-Audit': [
+      'Final Trial Balance & General Ledgers with Grouping',
+      'Closing Stock Valuation Report & Physical Inventory Summary',
+      'Depreciation Schedule & Fixed Asset Purchase Invoices',
+      'Form 26AS & TDS 26Q Reconciliation Sheet',
+      'List of Loans / Deposits Accepted & Repaid > ₹20,000 (Sec 269SS & 269T)',
+      'Quantitative Details of Raw Materials & Finished Goods',
+    ],
+    'Statutory-Audit': [
+      'Draft Financial Statements & Trial Balance',
+      'Bank Reconciliation Statements (BRS) for all Bank Accounts as of March 31',
+      'Debtors & Creditors Confirmation Letters / Ledgers',
+      'Statutory Dues Payment Receipts (GST, TDS, EPF, ESIC, PT)',
+      'Internal Control & Fixed Asset Physical Verification Reports',
+    ],
+    'Internal-Audit': [
+      'Standard Operating Procedures (SOPs) for Sales, Purchase, and HR',
+      'Internal Delegation of Financial Powers & Approval Matrix',
+      'Sample Invoices, Purchase Orders (PO), and Goods Receipt Notes (GRN)',
+      'Inventory Stock Registers & Variance Analysis Reports',
+    ],
+    'Stock-Audit': [
+      'Stock Ledger / Inventory Register as on Audit Date',
+      'Physical Inventory Count Sheets with Warehouse Manager Sign-off',
+      'Ageing Analysis of Slow-moving and Obsolete Stock',
+      'Stock Insurance Policy Copy with Adequate Bank Hypothecation Clause',
+    ],
+
+    // 🚀 Startup, Licensing & Advisory
+    'Startup-India': [
+      'Certificate of Incorporation / LLP Registration',
+      'Pitch Deck / Video Link demonstrating Innovation & Scalability',
+      'Patent / Trademark Applications (if filed)',
+      'Letter of Recommendation / Note on Job Creation & Wealth Generation',
+    ],
+    'MSME-Udyam': [
+      'Aadhaar Card of Business Proprietor / Director / Partner',
+      'PAN Card of Business Enterprise',
+      'Bank Account Details (IFSC Code & Account Number)',
+      'Previous Financial Year Turnover & Investment in Plant & Machinery',
+    ],
+    'IEC-License': [
+      'PAN Card of Individual / Entity',
+      'Cancelled Cheque with Entity Name / Bank Certificate',
+      'Address Proof of Business Premise',
+    ],
+    'FSSAI-License': [
+      'PAN & Aadhaar of Food Business Operator (FBO)',
+      'Premises Proof (Electricity Bill + Rent Agreement + NOC)',
+      'Food Safety Management System (FSMS) Plan & Food Category List',
+      'Water Testing Analysis Report (for Manufacturing Units)',
+    ],
+    'Trademark': [
+      'Logo / Brand Name Specimen Image (.jpg/.png)',
+      'Date of First Use in India (with User Affidavit if prior used)',
+      'Identity & Address Proof of Applicant',
+      'Power of Attorney in Form TM-48',
+    ],
+    'Virtual-CFO': [
+      'Monthly Tally / Zoho Books Backup or Cloud Access',
+      'Debtor & Creditor Ageing Reports',
+      'Cash Flow Projections & Budget vs Actual Variances',
+      'Monthly Statutory Compliance Tracker',
     ],
   };
 
@@ -567,17 +766,66 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                 <select
                   value={formComplianceType}
                   onChange={(e) => handleComplianceTypeChange(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
                 >
-                  <option value="GST-3B">GST-3B Filing</option>
-                  <option value="GSTR-1">GSTR-1 Outward Supply</option>
-                  <option value="ITR-1">ITR-1 (Salaried Individual)</option>
-                  <option value="ITR-4">ITR-4 (Presumptive / Business)</option>
-                  <option value="ITR-6">ITR-6 (Corporate / Companies)</option>
-                  <option value="Tax-Audit">Tax Audit (Sec 44AB)</option>
-                  <option value="ROC-Filing">ROC Annual Filing (AOC-4 / MGT-7)</option>
-                  <option value="GST-Registration">GST Registration</option>
-                  <option value="Company-Incorporation">Company Incorporation</option>
+                  <optgroup label="🧾 GST Returns & Compliance">
+                    <option value="GST-3B">GST-3B Monthly Return & ITC</option>
+                    <option value="GSTR-1">GSTR-1 Outward Supplies</option>
+                    <option value="GSTR-9">GSTR-9 Annual Return & 9C Audit</option>
+                    <option value="GST-Registration">New GST Registration</option>
+                    <option value="GST-LUT">GST LUT (Export Undertaking)</option>
+                    <option value="GST-Notice">GST Notice Reply (DRC-01 / ASMT-10)</option>
+                  </optgroup>
+
+                  <optgroup label="📊 Income Tax & ITR Filings">
+                    <option value="ITR-1">ITR-1 Sahaj (Salaried Individual)</option>
+                    <option value="ITR-2">ITR-2 (Capital Gains & Multi-House)</option>
+                    <option value="ITR-3">ITR-3 (Business & Profession Individual/HUF)</option>
+                    <option value="ITR-4">ITR-4 Sugam (Presumptive 44AD/ADA)</option>
+                    <option value="ITR-5">ITR-5 (Partnership Firms & LLPs)</option>
+                    <option value="ITR-6">ITR-6 (Corporate / Companies)</option>
+                    <option value="ITR-7">ITR-7 (Trusts, NGOs & Sec 8)</option>
+                    <option value="Advance-Tax-Q1">Advance Tax Q1 (June 15)</option>
+                    <option value="Advance-Tax-Q2">Advance Tax Q2 (Sept 15)</option>
+                    <option value="Advance-Tax-Q3">Advance Tax Q3 (Dec 15)</option>
+                    <option value="Advance-Tax-Q4">Advance Tax Q4 (March 15)</option>
+                    <option value="IT-Notice">Income Tax Notice Reply (143/148)</option>
+                  </optgroup>
+
+                  <optgroup label="💸 TDS & Withholding Tax">
+                    <option value="TDS-26Q">TDS Form 26Q (Vendor Payments & Contracts)</option>
+                    <option value="TDS-24Q">TDS Form 24Q (Salary & Form 16)</option>
+                    <option value="TDS-27Q">TDS Form 27Q (Foreign / NRI Payments)</option>
+                    <option value="TCS-27EQ">TCS Form 27EQ (Tax Collected at Source)</option>
+                  </optgroup>
+
+                  <optgroup label="🏛️ MCA / ROC & Corporate Secretarial">
+                    <option value="ROC-AOC4">ROC AOC-4 (Financial Statements Filing)</option>
+                    <option value="ROC-MGT7">ROC MGT-7 (Annual Return of Company)</option>
+                    <option value="ROC-Filing">ROC Annual Filing (Full Compliance)</option>
+                    <option value="Company-Incorporation">Private Limited / OPC Incorporation (SPICe+)</option>
+                    <option value="LLP-Incorporation">LLP Incorporation & Annual Filing (Form 11/8)</option>
+                    <option value="DIR-3-KYC">Annual Director KYC (DIR-3 KYC)</option>
+                    <option value="DPT-3">DPT-3 (Return of Deposits / Loans)</option>
+                    <option value="MSME-Form-1">MSME Form 1 (Outstanding Dues)</option>
+                    <option value="ROC-Change">Director / Registered Office Change (DIR-12/INC-22)</option>
+                  </optgroup>
+
+                  <optgroup label="💼 Audit & Assurance">
+                    <option value="Tax-Audit">Tax Audit under Section 44AB (Form 3CD)</option>
+                    <option value="Statutory-Audit">Statutory Company Audit</option>
+                    <option value="Internal-Audit">Internal Audit & SOP Review</option>
+                    <option value="Stock-Audit">Stock Audit & Inventory Verification</option>
+                  </optgroup>
+
+                  <optgroup label="🚀 Startup, Licensing & Advisory">
+                    <option value="Startup-India">Startup India (DPIIT) Recognition & 80-IAC</option>
+                    <option value="MSME-Udyam">MSME / Udyam Registration</option>
+                    <option value="IEC-License">Import Export Code (IEC) License</option>
+                    <option value="FSSAI-License">FSSAI Food License</option>
+                    <option value="Trademark">Trademark & IP Filing</option>
+                    <option value="Virtual-CFO">Virtual CFO & Monthly Financial MIS</option>
+                  </optgroup>
                 </select>
               </div>
 
