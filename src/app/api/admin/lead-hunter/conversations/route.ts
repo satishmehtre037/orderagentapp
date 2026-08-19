@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendWhatsAppTextMessage } from '@/lib/whatsapp';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+
 /**
  * GET /api/admin/lead-hunter/conversations
  * Fetch all outreach threads and message histories
@@ -96,11 +100,20 @@ export async function GET(req: Request) {
       new Date(b.last_timestamp).getTime() - new Date(a.last_timestamp).getTime()
     );
 
-    return NextResponse.json({
-      success: true,
-      count: threads.length,
-      threads,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        count: threads.length,
+        threads,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('[Admin Conversations GET Exception]:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

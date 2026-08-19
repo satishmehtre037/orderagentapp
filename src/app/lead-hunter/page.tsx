@@ -245,7 +245,13 @@ export default function LeadHunterPage() {
     }
 
     try {
-      const res = await fetch('/api/admin/lead-hunter/conversations');
+      const res = await fetch(`/api/admin/lead-hunter/conversations?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+      });
       const data = await res.json();
       const serverThreads: any[] = data.success && data.threads ? data.threads : [];
 
@@ -286,17 +292,25 @@ export default function LeadHunterPage() {
           map[clean] = { ...t, business_name: threadName, messages: [...(t.messages || [])] };
         } else {
           const existing = map[clean];
-          const allMsgs = [...(t.messages || []), ...(existing.messages || [])];
-          const seen = new Set<string>();
-          const deduped = allMsgs
-            .filter((m) => {
-              if (m.text.includes('**Reasoning') || m.text.includes('<think>')) return false;
-              const key = `${m.sender}_${(m.text || '').trim()}`;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            })
-            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          const allMsgs = [...(existing.messages || []), ...(t.messages || [])];
+          const seenIds = new Set<string>();
+          const deduped: any[] = [];
+          allMsgs.forEach((m) => {
+            if (m.text?.includes('**Reasoning') || m.text?.includes('<think>')) return;
+            if (m.id && seenIds.has(m.id)) return;
+            if (m.id) seenIds.add(m.id);
+            const last = deduped[deduped.length - 1];
+            if (
+              last &&
+              last.sender === m.sender &&
+              (last.text || '').trim() === (m.text || '').trim() &&
+              Math.abs(new Date(m.timestamp).getTime() - new Date(last.timestamp).getTime()) < 4000
+            ) {
+              return;
+            }
+            deduped.push(m);
+          });
+          deduped.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
           const lastM = deduped[deduped.length - 1];
           map[clean] = {
@@ -318,13 +332,16 @@ export default function LeadHunterPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('webcore_lead_threads', JSON.stringify(merged));
       }
-      if (!selectedThreadPhone && merged.length > 0) {
-        setSelectedThreadPhone(merged[0].phone);
-      }
+      setSelectedThreadPhone((prev) => {
+        if (prev && merged.some((t: any) => t.phone.replace(/\D/g, '') === prev.replace(/\D/g, ''))) {
+          return prev;
+        }
+        return merged[0]?.phone || null;
+      });
     } catch (err: any) {
       if (localSaved.length > 0) {
         setChatThreads(localSaved);
-        if (!selectedThreadPhone) setSelectedThreadPhone(localSaved[0].phone);
+        setSelectedThreadPhone((prev) => prev || localSaved[0]?.phone || null);
       }
     } finally {
       setIsLoadingChats(false);
