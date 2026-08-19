@@ -42,9 +42,8 @@ export async function getResponse(
   if (groqClient) {
     const groqModels = [
       process.env.GROQ_MODEL,
-      'openai/gpt-oss-120b',
-      'openai/gpt-oss-20b',
       'qwen/qwen3.6-27b',
+      'allam-2-7b',
     ].filter(Boolean) as string[];
 
     for (const model of groqModels) {
@@ -187,7 +186,7 @@ Conversation:
 ${recentMessages}`;
 
     const completion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
+      model: 'qwen/qwen3.6-27b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
     });
