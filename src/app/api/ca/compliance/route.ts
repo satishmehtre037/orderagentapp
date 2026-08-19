@@ -36,12 +36,29 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { id, status, acknowledgement_number, business_id, client_name, phone, email, compliance_type, due_date } = body;
+    const { id, status, acknowledgement_number, business_id, client_id, clientId, client_name, phone, email, compliance_type, due_date } = body;
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const validBusinessId = business_id && uuidRegex.test(business_id) && business_id !== 'demo-business-id'
       ? business_id
       : null;
+
+    const rawClientId = client_id || clientId;
+    let validClientId = rawClientId && uuidRegex.test(rawClientId) ? rawClientId : null;
+
+    if (!validClientId && phone) {
+      const cleanPhone = (phone || '').replace(/\D/g, '').slice(-10);
+      if (cleanPhone) {
+        const { data: foundClient } = await supabase
+          .from('ca_clients')
+          .select('id')
+          .ilike('phone', `%${cleanPhone}%`)
+          .maybeSingle();
+        if (foundClient) {
+          validClientId = foundClient.id;
+        }
+      }
+    }
 
     if (id) {
       const updates: any = { status };
@@ -61,10 +78,11 @@ export async function POST(req: Request) {
         .from('ca_compliance_calendar')
         .insert({
           business_id: validBusinessId,
+          client_id: validClientId,
           client_name,
           phone,
           email: email || null,
-          compliance_type,
+          compliance_type: compliance_type || 'General',
           due_date,
           status: status || 'Pending',
           reminder_count: 0,

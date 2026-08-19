@@ -107,6 +107,7 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           business_id: businessId,
+          client_id: selectedClientId || undefined,
           client_name: formClientName,
           phone: formPhone,
           email: formEmail,
