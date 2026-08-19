@@ -295,7 +295,7 @@ export default function LeadHunterPage() {
 
   useEffect(() => {
     if (activeTab === 'chats' && isAuthenticated) {
-      const interval = setInterval(fetchConversations, 6000);
+      const interval = setInterval(fetchConversations, 3000);
       return () => clearInterval(interval);
     }
   }, [activeTab, isAuthenticated]);
@@ -306,9 +306,53 @@ export default function LeadHunterPage() {
     if (!selectedThreadPhone || !chatReplyText.trim()) return;
 
     setIsSendingReply(true);
-    const activeThread = chatThreads.find((t) => t.phone === selectedThreadPhone);
+    const cleanTarget = selectedThreadPhone.replace(/\D/g, '');
+    const activeThread = chatThreads.find((t) => t.phone.replace(/\D/g, '') === cleanTarget);
     const textToSend = chatReplyText.trim();
     setChatReplyText('');
+
+    const newLocalMsg = {
+      id: `msg_local_${Date.now()}`,
+      text: textToSend,
+      sender: 'bot',
+      timestamp: new Date().toISOString(),
+    };
+
+    // Optimistically update UI and local storage immediately
+    setChatThreads((prev) => {
+      const exists = prev.find((t) => t.phone.replace(/\D/g, '') === cleanTarget);
+      let updated: any[];
+      if (exists) {
+        updated = prev.map((thread) =>
+          thread.phone.replace(/\D/g, '') === cleanTarget
+            ? {
+                ...thread,
+                last_message: textToSend,
+                last_sender: 'bot',
+                last_timestamp: new Date().toISOString(),
+                messages: [...(thread.messages || []), newLocalMsg],
+              }
+            : thread
+        );
+      } else {
+        updated = [
+          {
+            phone: selectedThreadPhone,
+            business_name: activeThread?.business_name || 'Prospect',
+            category: activeThread?.category || 'lead',
+            last_message: textToSend,
+            last_sender: 'bot',
+            last_timestamp: new Date().toISOString(),
+            messages: [newLocalMsg],
+          },
+          ...prev,
+        ];
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('webcore_lead_threads', JSON.stringify(updated));
+      }
+      return updated;
+    });
 
     try {
       const res = await fetch('/api/admin/lead-hunter/conversations', {
@@ -322,29 +366,8 @@ export default function LeadHunterPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setChatThreads((prev) =>
-          prev.map((thread) => {
-            if (thread.phone === selectedThreadPhone) {
-              return {
-                ...thread,
-                last_message: textToSend,
-                last_sender: 'bot',
-                last_timestamp: new Date().toISOString(),
-                messages: [
-                  ...thread.messages,
-                  {
-                    id: `msg_local_${Date.now()}`,
-                    text: textToSend,
-                    sender: 'bot',
-                    timestamp: new Date().toISOString(),
-                  },
-                ],
-              };
-            }
-            return thread;
-          })
-        );
         addLog(`💬 Manual reply sent to ${selectedThreadPhone}`, 'success');
+        setTimeout(fetchConversations, 1200);
       } else {
         alert(`Failed to send: ${data.error}`);
       }

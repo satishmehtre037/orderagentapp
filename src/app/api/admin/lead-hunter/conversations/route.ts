@@ -28,34 +28,41 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, threads: [] });
     }
 
-    // Group messages by customer_number into chat threads
+    // Group messages by clean normalized customer_number into chat threads
     const threadMap: Record<string, any> = {};
 
     (messages || []).forEach((msg) => {
-      const phone = msg.customer_number || 'Unknown';
-      if (!threadMap[phone]) {
-        threadMap[phone] = {
-          phone,
-          business_name: msg.business_name || `Prospect (${phone.slice(-4)})`,
+      const rawPhone = msg.customer_number || '';
+      const cleanKey = rawPhone.replace(/\D/g, '');
+      if (!cleanKey) return;
+
+      const formattedPhone = rawPhone.startsWith('+') ? rawPhone : `+${rawPhone}`;
+      const isClient = msg.message_direction === 'inbound' || msg.sender === 'customer' || msg.sender === 'inbound';
+
+      if (!threadMap[cleanKey]) {
+        threadMap[cleanKey] = {
+          phone: formattedPhone,
+          business_name: msg.business_name || `Lead (+${cleanKey})`,
           category: msg.category || 'lead',
           last_message: msg.message_text || msg.message || '',
-          last_sender: msg.message_direction === 'inbound' || msg.sender === 'customer' ? 'client' : 'bot',
+          last_sender: isClient ? 'client' : 'bot',
           last_timestamp: msg.created_at || new Date().toISOString(),
-          unread: msg.message_direction === 'inbound' || msg.sender === 'customer',
+          unread: isClient,
           messages: [],
         };
       }
 
-      threadMap[phone].messages.push({
+      threadMap[cleanKey].messages.push({
         id: msg.id || `msg_${Date.now()}_${Math.random()}`,
         text: msg.message_text || msg.message || '',
-        sender: msg.message_direction === 'inbound' || msg.sender === 'customer' ? 'client' : 'bot',
+        sender: isClient ? 'client' : 'bot',
         timestamp: msg.created_at || new Date().toISOString(),
       });
 
-      threadMap[phone].last_message = msg.message_text || msg.message || '';
-      threadMap[phone].last_sender = msg.message_direction === 'inbound' || msg.sender === 'customer' ? 'client' : 'bot';
-      threadMap[phone].last_timestamp = msg.created_at || new Date().toISOString();
+      threadMap[cleanKey].last_message = msg.message_text || msg.message || '';
+      threadMap[cleanKey].last_sender = isClient ? 'client' : 'bot';
+      threadMap[cleanKey].last_timestamp = msg.created_at || new Date().toISOString();
+      if (isClient) threadMap[cleanKey].unread = true;
     });
 
     const threads = Object.values(threadMap).sort((a: any, b: any) =>
@@ -92,21 +99,27 @@ export async function POST(req: Request) {
       cleanPhone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
     }
 
-    console.log(`[Admin Chat Dispatch] Sending manual reply to ${cleanPhone}: "${message}"...`);
+    console.log(`[Admin Chat Dispatch] 📤 Sending manual WhatsApp reply to ${cleanPhone}: "${message}"...`);
 
-    // 1. Send via WhatsApp Cloud API
+    // 1. Send via live WhatsApp Cloud API
     await sendWhatsAppTextMessage(cleanPhone, message);
 
-    // 2. Record in conversations table
+    // 2. Record in conversations table in Supabase
     try {
-      await supabaseAdmin.from('conversations').insert({
-        customer_number: cleanPhone,
-        message_text: message,
-        message_direction: 'outbound',
-        sender: 'agent',
-        business_name: businessName || 'Prospect',
-        created_at: new Date().toISOString(),
-      });
+      let bizId: string | null = null;
+      const { data: bizList } = await supabaseAdmin.from('businesses').select('id').limit(1);
+      if (bizList && bizList.length > 0) {
+        bizId = bizList[0].id;
+      }
+
+      if (bizId) {
+        await supabaseAdmin.from('conversations').insert({
+          business_id: bizId,
+          customer_number: cleanPhone,
+          message_text: message,
+          message_direction: 'outbound',
+        });
+      }
     } catch (dbErr) {
       console.warn('[Admin Chat DB Save Notice]:', dbErr);
     }
