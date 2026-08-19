@@ -1,21 +1,21 @@
-import { supabase } from '../config/supabase.js';
-import { getGroqChatCompletion } from './groqService.js';
-import { sendWhatsAppMessage } from './whatsappService.js';
-import { sendPartnerAlert } from './partnerAlertService.js';
+import { supabase } from '../config/supabase';
+import { getGroqChatCompletion } from './groqService';
+import { sendWhatsAppMessage } from './whatsappService';
+import { sendPartnerAlert } from './partnerAlertService';
 import {
   buildCASupportPrompt,
   buildCALeadQualificationPrompt,
   buildCALeadClassifierPrompt,
   buildCADocumentRequestPrompt,
   buildCAPaymentThanksPrompt,
-} from './promptBuilder.js';
+} from './promptBuilder';
 import type {
   CAClient,
   CAComplianceRecord,
   CADocumentTracker,
   CALead,
   CAQueryLog,
-} from '../types/index.js';
+} from '../types';
 
 /**
  * Normalizes phone numbers for reliable DB matching (e.g. strips + and 91 prefixes if needed)

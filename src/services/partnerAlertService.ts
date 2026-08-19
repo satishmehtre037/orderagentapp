@@ -1,4 +1,4 @@
-import { sendWhatsAppMessage } from './whatsappService.js';
+import { sendWhatsAppMessage } from './whatsappService';
 
 export interface PartnerAlertOptions {
   type: 'hot_lead' | 'compliance_overdue' | 'doc_escalation' | 'invoice_overdue' | 'system_error';

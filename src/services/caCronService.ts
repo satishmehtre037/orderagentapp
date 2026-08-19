@@ -1,15 +1,15 @@
 import cron from 'node-cron';
-import { supabase } from '../config/supabase.js';
-import { getGroqChatCompletion } from './groqService.js';
-import { sendWhatsAppMessage } from './whatsappService.js';
-import { sendPartnerAlert } from './partnerAlertService.js';
+import { supabase } from '../config/supabase';
+import { getGroqChatCompletion } from './groqService';
+import { sendWhatsAppMessage } from './whatsappService';
+import { sendPartnerAlert } from './partnerAlertService';
 import {
   buildCAComplianceReminderPrompt,
   buildCADocumentFollowupPrompt,
   buildCALeadFollowupPrompt,
   buildCAInvoiceReminderPrompt,
-} from './promptBuilder.js';
-import type { CAComplianceRecord, CADocumentTracker, CALead } from '../types/index.js';
+} from './promptBuilder';
+import type { CAComplianceRecord, CADocumentTracker, CALead } from '../types';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
