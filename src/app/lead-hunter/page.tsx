@@ -250,18 +250,40 @@ export default function LeadHunterPage() {
       const serverThreads: any[] = data.success && data.threads ? data.threads : [];
 
       // Sanitize messages to eliminate any legacy reasoning artifacts
-      const sanitizedServer = serverThreads.map((t: any) => ({
-        ...t,
-        messages: (t.messages || []).filter((m: any) => !m.text.includes('**Reasoning') && !m.text.includes('<think>')),
-      }));
+      const sanitizedServer = serverThreads.map((t: any) => {
+        const clean = (t.phone || '').replace(/\D/g, '');
+        let name = t.business_name;
+        if (!name || name.startsWith('Lead (')) {
+          if (clean === '918779841346' || clean === '8779841346') {
+            name = 'Satish Mehtre (WebCore Demo Lead)';
+          } else {
+            const matched = leads.find((l) => (l.phone_number || '').replace(/\D/g, '') === clean);
+            if (matched) name = matched.business_name;
+          }
+        }
+        return {
+          ...t,
+          business_name: name || t.business_name || `Lead (+${clean})`,
+          messages: (t.messages || []).filter((m: any) => !m.text.includes('**Reasoning') && !m.text.includes('<think>')),
+        };
+      });
 
       // Merge server threads and local threads by clean phone (Server takes priority)
       const map: Record<string, any> = {};
       [...sanitizedServer, ...localSaved].forEach((t) => {
         const clean = (t.phone || '').replace(/\D/g, '');
         if (!clean) return;
+        let threadName = t.business_name;
+        if (!threadName || threadName.startsWith('Lead (')) {
+          if (clean === '918779841346' || clean === '8779841346') {
+            threadName = 'Satish Mehtre (WebCore Demo Lead)';
+          } else {
+            const matched = leads.find((l) => (l.phone_number || '').replace(/\D/g, '') === clean);
+            if (matched) threadName = matched.business_name;
+          }
+        }
         if (!map[clean]) {
-          map[clean] = { ...t, messages: [...(t.messages || [])] };
+          map[clean] = { ...t, business_name: threadName, messages: [...(t.messages || [])] };
         } else {
           const existing = map[clean];
           const allMsgs = [...(t.messages || []), ...(existing.messages || [])];

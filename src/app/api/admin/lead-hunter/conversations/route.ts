@@ -38,28 +38,44 @@ export async function GET(req: Request) {
 
       const formattedPhone = rawPhone.startsWith('+') ? rawPhone : `+${rawPhone}`;
       const isClient = msg.message_direction === 'inbound' || msg.sender === 'customer' || msg.sender === 'inbound';
+      const text = msg.message_text || msg.message || '';
+
+      // Try to extract real business name from pitch text or known lead
+      let extractedName = msg.business_name;
+      if (!extractedName || extractedName.startsWith('Lead (')) {
+        if (cleanKey === '918779841346' || cleanKey === '8779841346') {
+          extractedName = 'Satish Mehtre (WebCore Demo Lead)';
+        } else {
+          const pitchMatch = text.match(/Namaste (?:Dr\.\s*\/\s*Team|Dr\.|Team)?\s*\*([^*]+)\*/i);
+          if (pitchMatch && pitchMatch[1]) {
+            extractedName = pitchMatch[1].trim();
+          }
+        }
+      }
 
       if (!threadMap[cleanKey]) {
         threadMap[cleanKey] = {
           phone: formattedPhone,
-          business_name: msg.business_name || `Lead (+${cleanKey})`,
+          business_name: extractedName || `Lead (+${cleanKey})`,
           category: msg.category || 'lead',
-          last_message: msg.message_text || msg.message || '',
+          last_message: text,
           last_sender: isClient ? 'client' : 'bot',
           last_timestamp: msg.created_at || new Date().toISOString(),
           unread: isClient,
           messages: [],
         };
+      } else if (extractedName && (!threadMap[cleanKey].business_name || threadMap[cleanKey].business_name.startsWith('Lead ('))) {
+        threadMap[cleanKey].business_name = extractedName;
       }
 
       threadMap[cleanKey].messages.push({
         id: msg.id || `msg_${Date.now()}_${Math.random()}`,
-        text: msg.message_text || msg.message || '',
+        text: text,
         sender: isClient ? 'client' : 'bot',
         timestamp: msg.created_at || new Date().toISOString(),
       });
 
-      threadMap[cleanKey].last_message = msg.message_text || msg.message || '';
+      threadMap[cleanKey].last_message = text;
       threadMap[cleanKey].last_sender = isClient ? 'client' : 'bot';
       threadMap[cleanKey].last_timestamp = msg.created_at || new Date().toISOString();
       if (isClient) threadMap[cleanKey].unread = true;
