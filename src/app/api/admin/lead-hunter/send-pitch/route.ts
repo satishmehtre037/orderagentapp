@@ -44,6 +44,21 @@ export async function POST(req: Request) {
     // Dispatch via live WhatsApp Cloud API
     const waResult = await sendWhatsAppTextMessage(cleanPhone, pitchText);
 
+    // Record outbound pitch in conversations ledger
+    try {
+      await supabaseAdmin.from('conversations').insert({
+        customer_number: cleanPhone,
+        message_text: pitchText,
+        message_direction: 'outbound',
+        sender: 'agent',
+        business_name: businessName,
+        category: category,
+        created_at: new Date().toISOString(),
+      });
+    } catch (convoErr) {
+      console.warn('[Lead Hunter Convo Save Notice]:', convoErr);
+    }
+
     // Update status in Supabase if lead has an ID
     if (lead.id) {
       try {

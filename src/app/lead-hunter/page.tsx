@@ -3,30 +3,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
-  Send,
+  Building2,
+  Phone,
   Sparkles,
-  Shield,
-  Lock,
-  Unlock,
+  Send,
+  Play,
+  Pause,
+  Square,
+  Clock,
   CheckCircle2,
   AlertCircle,
-  Clock,
-  Building2,
-  MapPin,
-  Star,
-  Phone,
+  ExternalLink,
+  Shield,
   Layers,
-  Code2,
   Smartphone,
   Globe,
   TrendingUp,
   RefreshCw,
-  Trash2,
-  Play,
-  Pause,
-  Square,
-  Copy,
-  ExternalLink,
+  Star,
+  MapPin,
+  Lock,
+  Unlock,
+  Code2,
   MessageSquare,
   Bot,
   Zap,
@@ -34,6 +32,9 @@ import {
 import { ScrapedLead } from '../api/admin/lead-hunter/search/route';
 
 export default function LeadHunterPage() {
+  // Navigation Tab: 'hunter' = Lead Scraper & Dispatcher, 'chats' = Live WhatsApp Conversations
+  const [activeTab, setActiveTab] = useState<'hunter' | 'chats'>('hunter');
+
   // 1. Passcode Lockscreen State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState('');
@@ -66,6 +67,14 @@ export default function LeadHunterPage() {
   const [campaignTotal, setCampaignTotal] = useState(0);
   const [countdown, setCountdown] = useState(0);
   const [campaignLogs, setCampaignLogs] = useState<Array<{ time: string; text: string; type: 'info' | 'success' | 'warn' }>>([]);
+
+  // 5. Live WhatsApp Chat Inbox State
+  const [chatThreads, setChatThreads] = useState<any[]>([]);
+  const [selectedThreadPhone, setSelectedThreadPhone] = useState<string | null>(null);
+  const [chatReplyText, setChatReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [isLoadingChats, setIsLoadingChats] = useState(false);
+  const [chatSearchFilter, setChatSearchFilter] = useState('');
 
   const isRunningRef = useRef(false);
   const isPausedRef = useRef(false);
@@ -102,52 +111,80 @@ export default function LeadHunterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: selectedCategory,
-          city: city.trim(),
+          city: city || 'Thane',
+          customQuery: customSearchQuery || undefined,
           count: leadVolume,
           noWebsiteOnly,
-          customQuery: customSearchQuery.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (data.success && data.leads) {
         setLeads(data.leads);
         setSelectedLeadIds(data.leads.map((l: ScrapedLead) => l.id));
-        setPreviewSampleLead(data.leads[0] || null);
-        addLog(`Found ${data.leads.length} verified ${selectedCategory} leads in ${city} ${noWebsiteOnly ? '(Without Website 🔥)' : ''}`, 'success');
+        addLog(`⚡ Extracted ${data.leads.length} live verified leads for "${data.query}"`, 'success');
+      } else {
+        addLog(`Search failed: ${data.error || 'Unknown error'}`, 'warn');
       }
     } catch (err: any) {
-      addLog(`Search error: ${err.message}`, 'warn');
+      addLog(`Error searching leads: ${err.message}`, 'warn');
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Quick Import Pasted Numbers
+  // Toggle Single Lead Selection
+  const handleToggleLeadSelection = (leadId: string) => {
+    if (selectedLeadIds.includes(leadId)) {
+      setSelectedLeadIds(selectedLeadIds.filter((id) => id !== leadId));
+    } else {
+      setSelectedLeadIds([...selectedLeadIds, leadId]);
+    }
+  };
+
+  // Select/Deselect All
+  const handleSelectAll = () => {
+    if (selectedLeadIds.length === leads.length) {
+      setSelectedLeadIds([]);
+    } else {
+      setSelectedLeadIds(leads.map((l) => l.id));
+    }
+  };
+
+  // Import Pasted Numbers
   const handleImportPastedNumbers = () => {
     if (!pastedNumbersText.trim()) return;
     const lines = pastedNumbersText.split('\n');
     const imported: ScrapedLead[] = [];
 
     lines.forEach((line, idx) => {
-      const clean = line.trim();
-      if (!clean) return;
-      // Extract phone digits
-      const digits = clean.replace(/\D/g, '');
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const parts = trimmed.split(/,|\t/);
+      let name = '';
+      let phone = '';
+
+      if (parts.length >= 2) {
+        name = parts[0].trim();
+        phone = parts[1].trim();
+      } else {
+        phone = trimmed;
+        name = `External Contact #${idx + 1}`;
+      }
+
+      const digits = phone.replace(/\D/g, '');
       if (digits.length >= 10) {
-        const phone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
-        const name = clean.includes(',') ? clean.split(',')[0].trim() : `Business Contact (${digits.slice(-4)})`;
-        const addr = `${city || 'Local Area'} Directory Contact`;
+        const cleanPhone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
         imported.push({
-          id: `lead_pasted_${Date.now()}_${idx}`,
+          id: `lead_pasted_${idx}_${Date.now()}`,
           business_name: name,
           category: selectedCategory,
-          city: city || 'Local',
-          phone_number: phone,
+          city: city || 'Thane',
+          phone_number: cleanPhone,
           rating: 4.5,
           reviews_count: 50,
-          address: addr,
+          address: `${city || 'Thane'} (Direct Upload)`,
           has_website: false,
-          maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + (city || 'India'))}`,
+          maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + (city || 'Thane'))}`,
           status: 'pending',
         });
       }
@@ -156,7 +193,7 @@ export default function LeadHunterPage() {
     if (imported.length > 0) {
       setLeads((prev) => [...imported, ...prev]);
       setSelectedLeadIds((prev) => [...imported.map((l) => l.id), ...prev]);
-      addLog(`📥 Imported ${imported.length} custom contact numbers.`, 'success');
+      addLog(`📥 Successfully imported ${imported.length} external leads into queue!`, 'success');
       setShowPasteModal(false);
       setPastedNumbersText('');
     } else {
@@ -185,6 +222,89 @@ export default function LeadHunterPage() {
     addLog(`📱 Added your personal test lead (+918779841346). Click "Send Pitch" to test live!`, 'success');
   };
 
+  // Fetch Conversations / Threads
+  const fetchConversations = async () => {
+    setIsLoadingChats(true);
+    try {
+      const res = await fetch('/api/admin/lead-hunter/conversations');
+      const data = await res.json();
+      if (data.success && data.threads) {
+        setChatThreads(data.threads);
+        if (!selectedThreadPhone && data.threads.length > 0) {
+          setSelectedThreadPhone(data.threads[0].phone);
+        }
+      }
+    } catch (err: any) {
+      console.warn('[Fetch Conversations Notice]:', err.message);
+    } finally {
+      setIsLoadingChats(false);
+    }
+  };
+
+  // Load chats when switching to 'chats' tab
+  useEffect(() => {
+    if (activeTab === 'chats' && isAuthenticated) {
+      fetchConversations();
+      const interval = setInterval(fetchConversations, 8000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, isAuthenticated]);
+
+  // Send Direct Manual Reply from Dashboard Chat Window
+  const sendManualChatReply = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!selectedThreadPhone || !chatReplyText.trim()) return;
+
+    setIsSendingReply(true);
+    const activeThread = chatThreads.find((t) => t.phone === selectedThreadPhone);
+    const textToSend = chatReplyText.trim();
+    setChatReplyText('');
+
+    try {
+      const res = await fetch('/api/admin/lead-hunter/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: selectedThreadPhone,
+          message: textToSend,
+          businessName: activeThread?.business_name || 'Prospect',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setChatThreads((prev) =>
+          prev.map((thread) => {
+            if (thread.phone === selectedThreadPhone) {
+              return {
+                ...thread,
+                last_message: textToSend,
+                last_sender: 'bot',
+                last_timestamp: new Date().toISOString(),
+                messages: [
+                  ...thread.messages,
+                  {
+                    id: `msg_local_${Date.now()}`,
+                    text: textToSend,
+                    sender: 'bot',
+                    timestamp: new Date().toISOString(),
+                  },
+                ],
+              };
+            }
+            return thread;
+          })
+        );
+        addLog(`💬 Manual reply sent to ${selectedThreadPhone}`, 'success');
+      } else {
+        alert(`Failed to send: ${data.error}`);
+      }
+    } catch (err: any) {
+      alert(`Send Exception: ${err.message}`);
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
   // Add Log Entry
   const addLog = (text: string, type: 'info' | 'success' | 'warn' = 'info') => {
     const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -210,20 +330,20 @@ export default function LeadHunterPage() {
         setLeads((prev) =>
           prev.map((l) => (l.id === lead.id ? { ...l, status: 'sent' } : l))
         );
-        addLog(`✅ WhatsApp pitch sent to ${lead.business_name}!`, 'success');
+        addLog(`✅ WhatsApp Pitch delivered to ${lead.business_name}!`, 'success');
       } else {
-        addLog(`❌ Failed for ${lead.business_name}: ${data.error}`, 'warn');
+        addLog(`⚠️ Failed delivering to ${lead.business_name}: ${data.error}`, 'warn');
       }
     } catch (err: any) {
-      addLog(`❌ Exception for ${lead.business_name}: ${err.message}`, 'warn');
+      addLog(`❌ Network error pitching ${lead.business_name}: ${err.message}`, 'warn');
     }
   };
 
-  // Smart Paced Batch Campaign Loop
-  const startPacedCampaign = async () => {
-    const targetLeads = leads.filter((l) => selectedLeadIds.includes(l.id));
-    if (targetLeads.length === 0) {
-      alert('Please select at least 1 lead to start outreach.');
+  // Paced Campaign Dispatcher
+  const handleStartPacedCampaign = async () => {
+    const queue = leads.filter((l) => selectedLeadIds.includes(l.id) && l.status === 'pending');
+    if (queue.length === 0) {
+      alert('No pending leads selected for dispatch.');
       return;
     }
 
@@ -231,37 +351,32 @@ export default function LeadHunterPage() {
     setIsCampaignPaused(false);
     isRunningRef.current = true;
     isPausedRef.current = false;
-    setCampaignTotal(targetLeads.length);
+    setCampaignTotal(queue.length);
     setCampaignCurrentIdx(0);
+    addLog(`🚀 Starting automated campaign: ${queue.length} leads with ${delaySeconds}s safe delay...`, 'info');
 
-    addLog(`🚀 Starting Smart-Paced Outreach to ${targetLeads.length} leads (Pacing: ${delaySeconds}s delay)`, 'info');
+    for (let i = 0; i < queue.length; i++) {
+      if (!isRunningRef.current) break;
 
-    for (let i = 0; i < targetLeads.length; i++) {
-      if (!isRunningRef.current) {
-        addLog(`🛑 Outreach campaign stopped by user.`, 'warn');
-        break;
-      }
-
-      // Check pause
-      while (isPausedRef.current && isRunningRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      while (isPausedRef.current) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (!isRunningRef.current) break;
       }
 
       if (!isRunningRef.current) break;
 
-      const currentLead = targetLeads[i];
+      const lead = queue[i];
       setCampaignCurrentIdx(i + 1);
+      await sendSinglePitch(lead);
 
-      await sendSinglePitch(currentLead);
-
-      // Delay countdown between messages (except last one)
-      if (i < targetLeads.length - 1 && isRunningRef.current) {
-        for (let cd = delaySeconds; cd > 0; cd--) {
+      if (i < queue.length - 1 && isRunningRef.current) {
+        for (let c = delaySeconds; c > 0; c--) {
           if (!isRunningRef.current) break;
-          while (isPausedRef.current && isRunningRef.current) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+          while (isPausedRef.current) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            if (!isRunningRef.current) break;
           }
-          setCountdown(cd);
+          setCountdown(c);
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         setCountdown(0);
@@ -270,21 +385,55 @@ export default function LeadHunterPage() {
 
     setIsCampaignRunning(false);
     isRunningRef.current = false;
-    addLog(`🎉 Outreach campaign completed!`, 'success');
+    addLog(`🎉 Campaign execution completed!`, 'success');
   };
 
-  const stopCampaign = () => {
-    isRunningRef.current = false;
-    isPausedRef.current = false;
+  const handlePauseResumeCampaign = () => {
+    if (isCampaignPaused) {
+      setIsCampaignPaused(false);
+      isPausedRef.current = false;
+      addLog(`▶️ Campaign resumed.`, 'info');
+    } else {
+      setIsCampaignPaused(true);
+      isPausedRef.current = true;
+      addLog(`⏸️ Campaign paused.`, 'warn');
+    }
+  };
+
+  const handleStopCampaign = () => {
     setIsCampaignRunning(false);
     setIsCampaignPaused(false);
+    isRunningRef.current = false;
+    isPausedRef.current = false;
     setCountdown(0);
+    addLog(`🛑 Campaign stopped by user.`, 'warn');
   };
 
-  const togglePause = () => {
-    isPausedRef.current = !isPausedRef.current;
-    setIsCampaignPaused(isPausedRef.current);
-    addLog(isPausedRef.current ? `⏸️ Campaign paused.` : `▶️ Campaign resumed.`, 'info');
+  // Generate Pitch Preview Text
+  const generatePitchText = (lead: ScrapedLead, type: string, custom: string, sender: string) => {
+    if (type === 'custom' && custom.trim()) {
+      return custom
+        .replace('{business_name}', lead.business_name)
+        .replace('{city}', lead.city)
+        .replace('{sender_name}', sender);
+    }
+    const name = lead.business_name;
+    const cat = lead.category.replace('_', ' ');
+
+    if (type === 'whatsapp_ai') {
+      return `Namaste ${name}! 🙏\n\nI noticed your clinic on Google Maps. We build *24/7 AI WhatsApp Assistants* for top doctors in ${lead.city}.\n\n✅ Auto-book appointments on WhatsApp\n✅ Send automated OPD token reminders\n✅ Answer patient queries instantly 24/7\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${sender}`;
+    }
+
+    if (type === 'web_mobile') {
+      return `Hello ${name}! 👋\n\nWe specialize in building *Lightning-Fast Modern Websites & Android Mobile Apps* for ${cat}s in ${lead.city}.\n\n🚀 Next.js High-Performance Website\n📱 Play Store Native Android App\n💳 Integrated UPI & Payment Gateway\n\nCan I send you a custom mockup for ${name}? Reply *YES* to review!\n\nCheers,\n${sender}`;
+    }
+
+    if (type === 'local_seo') {
+      return `Namaste ${name}! 📍\n\nWe help ${cat}s in ${lead.city} rank *Top 3 on Google Maps* to generate 50+ new client inquiries every month.\n\n⭐ 5-Star Review Automation via WhatsApp\n📍 Google Business Profile Optimization\n🔍 Dominate local neighborhood searches\n\nWould you like a free Local SEO Audit Report for ${name}? Reply *AUDIT* to receive it today!\n\nRegards,\n${sender}`;
+    }
+
+    // Default All In One
+    return `Namaste ${name} Team! 🙏\n\nI am Satish from *WebCore Studios*. We provide complete modern technology solutions for ${cat}s in ${lead.city}:\n\n1️⃣ *Modern Responsive Website* (Ultra-fast Next.js)\n2️⃣ *Native Android App* (Play Store ready)\n3️⃣ *24/7 AI WhatsApp Assistant* (Auto OPD & Booking)\n4️⃣ *Google Maps SEO* (Top Local Rankings)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for ${name}.\n\nReply *YES* if you'd like to see a custom live demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
   };
 
   // Lockscreen Gate
@@ -310,7 +459,7 @@ export default function LeadHunterPage() {
             <div>
               <input
                 type="password"
-                placeholder="Enter Passcode (e.g., webcore2026)"
+                placeholder="••••••••••••"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 className={`w-full px-4 py-3 bg-slate-800/80 border ${
@@ -319,8 +468,8 @@ export default function LeadHunterPage() {
                 autoFocus
               />
               {passcodeError && (
-                <p className="text-xs text-rose-400 font-medium mt-2">
-                  Incorrect passcode. (Default: <code className="text-white">webcore2026</code>)
+                <p className="text-xs text-rose-400 font-medium mt-2 text-center">
+                  Access Denied: Invalid Master Admin Passcode.
                 </p>
               )}
             </div>
@@ -344,7 +493,7 @@ export default function LeadHunterPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
             <Zap className="w-5 h-5 text-white" />
@@ -362,6 +511,43 @@ export default function LeadHunterPage() {
           </div>
         </div>
 
+        {/* Tab Switcher */}
+        <div className="flex items-center space-x-1.5 bg-slate-800/80 p-1 rounded-2xl border border-slate-700">
+          <button
+            type="button"
+            onClick={() => setActiveTab('hunter')}
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+              activeTab === 'hunter'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Lead Hunter & Scraper</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('chats');
+              fetchConversations();
+            }}
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+              activeTab === 'chats'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Live WhatsApp Chats</span>
+            {chatThreads.length > 0 && (
+              <span className="px-1.5 py-0.5 bg-emerald-500 text-slate-950 font-black text-[10px] rounded-full">
+                {chatThreads.length}
+              </span>
+            )}
+          </button>
+        </div>
+
         <div className="flex items-center space-x-3">
           <button
             onClick={() => {
@@ -377,525 +563,765 @@ export default function LeadHunterPage() {
 
       {/* Main Workspace */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Top Metric Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-slate-400">Total Leads Found</span>
-            <div className="text-2xl font-bold text-white mt-1">{leads.length}</div>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-emerald-400">Pitches Sent</span>
-            <div className="text-2xl font-bold text-emerald-400 mt-1">{sentCount}</div>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-amber-400">Pending Outreach</span>
-            <div className="text-2xl font-bold text-amber-400 mt-1">{pendingCount}</div>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
-            <span className="text-xs font-medium text-indigo-400">Selected for Dispatch</span>
-            <div className="text-2xl font-bold text-indigo-400 mt-1">{selectedLeadIds.length}</div>
-          </div>
-        </div>
-
-        {/* Section 1: Search & Scrape Engine */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
-          <div className="flex items-center space-x-2.5">
-            <Search className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-base font-bold text-white">1. Search & Extract Local Businesses</h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">Target Industry / Category</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="clinic">🩺 Clinics & Polyclinics</option>
-                <option value="hospital">🏥 Hospitals & Multi-Specialty</option>
-                <option value="ca_firm">📊 CA & Tax Accounting Firms</option>
-                <option value="salon">✂️ Salons & Luxury Spas</option>
-                <option value="real_estate">🏢 Real Estate & Builders</option>
-                <option value="tuition">🎓 Coaching & Academies</option>
-                <option value="restaurant">🍽️ Restaurants & Cafes</option>
-                <option value="retail">🛍️ Boutiques & Retail Stores</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">Target City / Area</label>
-              <input
-                type="text"
-                placeholder="e.g. Thane, Pune, Mumbai, Bangalore"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">Extract Volume</label>
-              <select
-                value={leadVolume}
-                onChange={(e) => setLeadVolume(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value={25}>⚡ 25 High-Intent Leads</option>
-                <option value={50}>🚀 50 Leads (Daily Campaign)</option>
-                <option value={100}>🔥 100 Bulk Leads</option>
-                <option value={150}>💎 150 Mega Batch</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1.5">Custom Query (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. CA firms near Naupada / Panchpakhadi"
-                value={customSearchQuery}
-                onChange={(e) => setCustomSearchQuery(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <label className="mt-2 flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={noWebsiteOnly}
-                  onChange={(e) => setNoWebsiteOnly(e.target.checked)}
-                  className="rounded border-slate-700 bg-slate-800 text-rose-500 focus:ring-rose-500"
-                />
-                <span className="text-[11px] font-bold text-rose-400">🔥 No Website Only (High-Conversion Leads)</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={handleAddMyNumberTestLead}
-                className="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white font-bold text-xs rounded-xl border border-emerald-500/30 transition flex items-center space-x-1.5"
-              >
-                <span>📱 Add My Number (+918779841346) as Test Lead</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowPasteModal(true)}
-                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs rounded-xl border border-slate-700 transition flex items-center space-x-1.5"
-              >
-                <span>📥 Paste / Upload List</span>
-              </button>
-            </div>
-
-            <button
-              onClick={handleSearchLeads}
-              disabled={isSearching}
-              className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center space-x-2"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSearching ? 'animate-spin' : ''}`} />
-              <span>{isSearching ? `Extracting ${leadVolume} Leads...` : `Search & Extract ${leadVolume} Leads`}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Section 2: Multi-Service Pitch Arsenal */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center space-x-2.5">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-              <h2 className="text-base font-bold text-white">2. WebCore Studios Service Pitch Offering</h2>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-slate-400">Sender Signature:</span>
-              <input
-                type="text"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white font-medium"
-              />
-            </div>
-          </div>
-
-          {/* Pitch Package Selector */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <button
-              type="button"
-              onClick={() => setPitchType('all_in_one')}
-              className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
-                pitchType === 'all_in_one'
-                  ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/40 text-white'
-                  : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Layers className="w-4 h-4 text-indigo-400" />
-                <span className="text-xs font-bold">All-In-One Tech Suite</span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                Web App + Android App + WhatsApp AI + Google SEO
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPitchType('whatsapp_ai')}
-              className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
-                pitchType === 'whatsapp_ai'
-                  ? 'bg-purple-600/20 border-purple-500 ring-2 ring-purple-500/40 text-white'
-                  : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Bot className="w-4 h-4 text-purple-400" />
-                <span className="text-xs font-bold">WhatsApp AI Bot</span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                24/7 AI Reception, OPD Tokens & Online Booking
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPitchType('web_mobile')}
-              className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
-                pitchType === 'web_mobile'
-                  ? 'bg-pink-600/20 border-pink-500 ring-2 ring-pink-500/40 text-white'
-                  : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Smartphone className="w-4 h-4 text-pink-400" />
-                <span className="text-xs font-bold">Web & Android Apps</span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                Fast Modern Website & Play Store Ready App
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPitchType('local_seo')}
-              className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
-                pitchType === 'local_seo'
-                  ? 'bg-emerald-600/20 border-emerald-500 ring-2 ring-emerald-500/40 text-white'
-                  : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-bold">Local SEO & Reviews</span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                Google Maps Top 3 Ranking & 5-Star Reviews
-              </p>
-            </button>
-          </div>
-        </div>
-
-        {/* Section 3: Smart-Paced Campaign Dispatcher */}
-        <div className="bg-gradient-to-br from-slate-900 to-indigo-950/40 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-indigo-400" />
-                <span>3. Smart-Paced Campaign Dispatcher</span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Dispatches 1 personalized WhatsApp pitch every {delaySeconds}s to protect your WhatsApp number from spam filters.
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
-                <span className="text-xs text-slate-400">Delay:</span>
-                <input
-                  type="number"
-                  min="20"
-                  max="120"
-                  value={delaySeconds}
-                  onChange={(e) => setDelaySeconds(Number(e.target.value) || 35)}
-                  className="w-12 px-1 text-center bg-slate-900 border border-slate-700 rounded text-xs font-bold text-white"
-                />
-                <span className="text-xs text-slate-400">sec</span>
-              </div>
-
-              {!isCampaignRunning ? (
+        {activeTab === 'chats' ? (
+          /* Live WhatsApp Chat Window (Outreach & Replies Inbox) */
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-[750px]">
+            {/* Left Sidebar: Threads List */}
+            <div className="w-full md:w-80 lg:w-96 border-r border-slate-800 flex flex-col bg-slate-900/60">
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-sm text-white flex items-center space-x-2">
+                    <MessageSquare className="w-4 h-4 text-indigo-400" />
+                    <span>Outreach Conversations</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {chatThreads.length} active threads
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={startPacedCampaign}
-                  disabled={leads.length === 0}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center space-x-1.5"
+                  onClick={fetchConversations}
+                  disabled={isLoadingChats}
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center space-x-1 transition"
+                  title="Refresh Chats"
                 >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Start Campaign ({selectedLeadIds.length})</span>
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingChats ? 'animate-spin' : ''}`} />
                 </button>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={togglePause}
-                    className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
-                  >
-                    <Pause className="w-3.5 h-3.5" />
-                    <span>{isCampaignPaused ? 'Resume' : 'Pause'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={stopCampaign}
-                    className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
-                  >
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>Stop</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          {isCampaignRunning && (
-            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 space-y-2 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-indigo-400">
-                  Sending {campaignCurrentIdx} of {campaignTotal} leads...
-                </span>
-                {countdown > 0 && (
-                  <span className="text-amber-400 animate-pulse">
-                    ⏳ Next lead in {countdown}s...
-                  </span>
-                )}
               </div>
-              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 transition-all duration-300"
-                  style={{ width: `${(campaignCurrentIdx / (campaignTotal || 1)) * 100}%` }}
+
+              {/* Search Filter */}
+              <div className="p-3 border-b border-slate-800/80">
+                <input
+                  type="text"
+                  placeholder="Search by name or number..."
+                  value={chatSearchFilter}
+                  onChange={(e) => setChatSearchFilter(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
+
+              {/* Threads List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-800/50">
+                {chatThreads.filter(
+                  (t) =>
+                    t.business_name.toLowerCase().includes(chatSearchFilter.toLowerCase()) ||
+                    t.phone.includes(chatSearchFilter)
+                ).length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-xs">
+                    {isLoadingChats ? 'Loading conversations...' : 'No conversations recorded yet. Send a pitch from Lead Hunter to start chatting!'}
+                  </div>
+                ) : (
+                  chatThreads
+                    .filter(
+                      (t) =>
+                        t.business_name.toLowerCase().includes(chatSearchFilter.toLowerCase()) ||
+                        t.phone.includes(chatSearchFilter)
+                    )
+                    .map((thread) => {
+                      const isSelected = selectedThreadPhone === thread.phone;
+                      return (
+                        <button
+                          key={thread.phone}
+                          type="button"
+                          onClick={() => setSelectedThreadPhone(thread.phone)}
+                          className={`w-full text-left p-3.5 transition flex items-start space-x-3 ${
+                            isSelected ? 'bg-indigo-600/10 border-l-4 border-indigo-500' : 'hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-700 to-purple-700 flex items-center justify-center text-white font-black text-xs shrink-0 shadow-md">
+                            {thread.business_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-xs font-bold text-white truncate">{thread.business_name}</h4>
+                              <span className="text-[10px] text-slate-500 font-mono">
+                                {new Date(thread.last_timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className="text-[11px] font-mono text-slate-400 mt-0.5">{thread.phone}</div>
+                            <p
+                              className={`text-[11px] truncate mt-1 ${
+                                thread.last_sender === 'client' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
+                              }`}
+                            >
+                              {thread.last_sender === 'client' ? '📥 ' : '📤 '}
+                              {thread.last_message || 'No messages'}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })
+                )}
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Section 4: Leads Table & Real-Time Logs */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Table (2 Cols) */}
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <Building2 className="w-4 h-4 text-slate-400" />
-                <span>Extracted Local Leads ({leads.length})</span>
-              </h3>
+            {/* Right Main Chat Window */}
+            <div className="flex-1 flex flex-col bg-slate-950">
+              {chatThreads.find((t) => t.phone === selectedThreadPhone) ? (
+                (() => {
+                  const currentThread = chatThreads.find((t) => t.phone === selectedThreadPhone)!;
+                  return (
+                    <>
+                      {/* Chat Header */}
+                      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/40 flex-wrap gap-2">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow">
+                            {currentThread.business_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-sm text-white flex items-center space-x-2">
+                              <span>{currentThread.business_name}</span>
+                              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-bold">
+                                WhatsApp Live
+                              </span>
+                            </h3>
+                            <div className="text-xs font-mono text-slate-400 flex items-center space-x-2 mt-0.5">
+                              <span>{currentThread.phone}</span>
+                            </div>
+                          </div>
+                        </div>
 
-              {leads.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setSelectedLeadIds(leads.map((l) => l.id))}
-                    className="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-semibold"
-                  >
-                    Select All
-                  </button>
-                  <span className="text-slate-600">•</span>
-                  <button
-                    onClick={() => setSelectedLeadIds([])}
-                    className="text-[11px] text-slate-400 hover:text-slate-300 underline"
-                  >
-                    Deselect All
-                  </button>
+                        <div className="flex items-center space-x-2">
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentThread.business_name)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center space-x-1 transition"
+                          >
+                            <MapPin className="w-3 h-3 text-indigo-400" />
+                            <span>Maps</span>
+                          </a>
+                          <a
+                            href={`https://wa.me/${currentThread.phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white text-xs font-bold rounded-xl border border-emerald-500/30 flex items-center space-x-1 transition shadow-sm"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>WhatsApp Web</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Chat Messages Body */}
+                      <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-950/70">
+                        {currentThread.messages.map((msg: any) => {
+                          const isClient = msg.sender === 'client';
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
+                            >
+                              <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1 font-mono">
+                                <span>{isClient ? currentThread.business_name : 'Satish (WebCore)'}</span>
+                                <span>•</span>
+                                <span>
+                                  {new Date(msg.timestamp).toLocaleTimeString('en-IN', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                              <div
+                                className={`max-w-lg rounded-2xl px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap ${
+                                  isClient
+                                    ? 'bg-slate-800 text-white border border-slate-700 rounded-tl-sm shadow-md'
+                                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-sm shadow-lg shadow-indigo-600/20'
+                                }`}
+                              >
+                                {msg.text}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Quick Chat Reply Bar */}
+                      <form
+                        onSubmit={sendManualChatReply}
+                        className="p-3 sm:p-4 border-t border-slate-800 bg-slate-900/60 flex items-center space-x-3"
+                      >
+                        <input
+                          type="text"
+                          placeholder={`Type a WhatsApp reply to ${currentThread.business_name}...`}
+                          value={chatReplyText}
+                          onChange={(e) => setChatReplyText(e.target.value)}
+                          className="flex-1 px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isSendingReply || !chatReplyText.trim()}
+                          className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition disabled:opacity-50 flex items-center space-x-1.5"
+                        >
+                          {isSendingReply ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          <span>Send WhatsApp</span>
+                        </button>
+                      </form>
+                    </>
+                  );
+                })()
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 text-slate-500">
+                  <MessageSquare className="w-12 h-12 text-slate-700" />
+                  <p className="text-sm font-semibold text-slate-400">Select a conversation from the left</p>
+                  <p className="text-xs max-w-sm">
+                    View complete message thread of what pitches you sent and what the business replied.
+                  </p>
                 </div>
               )}
             </div>
-
-            {leads.length === 0 ? (
-              <div className="p-8 text-center bg-slate-800/40 rounded-2xl border border-slate-800/80 space-y-2">
-                <Search className="w-8 h-8 text-slate-500 mx-auto" />
-                <p className="text-xs font-semibold text-slate-300">No leads extracted yet.</p>
-                <p className="text-[11px] text-slate-500">
-                  Select a category above (e.g. Clinics in Pune) and click &quot;Search & Extract Leads&quot;.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-slate-400 font-bold">
-                      <th className="pb-3 pr-2 w-8">
-                        <input
-                          type="checkbox"
-                          checked={selectedLeadIds.length === leads.length && leads.length > 0}
-                          onChange={(e) =>
-                            setSelectedLeadIds(e.target.checked ? leads.map((l) => l.id) : [])
-                          }
-                          className="rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500"
-                        />
-                      </th>
-                      <th className="pb-3">Business Name</th>
-                      <th className="pb-3">Phone</th>
-                      <th className="pb-3">Rating</th>
-                      <th className="pb-3">Status</th>
-                      <th className="pb-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {leads.map((lead) => {
-                      const isSelected = selectedLeadIds.includes(lead.id);
-                      return (
-                        <tr key={lead.id} className="hover:bg-slate-800/40 transition">
-                          <td className="py-3 pr-2">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedLeadIds([...selectedLeadIds, lead.id]);
-                                } else {
-                                  setSelectedLeadIds(selectedLeadIds.filter((id) => id !== lead.id));
-                                }
-                              }}
-                              className="rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500"
-                            />
-                          </td>
-                          <td className="py-3 font-semibold text-white">
-                            <div className="flex items-center space-x-1.5">
-                              <a
-                                href={lead.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.business_name + ' ' + lead.address)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:text-indigo-400 underline-offset-2 hover:underline flex items-center space-x-1 font-bold group"
-                                title="Click to view and verify on Google Maps"
-                              >
-                                <span>{lead.business_name}</span>
-                                <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-indigo-400" />
-                              </a>
-                            </div>
-                            <div className="text-[10px] text-slate-400 font-normal">{lead.address}</div>
-                            <div className="mt-1 flex items-center space-x-2">
-                              {!lead.has_website ? (
-                                <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded text-[9px] font-bold">
-                                  🔥 No Website (Hot Prospect)
-                                </span>
-                              ) : (
-                                <span className="px-1.5 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded text-[9px] font-medium">
-                                  🌐 Has Website
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 font-mono text-slate-300 whitespace-nowrap">
-                            <div className="flex items-center space-x-1">
-                              <input
-                                type="text"
-                                value={lead.phone_number}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setLeads((prev) =>
-                                    prev.map((l) => (l.id === lead.id ? { ...l, phone_number: val } : l))
-                                  );
-                                }}
-                                placeholder="+91..."
-                                className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs text-white w-32 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-                                title="Click to edit or paste verified mobile number"
-                              />
-                            </div>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <a
-                                href={lead.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.business_name + ' ' + lead.address)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-0.5"
-                              >
-                                <MapPin className="w-2.5 h-2.5" />
-                                <span>Maps</span>
-                              </a>
-                              <span className="text-slate-600">•</span>
-                              <a
-                                href={`https://wa.me/${lead.phone_number.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center space-x-0.5"
-                              >
-                                <MessageSquare className="w-2.5 h-2.5" />
-                                <span>Chat</span>
-                              </a>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <span className="inline-flex items-center space-x-1 text-amber-400 font-bold">
-                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                              <span>{lead.rating}</span>
-                              <span className="text-[10px] text-slate-500 font-normal">({lead.reviews_count})</span>
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            {lead.status === 'sent' ? (
-                              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold text-[10px] rounded-full border border-emerald-500/20 flex items-center space-x-1 w-max">
-                                <CheckCircle2 className="w-2.5 h-2.5" />
-                                <span>Sent</span>
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 bg-slate-800 text-slate-400 font-semibold text-[10px] rounded-full border border-slate-700 w-max">
-                                Pending
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => sendSinglePitch(lead)}
-                              className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white font-bold text-[10px] rounded-lg border border-indigo-500/30 transition flex items-center space-x-1 ml-auto"
-                            >
-                              <Send className="w-2.5 h-2.5" />
-                              <span>Send Pitch</span>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
-
-          {/* Real-Time Logs Console (1 Col) */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-xl flex flex-col">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
-                <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Live Outreach Console</span>
-              </h3>
-              <button
-                onClick={() => setCampaignLogs([])}
-                className="text-[10px] text-slate-500 hover:text-slate-300"
-              >
-                Clear
-              </button>
+        ) : (
+          /* Lead Hunter Workspace */
+          <>
+            {/* Top Metric Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+                <span className="text-xs font-medium text-slate-400">Total Leads Found</span>
+                <div className="text-2xl font-bold text-white mt-1">{leads.length}</div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+                <span className="text-xs font-medium text-emerald-400">Pitches Sent</span>
+                <div className="text-2xl font-bold text-emerald-400 mt-1">{sentCount}</div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+                <span className="text-xs font-medium text-amber-400">Pending Outreach</span>
+                <div className="text-2xl font-bold text-amber-400 mt-1">{pendingCount}</div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+                <span className="text-xs font-medium text-indigo-400">Selected for Dispatch</span>
+                <div className="text-2xl font-bold text-indigo-400 mt-1">{selectedLeadIds.length}</div>
+              </div>
             </div>
 
-            <div className="flex-1 bg-slate-950 p-3 rounded-2xl border border-slate-800/80 font-mono text-[11px] space-y-2 overflow-y-auto max-h-[420px]">
-              {campaignLogs.length === 0 ? (
-                <div className="text-slate-600 text-center py-6">Ready. No outreach events yet.</div>
-              ) : (
-                campaignLogs.map((log, idx) => (
-                  <div key={idx} className="leading-tight">
-                    <span className="text-slate-500">[{log.time}]</span>{' '}
-                    <span
-                      className={
-                        log.type === 'success'
-                          ? 'text-emerald-400'
-                          : log.type === 'warn'
-                          ? 'text-amber-400'
-                          : 'text-slate-300'
-                      }
-                    >
-                      {log.text}
-                    </span>
+            {/* Section 1: Search & Scrape Engine */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
+              <div className="flex items-center space-x-2.5">
+                <Search className="w-5 h-5 text-indigo-400" />
+                <h2 className="text-base font-bold text-white">1. Search & Extract Local Businesses</h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">Target Industry / Category</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="clinic">🩺 Clinics & Polyclinics</option>
+                    <option value="hospital">🏥 Hospitals & Multi-Specialty</option>
+                    <option value="ca_firm">📊 CA & Tax Accounting Firms</option>
+                    <option value="salon">✂️ Salons & Luxury Spas</option>
+                    <option value="real_estate">🏢 Real Estate & Builders</option>
+                    <option value="tuition">🎓 Coaching & Academies</option>
+                    <option value="restaurant">🍽️ Restaurants & Cafes</option>
+                    <option value="retail">🛍️ Boutiques & Retail Stores</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">City / Target Location</label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="e.g., Thane, Mumbai, Pune"
+                    className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">Search Volume</label>
+                  <select
+                    value={leadVolume}
+                    onChange={(e) => setLeadVolume(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value={25}>⚡ 25 High-Intent Leads</option>
+                    <option value={50}>🔥 50 Commercial Leads</option>
+                    <option value={100}>🚀 100 High-Volume Leads</option>
+                    <option value={150}>👑 150 Maximum Territory Scan</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col justify-end">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 px-3.5 py-2.5 rounded-xl transition">
+                    <input
+                      type="checkbox"
+                      checked={noWebsiteOnly}
+                      onChange={(e) => setNoWebsiteOnly(e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-rose-400">🔥 No Website Only (High-Conversion)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <input
+                  type="text"
+                  value={customSearchQuery}
+                  onChange={(e) => setCustomSearchQuery(e.target.value)}
+                  placeholder="Or custom search query: e.g. 'Pediatrician clinics in Naupada Thane' or 'Dentists in Majiwada'..."
+                  className="flex-1 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleSearchLeads}
+                  disabled={isSearching}
+                  className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  {isSearching ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
+                  <span>{isSearching ? 'Extracting Directory...' : 'Extract High-Value Leads'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 2: Multi-Service Pitch Arsenal */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
+              <div className="flex items-center space-x-2.5">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                <h2 className="text-base font-bold text-white">2. High-Converting Pitch Arsenal</h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPitchType('all_in_one')}
+                  className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
+                    pitchType === 'all_in_one'
+                      ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-lg'
+                      : 'bg-slate-800/60 border-slate-700/60 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Layers className="w-4 h-4 text-indigo-400" />
+                    <span className="font-bold text-xs">All-In-One Tech Suite</span>
                   </div>
-                ))
-              )}
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    Website + Android App + WhatsApp AI OPD Bot + Local SEO.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPitchType('whatsapp_ai')}
+                  className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
+                    pitchType === 'whatsapp_ai'
+                      ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-lg'
+                      : 'bg-slate-800/60 border-slate-700/60 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Bot className="w-4 h-4 text-emerald-400" />
+                    <span className="font-bold text-xs">24/7 WhatsApp AI Bot</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    Automated appointment booking & voice OPD reception.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPitchType('web_mobile')}
+                  className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
+                    pitchType === 'web_mobile'
+                      ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-lg'
+                      : 'bg-slate-800/60 border-slate-700/60 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Smartphone className="w-4 h-4 text-sky-400" />
+                    <span className="font-bold text-xs">Web & Android Apps</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    Next.js custom web app + Play Store native mobile app.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPitchType('local_seo')}
+                  className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
+                    pitchType === 'local_seo'
+                      ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-lg'
+                      : 'bg-slate-800/60 border-slate-700/60 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Globe className="w-4 h-4 text-amber-400" />
+                    <span className="font-bold text-xs">Google Maps & SEO</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    Top #1 ranking on Google Maps & 5-star review engine.
+                  </p>
+                </button>
+              </div>
+
+              {/* Pitch Customizer & Preview Controls */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs font-bold text-slate-300">Sender Identity:</label>
+                    <input
+                      type="text"
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewSampleLead(
+                        leads.length > 0
+                          ? leads[0]
+                          : {
+                              id: 'sample_preview',
+                              business_name: 'Dr. Godbole Polyclinic',
+                              category: selectedCategory,
+                              city: city || 'Thane',
+                              phone_number: '+919820123456',
+                              rating: 4.8,
+                              reviews_count: 140,
+                              address: 'Naupada, Thane West',
+                              has_website: false,
+                              maps_url: 'https://maps.google.com',
+                              status: 'pending',
+                            }
+                      );
+                      setShowPitchPreview(!showPitchPreview);
+                    }}
+                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1"
+                  >
+                    <span>{showPitchPreview ? 'Hide Message Preview' : '👁️ View Live Message Pitch Preview'}</span>
+                  </button>
+                </div>
+
+                {showPitchPreview && previewSampleLead && (
+                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-1.5">
+                      <span>Preview Message to: <strong className="text-white">{previewSampleLead.business_name}</strong></span>
+                      <span className="font-mono text-emerald-400">WhatsApp Cloud API</span>
+                    </div>
+                    <pre className="text-xs text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">
+                      {generatePitchText(previewSampleLead, pitchType, customMessage, senderName)}
+                    </pre>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+
+            {/* Section 3: Smart Paced Campaign Dispatcher */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center space-x-2.5">
+                  <Send className="w-5 h-5 text-emerald-400" />
+                  <h2 className="text-base font-bold text-white">3. Paced Automated Campaign</h2>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={handleAddMyNumberTestLead}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center space-x-1.5 transition"
+                    title="Add Satish's phone number as a test lead"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>+ Add My Number (+918779841346)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPasteModal(true)}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center space-x-1.5 transition"
+                  >
+                    <span>📥 Paste Phone List</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Progress & Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <div>
+                  <div className="text-xs text-slate-400 font-medium">Safe Pacing Interval:</div>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <input
+                      type="range"
+                      min={10}
+                      max={60}
+                      value={delaySeconds}
+                      onChange={(e) => setDelaySeconds(Number(e.target.value))}
+                      disabled={isCampaignRunning}
+                      className="w-32 accent-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-white font-mono">{delaySeconds}s / msg</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-slate-400 font-medium">Campaign Progress:</div>
+                  <div className="text-xs font-bold text-white mt-1">
+                    {campaignCurrentIdx} of {campaignTotal} sent
+                    {countdown > 0 && (
+                      <span className="text-emerald-400 font-mono ml-2">
+                        (Next in {countdown}s...)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 sm:justify-end">
+                  {!isCampaignRunning ? (
+                    <button
+                      type="button"
+                      onClick={handleStartPacedCampaign}
+                      disabled={selectedLeadIds.length === 0}
+                      className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center space-x-1.5 disabled:opacity-50"
+                    >
+                      <Play className="w-4 h-4" />
+                      <span>Start Campaign ({selectedLeadIds.length} Leads)</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handlePauseResumeCampaign}
+                        className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
+                      >
+                        {isCampaignPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                        <span>{isCampaignPaused ? 'Resume' : 'Pause'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleStopCampaign}
+                        className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
+                      >
+                        <Square className="w-3.5 h-3.5" />
+                        <span>Stop</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: Extracted Leads Table & Live Logs */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Leads Table (2 Cols) */}
+              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-indigo-400" />
+                    <h3 className="font-bold text-sm text-white">Target Businesses Queue ({leads.length})</h3>
+                  </div>
+
+                  {leads.length > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAll}
+                        className="text-xs text-indigo-400 hover:text-indigo-300 font-bold"
+                      >
+                        {selectedLeadIds.length === leads.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {leads.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 border border-dashed border-slate-800 rounded-2xl space-y-2">
+                    <Search className="w-8 h-8 mx-auto text-slate-600" />
+                    <p className="text-xs font-semibold">No leads extracted yet.</p>
+                    <p className="text-[11px]">Select an industry & city above, or click "Add My Number" to test live.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto max-h-[500px]">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                          <th className="py-2.5 px-1 w-8"></th>
+                          <th className="py-2.5">Business & Location</th>
+                          <th className="py-2.5">Phone Number</th>
+                          <th className="py-2.5">Rating</th>
+                          <th className="py-2.5">Status</th>
+                          <th className="py-2.5 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-medium">
+                        {leads.map((lead) => {
+                          const isSelected = selectedLeadIds.includes(lead.id);
+                          return (
+                            <tr
+                              key={lead.id}
+                              className={`hover:bg-slate-800/40 transition ${
+                                isSelected ? 'bg-indigo-600/5' : ''
+                              }`}
+                            >
+                              <td className="py-3 px-1">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleLeadSelection(lead.id)}
+                                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                              </td>
+                              <td className="py-3">
+                                <div className="font-bold text-white flex items-center space-x-1.5">
+                                  <a
+                                    href={lead.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.business_name + ' ' + lead.address)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-indigo-400 underline-offset-2 hover:underline flex items-center space-x-1 font-bold group"
+                                    title="Click to view and verify on Google Maps"
+                                  >
+                                    <span>{lead.business_name}</span>
+                                    <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-indigo-400" />
+                                  </a>
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-normal">{lead.address}</div>
+                                <div className="mt-1 flex items-center space-x-2">
+                                  {!lead.has_website ? (
+                                    <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded text-[9px] font-bold">
+                                      🔥 No Website (Hot Prospect)
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded text-[9px] font-medium">
+                                      🌐 Has Website
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 font-mono text-slate-300 whitespace-nowrap">
+                                <div className="flex items-center space-x-1">
+                                  <input
+                                    type="text"
+                                    value={lead.phone_number}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setLeads((prev) =>
+                                        prev.map((l) => (l.id === lead.id ? { ...l, phone_number: val } : l))
+                                      );
+                                    }}
+                                    placeholder="+91..."
+                                    className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs text-white w-32 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                                    title="Click to edit or paste verified mobile number"
+                                  />
+                                </div>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <a
+                                    href={lead.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.business_name + ' ' + lead.address)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-0.5"
+                                  >
+                                    <MapPin className="w-2.5 h-2.5" />
+                                    <span>Maps</span>
+                                  </a>
+                                  <span className="text-slate-600">•</span>
+                                  <a
+                                    href={`https://wa.me/${lead.phone_number.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center space-x-0.5"
+                                  >
+                                    <MessageSquare className="w-2.5 h-2.5" />
+                                    <span>Chat</span>
+                                  </a>
+                                </div>
+                              </td>
+                              <td className="py-3">
+                                <span className="inline-flex items-center space-x-1 text-amber-400 font-bold">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  <span>{lead.rating}</span>
+                                  <span className="text-[10px] text-slate-500 font-normal">({lead.reviews_count})</span>
+                                </span>
+                              </td>
+                              <td className="py-3">
+                                {lead.status === 'sent' ? (
+                                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold text-[10px] rounded-full border border-emerald-500/20 flex items-center space-x-1 w-max">
+                                    <CheckCircle2 className="w-2.5 h-2.5" />
+                                    <span>Sent</span>
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 bg-slate-800 text-slate-400 font-semibold text-[10px] rounded-full border border-slate-700 w-max">
+                                    Pending
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => sendSinglePitch(lead)}
+                                  className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white font-bold text-[10px] rounded-lg border border-indigo-500/30 transition flex items-center space-x-1 ml-auto"
+                                >
+                                  <Send className="w-2.5 h-2.5" />
+                                  <span>Send Pitch</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Real-Time Logs Console (1 Col) */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-xl flex flex-col">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
+                    <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Live Outreach Console</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setCampaignLogs([])}
+                    className="text-[10px] text-slate-500 hover:text-slate-300"
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="flex-1 bg-slate-950 p-3 rounded-2xl border border-slate-800/80 font-mono text-[11px] space-y-2 overflow-y-auto max-h-[420px]">
+                  {campaignLogs.length === 0 ? (
+                    <div className="text-slate-600 text-center py-6">Ready. No outreach events yet.</div>
+                  ) : (
+                    campaignLogs.map((log, idx) => (
+                      <div key={idx} className="leading-tight">
+                        <span className="text-slate-500">[{log.time}]</span>{' '}
+                        <span
+                          className={
+                            log.type === 'success'
+                              ? 'text-emerald-400'
+                              : log.type === 'warn'
+                              ? 'text-amber-400'
+                              : 'text-slate-300'
+                          }
+                        >
+                          {log.text}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Paste / Bulk Import Modal */}
@@ -907,6 +1333,7 @@ export default function LeadHunterPage() {
                 <span>📥 Paste External Phone List / CSV</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setShowPasteModal(false)}
                 className="text-xs text-slate-400 hover:text-white"
               >
