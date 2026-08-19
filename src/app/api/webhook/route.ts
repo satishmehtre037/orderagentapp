@@ -83,18 +83,22 @@ export async function POST(req: Request) {
 
     // 1. Immediately Save to conversations table in Supabase
     try {
-      let bizId: string | null = null;
+      let bizId: string | null = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
       const { data: bList } = await supabaseAdmin.from('businesses').select('id').limit(1);
       if (bList && bList.length > 0) bizId = bList[0].id;
 
       if (bizId) {
-        await supabaseAdmin.from('conversations').insert({
+        const insertRes = await supabaseAdmin.from('conversations').insert({
           business_id: bizId,
           customer_number: customerNumber.startsWith('+') ? customerNumber : `+${customerNumber}`,
           message_text: messageText,
           message_direction: 'inbound',
         });
-        console.log(`[Next.js Webhook] ✅ Saved inbound message from ${customerNumber} to Supabase conversations!`);
+        if (insertRes.error) {
+          console.error('[Next.js Webhook Insert Error]:', insertRes.error);
+        } else {
+          console.log(`[Next.js Webhook] ✅ Saved inbound message from ${customerNumber} to Supabase conversations!`);
+        }
       }
     } catch (saveErr) {
       console.warn('[Next.js Webhook Save Error]:', saveErr);

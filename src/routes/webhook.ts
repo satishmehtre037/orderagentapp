@@ -145,13 +145,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     // Always save every inbound message into the conversations table for the live chat inbox
     try {
-      let bizId: string | null = null;
+      let bizId: string | null = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
       const { data: bList } = await supabase.from('businesses').select('id').limit(1);
       if (bList && bList.length > 0) bizId = bList[0].id;
       if (bizId) {
         await supabase.from('conversations').insert({
           business_id: bizId,
-          customer_number: customerNumber,
+          customer_number: customerNumber.startsWith('+') ? customerNumber : `+${customerNumber}`,
           message_text: messageText,
           message_direction: 'inbound',
         });
