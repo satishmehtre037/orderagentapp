@@ -3,6 +3,10 @@
 -- Replaces n8n Google Sheets (Clients, Compliance_Calendar, Documents_Tracker, Leads, Query_Log)
 -- ==============================================================================
 
+-- 0. Update Businesses category check constraint to support 'ca_firm'
+ALTER TABLE public.businesses DROP CONSTRAINT IF EXISTS businesses_category_check;
+ALTER TABLE public.businesses ADD CONSTRAINT businesses_category_check CHECK (category IN ('bakery', 'cafe', 'salon', 'gym', 'tuition', 'clinic', 'real_estate', 'retail', 'ca_firm'));
+
 -- 1. CA Clients Table
 CREATE TABLE IF NOT EXISTS public.ca_clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -20,6 +20,7 @@ import {
   processIncomingDocument,
   handleCALeadInquiry,
 } from '../services/caService';
+import { resolveCategoryFromNameOrType } from '../lib/constants/categoryPresets';
 
 const router = Router();
 
@@ -175,7 +176,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
     // --------------------------------------------------------------------------
     // 3. CA FIRM AUTOMATION SUITE ROUTER (Branch 1 from n8n)
     // --------------------------------------------------------------------------
-    if (business.category === 'ca_firm') {
+    const effectiveCategory = resolveCategoryFromNameOrType(business.category, business.name);
+
+    if (effectiveCategory === 'ca_firm') {
       const messageToSave = isMediaDocument ? `📄 [Document Upload]: ${mediaPayload.filename}` : isVoiceNote ? `🎙️ [Voice Note]: ${messageText}` : messageText;
       await saveConversationMessage(business.id, customerNumber, 'inbound', messageToSave);
 
