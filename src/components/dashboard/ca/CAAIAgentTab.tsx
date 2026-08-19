@@ -46,14 +46,14 @@ export default function CAAIAgentTab({
       id: '1',
       sender: 'client',
       senderName: 'Client (WhatsApp)',
-      text: 'Namaste! Mujhe statutory compliance deadlines ke baare mein poochna tha.',
+      text: 'Good day! Could you please clarify the upcoming statutory compliance deadlines for our entity?',
       meta: 'Client • 10:24 AM',
     },
     {
       id: '2',
       sender: 'ai',
-      senderName: 'AI Tax Assistant',
-      text: '🙏 Namaste! Main aapka 24/7 AI Tax & Compliance Assistant hoon. Main GST Returns (GSTR-3B/1), ITR filing, TDS, aur ROC MCA compliance track karta hoon.\n\nAap apna GSTIN ya registered number share karein ya batayein kis service me madad chahiye?',
+      senderName: 'AI Practice Assistant',
+      text: 'Greetings! I am your 24/7 Autonomous Tax & Corporate Compliance Assistant. I monitor GST Returns (GSTR-3B / GSTR-1), Income Tax (ITR & Tax Audits), TDS quarterly returns, and MCA ROC Secretarial Filings.\n\nPlease share your GSTIN or specify the statutory filing you require assistance with.',
       meta: '🤖 AI Agent • 10:24 AM • Live Auto-reply',
     },
   ]);
@@ -79,29 +79,29 @@ export default function CAAIAgentTab({
 
   const FAQS = [
     {
-      q: 'GSTR-3B ki deadline kab hai?',
+      q: 'What is the statutory deadline for GSTR-3B monthly filing?',
       asks: 'Statutory Date',
-      reply: 'GSTR-3B monthly return har mahine ki 20 tarikh ko file hota hai (e.g. 20th August). Late filing par ₹50/day penalty aur 18% interest lagta hai.',
+      reply: 'GSTR-3B is due on the 20th of every month (e.g., 20th August). Delayed filings attract a statutory late fee of ₹50/day and 18% annual interest on net tax liabilities.',
     },
     {
-      q: 'ITR file karne ke liye kaun se documents chahiye?',
+      q: 'What mandatory documents are required for Corporate ITR filing?',
       asks: 'Tax Checklist',
-      reply: 'Salaried individual ke liye Form 16, PAN, Aadhaar, Bank Statements aur Form 26AS/AIS chahiye hote hain.',
+      reply: 'Audited Financial Statements (Balance Sheet & P&L), Form 3CD Tax Audit Report, Form 26AS / AIS Tax Credit reconciliation, and Director DSC credentials.',
     },
     {
-      q: 'GST registration ke liye fees kitni hai?',
+      q: 'What is the standard professional fee for New GST Registration?',
       asks: 'Service Quote',
-      reply: 'Naye GST registration ke liye professional fee ₹1,999 hai jisme ARN tracking aur GST certificate delivery included hai.',
+      reply: 'New GST Registration is processed at a standard professional fee of ₹1,999, inclusive of ARN tracking, query resolution, and delivery of official GST Certificate.',
     },
     {
-      q: 'Pvt Ltd company kaise banate hain?',
+      q: 'What is the procedure and timeline for Private Limited Incorporation?',
       asks: 'ROC Guide',
-      reply: 'Pvt Ltd company incorporation MCA portal par SPICe+ form dwara hoti hai. PAN, Aadhaar, DSC aur Address proof zaroori hai. 7-10 working days me ho jati hai.',
+      reply: 'Incorporation is executed via the MCA SPICe+ digital gateway. Required credentials include Director PAN, Aadhaar, Digital Signature (DSC), and Registered Office utility proof. Average clearance is 7-10 business days.',
     },
     {
-      q: 'Late filing penalty kya hogi?',
+      q: 'What are the statutory late fees and penalties for overdue filings?',
       asks: 'Penalty Rules',
-      reply: 'GST me late fee ₹50/din (Nil return me ₹20/din) hoti hai. Income Tax me Sec 234F ke tahat ₹1,000 ya ₹5,000 late fees lagti hai.',
+      reply: 'GST late fee is ₹50/day (₹20/day for NIL returns). Income Tax late filing fee under Section 234F is ₹1,000 or ₹5,000 based on taxable turnover.',
     },
   ];
 
@@ -144,13 +144,13 @@ export default function CAAIAgentTab({
         // Fallback intelligent response generator
         const lower = query.toLowerCase();
         if (lower.includes('gst') || lower.includes('3b')) {
-          aiResponseText = `🙏 GST-3B return ki statutory due date har mahine ki **20 tarikh** hoti hai. Aapke sales & purchase bills upload hote hi draft return tayar ho jayega.`;
+          aiResponseText = `The statutory due date for GSTR-3B monthly return is the **20th of every month**. Your return draft will be prepared immediately upon upload of your sales register and purchase ITC invoices.`;
         } else if (lower.includes('itr') || lower.includes('form 16') || lower.includes('tax')) {
-          aiResponseText = `📊 ITR filing ke liye aapka Form 16 aur Bank Statement required hai. Aap yahan direct PDF share kar sakte hain, hum turant verify karenge!`;
+          aiResponseText = `For Income Tax Return (ITR) filing, your Form 16 / Trial Balance and Bank Statements are required. You may upload them directly here for automated verification.`;
         } else if (lower.includes('roc') || lower.includes('company') || lower.includes('incorporat')) {
-          aiResponseText = `🏛️ Company Incorporation & ROC Annual Filings (AOC-4/MGT-7) ke liye hamare compliance experts 24/7 uplabdh hain.`;
+          aiResponseText = `Company Incorporation (SPICe+) and ROC Annual Compliance (Form AOC-4 & MGT-7) are monitored autonomously by our corporate secretarial desk.`;
         } else {
-          aiResponseText = `🙏 Main aapki query samajh gaya. Hamari AI system ne aapka requirement record kar liya hai. Senior CA team is par review kar rahi hai.`;
+          aiResponseText = `Thank you for your inquiry. Your statutory requirement has been logged into our practice management system and routed to our Senior CA Partners for review.`;
         }
       }
 
@@ -264,7 +264,7 @@ export default function CAAIAgentTab({
           <div className="pt-3 border-t border-slate-800 flex gap-2">
             <input
               type="text"
-              placeholder={`Client "${selectedClientName}" ki taraf se query likhein...`}
+              placeholder={`Type a statutory query on behalf of "${selectedClientName}" (e.g. When is our GSTR-3B due?)...`}
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
               onKeyDown={(e) => {

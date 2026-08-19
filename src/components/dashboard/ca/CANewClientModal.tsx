@@ -112,8 +112,8 @@ export default function CANewClientModal({
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">+ Naya Client Add Karein</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Add to Compliance Directory & activate WhatsApp AI</p>
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">+ Onboard New Client Entity</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Register into Compliance Directory & activate WhatsApp AI automation</p>
             </div>
           </div>
           <button
@@ -134,12 +134,12 @@ export default function CANewClientModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Client / Firm Name *
+                Client / Firm Legal Name *
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Mehta Textiles Pvt Ltd"
+                placeholder="e.g. Apex Enterprises Pvt Ltd"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
@@ -147,7 +147,7 @@ export default function CANewClientModal({
             </div>
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Client Type *
+                Entity Structure *
               </label>
               <select
                 value={entityType}
@@ -158,7 +158,7 @@ export default function CANewClientModal({
                 <option value="Proprietorship">Proprietorship Firm</option>
                 <option value="Partnership">Partnership Firm</option>
                 <option value="LLP">Limited Liability Partnership (LLP)</option>
-                <option value="Individual">Individual (Salaried/Professional)</option>
+                <option value="Individual">Individual (Salaried / Professional)</option>
                 <option value="Public Limited">Public Limited Company</option>
               </select>
             </div>
@@ -167,7 +167,7 @@ export default function CANewClientModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                PAN Number (Optional)
+                Permanent Account Number (PAN)
               </label>
               <input
                 type="text"
@@ -211,7 +211,7 @@ export default function CANewClientModal({
               </label>
               <input
                 type="email"
-                placeholder="client@example.com"
+                placeholder="client@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -221,7 +221,7 @@ export default function CANewClientModal({
 
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-2">
-              Services Required (Select all that apply)
+              Statutory Services Required (Select all that apply)
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {SERVICES_LIST.map((svc) => {
@@ -252,7 +252,7 @@ export default function CANewClientModal({
 
           <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 text-[11px] text-indigo-700 dark:text-indigo-300 flex items-center space-x-2">
             <span className="text-base shrink-0">🤖</span>
-            <span>Submitting will automatically register this client in your Compliance Calendar and deliver an official WhatsApp Welcome Letter!</span>
+            <span>Registration automatically schedules statutory deadlines in your Compliance Calendar and delivers a formal WhatsApp Engagement Letter!</span>
           </div>
 
           <div className="flex items-center justify-end space-x-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -269,7 +269,7 @@ export default function CANewClientModal({
               className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-md transition disabled:opacity-50 flex items-center space-x-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{submitting ? 'Adding Client...' : '✓ Client Add Karein'}</span>
+              <span>{submitting ? 'Registering...' : '✓ Onboard Client Entity'}</span>
             </button>
           </div>
         </form>
