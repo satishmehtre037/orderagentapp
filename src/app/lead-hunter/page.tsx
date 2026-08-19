@@ -526,7 +526,45 @@ export default function LeadHunterPage() {
     }
   };
 
-  // Paced Campaign Dispatcher
+  // Synchronize 24/7 Cloud Background Campaign Status
+  const syncServerCampaign = async () => {
+    try {
+      const res = await fetch(`/api/admin/lead-hunter/campaign?_t=${Date.now()}`, {
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (data.success && data.campaign) {
+        const camp = data.campaign;
+        if (camp.status === 'running' || camp.status === 'paused') {
+          setIsCampaignRunning(true);
+          setIsCampaignPaused(camp.status === 'paused');
+          setCampaignTotal(camp.total);
+          setCampaignCurrentIdx(camp.currentIndex);
+          setCountdown(camp.countdown || 0);
+          if (camp.logs && camp.logs.length > 0) {
+            setCampaignLogs(camp.logs);
+          }
+        } else if (camp.status === 'completed' || camp.status === 'cancelled') {
+          if (isCampaignRunning) {
+            setIsCampaignRunning(false);
+            setIsCampaignPaused(false);
+            setCountdown(0);
+          }
+        }
+      }
+    } catch (e) {}
+  };
+
+  // Poll server campaign status every 2.5s
+  useEffect(() => {
+    if (isAuthenticated) {
+      syncServerCampaign();
+      const interval = setInterval(syncServerCampaign, 2500);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, isCampaignRunning]);
+
+  // 24/7 Paced Server Campaign Dispatcher
   const handleStartPacedCampaign = async () => {
     const validQueue = leads.filter(
       (l) => selectedLeadIds.includes(l.id) && l.status === 'pending' && (l.phone_number || '').replace(/\D/g, '').length >= 10
@@ -546,64 +584,63 @@ export default function LeadHunterPage() {
 
     setIsCampaignRunning(true);
     setIsCampaignPaused(false);
-    isRunningRef.current = true;
-    isPausedRef.current = false;
     setCampaignTotal(validQueue.length);
     setCampaignCurrentIdx(0);
-    addLog(`🚀 Starting automated campaign: ${validQueue.length} verified leads with ${delaySeconds}s safe delay...`, 'info');
+    addLog(`🚀 Handing off ${validQueue.length} verified leads to 24/7 Cloud Background Queue with ${delaySeconds}s safe pacing...`, 'info');
 
-    for (let i = 0; i < validQueue.length; i++) {
-      if (!isRunningRef.current) break;
-
-      while (isPausedRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        if (!isRunningRef.current) break;
+    try {
+      const res = await fetch('/api/admin/lead-hunter/campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leads: validQueue,
+          pitchType,
+          customMessage: pitchType === 'custom' ? customMessage : undefined,
+          senderName,
+          delaySeconds,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addLog(`☁️ 24/7 Cloud Queue Activated! You can now safely close this browser, lock your screen, or shut down your PC.`, 'success');
+        syncServerCampaign();
+      } else {
+        alert(`Failed to start cloud campaign: ${data.error}`);
+        setIsCampaignRunning(false);
       }
-
-      if (!isRunningRef.current) break;
-
-      const lead = validQueue[i];
-      setCampaignCurrentIdx(i + 1);
-      await sendSinglePitch(lead);
-
-      if (i < validQueue.length - 1 && isRunningRef.current) {
-        for (let c = delaySeconds; c > 0; c--) {
-          if (!isRunningRef.current) break;
-          while (isPausedRef.current) {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            if (!isRunningRef.current) break;
-          }
-          setCountdown(c);
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-        setCountdown(0);
-      }
+    } catch (err: any) {
+      alert(`Cloud Campaign Request Error: ${err.message}`);
+      setIsCampaignRunning(false);
     }
-
-    setIsCampaignRunning(false);
-    isRunningRef.current = false;
-    addLog(`🎉 Campaign execution completed!`, 'success');
   };
 
-  const handlePauseResumeCampaign = () => {
-    if (isCampaignPaused) {
+  const handlePauseResumeCampaign = async () => {
+    const targetAction = isCampaignPaused ? 'resume' : 'pause';
+    try {
+      await fetch('/api/admin/lead-hunter/campaign/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: targetAction }),
+      });
+      setIsCampaignPaused(!isCampaignPaused);
+      addLog(targetAction === 'pause' ? '⏸️ Background campaign paused on server.' : '▶️ Background campaign resumed on server.', 'info');
+      syncServerCampaign();
+    } catch (e) {}
+  };
+
+  const handleStopCampaign = async () => {
+    try {
+      await fetch('/api/admin/lead-hunter/campaign/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' }),
+      });
+      setIsCampaignRunning(false);
       setIsCampaignPaused(false);
-      isPausedRef.current = false;
-      addLog(`▶️ Campaign resumed.`, 'info');
-    } else {
-      setIsCampaignPaused(true);
-      isPausedRef.current = true;
-      addLog(`⏸️ Campaign paused.`, 'warn');
-    }
-  };
-
-  const handleStopCampaign = () => {
-    setIsCampaignRunning(false);
-    setIsCampaignPaused(false);
-    isRunningRef.current = false;
-    isPausedRef.current = false;
-    setCountdown(0);
-    addLog(`🛑 Campaign stopped by user.`, 'warn');
+      setCountdown(0);
+      addLog(`🛑 Background campaign cancelled on server.`, 'warn');
+      syncServerCampaign();
+    } catch (e) {}
   };
 
   // Generate Pitch Preview Text (Category-Aware High-Conversion AI Copy)
@@ -1341,9 +1378,15 @@ export default function LeadHunterPage() {
             {/* Section 3: Smart Paced Campaign Dispatcher */}
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center space-x-2.5">
-                  <Send className="w-5 h-5 text-emerald-400" />
-                  <h2 className="text-base font-bold text-white">3. Paced Automated Campaign</h2>
+                <div className="flex items-center space-x-2.5 flex-wrap gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Send className="w-5 h-5 text-emerald-400" />
+                    <h2 className="text-base font-bold text-white">3. Paced Automated Campaign</h2>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-bold flex items-center space-x-1.5 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>☁️ 24/7 Cloud Background Queue (Safe to Close Browser)</span>
+                  </span>
                 </div>
 
                 <div className="flex items-center space-x-3">
