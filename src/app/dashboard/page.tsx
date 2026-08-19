@@ -51,6 +51,8 @@ import {
   Zap,
   Plus,
   BarChart3,
+  LayoutGrid,
+  X,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -59,6 +61,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('orders');
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
+  const [isMobileAllTabsOpen, setIsMobileAllTabsOpen] = useState(false);
 
   const [isBotPaused, setIsBotPaused] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
@@ -754,27 +757,28 @@ export default function DashboardPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab('ca_invoices')}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-                activeTab === 'ca_invoices'
-                  ? 'text-amber-600 dark:text-amber-400 font-bold scale-105'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <Receipt className="w-5 h-5 mb-0.5" />
-              <span className="text-[10px] tracking-tight font-medium">Fees</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('conversations')}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
                 activeTab === 'conversations'
-                  ? 'text-slate-900 dark:text-white font-bold scale-105'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <MessageSquare className="w-5 h-5 mb-0.5" />
               <span className="text-[10px] tracking-tight font-medium">Chats</span>
+            </button>
+
+            {/* All Tabs / Menu Drawer Trigger */}
+            <button
+              onClick={() => setIsMobileAllTabsOpen(true)}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+                isMobileAllTabsOpen
+                  ? 'text-teal-600 dark:text-teal-400 font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <LayoutGrid className="w-5 h-5 mb-0.5 text-indigo-500" />
+              <span className="text-[10px] tracking-tight font-bold text-slate-800 dark:text-slate-200">All Tabs</span>
             </button>
           </>
         ) : (
@@ -831,6 +835,198 @@ export default function DashboardPage() {
           </>
         )}
       </nav>
+
+      {/* Mobile All Modules Bottom Sheet Launcher */}
+      {isMobileAllTabsOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm sm:hidden flex flex-col justify-end animate-in fade-in duration-150">
+          <div
+            className="fixed inset-0"
+            onClick={() => setIsMobileAllTabsOpen(false)}
+          />
+          <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl p-5 border-t border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <LayoutGrid className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">All Practice Modules</h3>
+              </div>
+              <button
+                onClick={() => setIsMobileAllTabsOpen(false)}
+                className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-left">
+              <button
+                onClick={() => {
+                  setActiveTab('ca_dashboard');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'ca_dashboard'
+                    ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500/60 text-teal-900 dark:text-teal-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl w-fit mb-2">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Dashboard</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Practice overview & stats</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('ca_compliance');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'ca_compliance'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl w-fit mb-2">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Compliance</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Statutory tax deadlines</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('ca_documents');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'ca_documents'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500/60 text-blue-900 dark:text-blue-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl w-fit mb-2">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Doc Hub</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Document collection & OCR</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('ca_leads');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'ca_leads'
+                    ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-500/60 text-rose-900 dark:text-rose-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl w-fit mb-2">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Leads CRM</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">4-Stage Kanban pipeline</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('ca_invoices');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'ca_invoices'
+                    ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500/60 text-amber-900 dark:text-amber-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl w-fit mb-2">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Invoices & Fees</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Fee ledger & UPI links</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('ca_agent');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'ca_agent'
+                    ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-500/60 text-purple-900 dark:text-purple-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl w-fit mb-2">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">AI Agent Desk</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Live WhatsApp test bot</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('ca_automation');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'ca_automation'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500/60 text-emerald-900 dark:text-emerald-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl w-fit mb-2">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Cron Engines</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Background automations</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('conversations');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  activeTab === 'conversations'
+                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 font-bold text-slate-900 dark:text-white shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="p-2 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl w-fit mb-2">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Live Chats</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">2-Way WhatsApp inbox</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('billing');
+                  setIsMobileAllTabsOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition-all col-span-2 ${
+                  activeTab === 'billing'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/60 text-indigo-900 dark:text-indigo-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">Plan & Subscription (Billing)</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Upgrade to Pro, invoices & danger zone</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clean Modern Footer */}
       <footer className="hidden sm:block bg-white border-t border-slate-200 mt-16 py-6 text-xs text-slate-500">
