@@ -2,37 +2,37 @@ import { z } from 'zod';
 
 export const bakeryItemSchema = z.object({
   name: z.string().min(1, 'Item name is required'),
-  price: z.coerce.number().min(1, 'Price must be > 0'),
-  unit: z.string().min(1, 'Unit required (e.g. kg, pcs)'),
+  price: z.coerce.number().min(0, 'Price must be >= 0').default(0),
+  unit: z.string().optional().default('pcs'),
 });
 
 export const cafeItemSchema = z.object({
   name: z.string().min(1, 'Item name is required'),
-  price: z.coerce.number().min(1, 'Price must be > 0'),
+  price: z.coerce.number().min(0, 'Price must be >= 0').default(0),
   category: z.string().optional(),
 });
 
 export const salonServiceSchema = z.object({
   name: z.string().min(1, 'Service name is required'),
-  price: z.coerce.number().min(1, 'Price must be > 0'),
-  duration: z.string().min(1, 'Duration required (e.g. 45 mins)'),
+  price: z.coerce.number().min(0, 'Price must be >= 0').default(0),
+  duration: z.string().optional().default('30 mins'),
 });
 
 export const gymPlanSchema = z.object({
-  name: z.string().min(1, 'Plan name is required (e.g. 1 Month Pass, Annual VIP)'),
-  price: z.coerce.number().min(1, 'Price must be > 0'),
-  duration: z.string().min(1, 'Duration (e.g. 1 Month, 3 Months, 1 Year)'),
+  name: z.string().min(1, 'Plan name is required'),
+  price: z.coerce.number().min(0, 'Price must be >= 0').default(0),
+  duration: z.string().optional().default('1 Month'),
 });
 
 export const tuitionCourseSchema = z.object({
   name: z.string().min(1, 'Course name is required'),
-  fee: z.string().min(1, 'Fee details required (e.g. ₹2,000/mo)'),
-  batch_timing: z.string().min(1, 'Batch timing required'),
+  fee: z.string().optional().default('Contact for fee'),
+  batch_timing: z.string().optional().default('Flexible'),
 });
 
 export const faqItemSchema = z.object({
-  question: z.string().min(1, 'Question required'),
-  answer: z.string().min(1, 'Answer required'),
+  question: z.string().optional().default(''),
+  answer: z.string().optional().default(''),
 });
 
 export const staffItemSchema = z.object({

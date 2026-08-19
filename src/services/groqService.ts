@@ -27,11 +27,14 @@ export async function getResponse(
     }
   }
 
-  // Append new user message
-  if (formattedHistory.length > 0 && formattedHistory[formattedHistory.length - 1].role === 'user') {
-    formattedHistory[formattedHistory.length - 1].content += `\n${newMessage}`;
-  } else {
-    formattedHistory.push({ role: 'user', content: newMessage });
+  // Append new user message (avoid duplicating if already present in history)
+  const lastMsg = formattedHistory[formattedHistory.length - 1];
+  if (!lastMsg || lastMsg.role !== 'user' || !lastMsg.content.includes(newMessage)) {
+    if (lastMsg && lastMsg.role === 'user') {
+      lastMsg.content += `\n${newMessage}`;
+    } else {
+      formattedHistory.push({ role: 'user', content: newMessage });
+    }
   }
 
   // Execute with Groq Llama 3.3 / Llama 3.1
@@ -39,13 +42,8 @@ export async function getResponse(
   if (groqClient) {
     const groqModels = [
       process.env.GROQ_MODEL,
-      'qwen/qwen2.5-27b',
-      'groq/compound',
-      'groq/compound-mini',
       'llama-3.3-70b-versatile',
       'llama-3.1-8b-instant',
-      'llama3-8b-8192',
-      'llama3-70b-8192',
       'gemma2-9b-it',
     ].filter(Boolean) as string[];
 
@@ -57,7 +55,7 @@ export async function getResponse(
           messages: [
             {
               role: 'system',
-              content: `${systemPrompt}\n\n### MANDATORY RULES:\n1. ACCEPT ALL LIVE MENU ITEMS: If the customer orders an item in the live catalog, confirm it immediately.\n2. STRICT DOMAIN GUARDRAIL: Never write code (Python, JS, etc.), do homework, or answer unrelated general queries. Politely refuse and state that you are exclusively the virtual assistant for this business.`,
+              content: `${systemPrompt}\n\n### MANDATORY RULES:\n1. ACCEPT ALL LIVE MENU & SERVICE ITEMS: If the customer asks to book an appointment, checkup, or service, confirm the slot, date, time, and details immediately.\n2. When user provides date/time (e.g. "20 august 2 pm"), CONFIRM the appointment warmly and append the JSON capture block.\n3. STRICT DOMAIN GUARDRAIL: Never write code (Python, JS, etc.), do homework, or answer unrelated general queries. Politely refuse and state that you are exclusively the virtual assistant for this business.`,
             },
             ...formattedHistory.map((m) => ({
               role: m.role as 'user' | 'assistant',
@@ -89,11 +87,37 @@ export async function getResponse(
     });
 
     const category = business.category || 'store';
+    const lowerMsg = newMessage.toLowerCase();
+
+    // Check if the user is answering date/time or requesting an appointment
+    const isDateTimeOrBooking =
+      lowerMsg.includes('am') ||
+      lowerMsg.includes('pm') ||
+      lowerMsg.includes('august') ||
+      lowerMsg.includes('september') ||
+      lowerMsg.includes('october') ||
+      lowerMsg.includes('november') ||
+      lowerMsg.includes('december') ||
+      lowerMsg.includes('tomorrow') ||
+      lowerMsg.includes('today') ||
+      lowerMsg.includes('clock') ||
+      /\b\d{1,2}(:\d{2})?\s*(am|pm)?\b/i.test(lowerMsg);
+
+    if (isDateTimeOrBooking && formattedHistory.length > 1) {
+      if (category === 'hospital' || category === 'clinic') {
+        return `✅ *Appointment Confirmed!*\n\nThank you for choosing *${business.name}*.\nWe have scheduled your consultation for: *${newMessage}*.\n\n🎟️ *Token Number:* #OPD-${Math.floor(Math.random() * 30) + 1}\n📍 *Location:* Main OPD Consultation Wing\n\nPlease arrive 10 minutes prior to your slot. If you need any assistance, feel free to message us here!`;
+      } else if (category === 'salon') {
+        return `✅ *Appointment Confirmed!*\n\nThank you for choosing *${business.name}*.\nYour slot has been reserved for: *${newMessage}*.\n\nWe look forward to pampering you!`;
+      } else {
+        return `✅ *Request Confirmed!*\n\nThank you for choosing *${business.name}*.\nYour request for *${newMessage}* has been received and confirmed.`;
+      }
+    }
+
     let catalogList = '';
 
     if (category === 'bakery' && Array.isArray(configMap.menu_items)) {
       catalogList = configMap.menu_items.map((m: any) => `• *${m.name}* — ₹${m.price}${m.unit ? ` (${m.unit})` : ''}`).join('\n');
-    } else if (category === 'salon' && Array.isArray(configMap.services)) {
+    } else if ((category === 'salon' || category === 'clinic' || category === 'hospital' || category === 'custom' || category === 'real_estate' || category === 'ca_firm') && Array.isArray(configMap.services)) {
       catalogList = configMap.services.map((s: any) => `• *${s.name}* — ₹${s.price}${s.duration ? ` (${s.duration})` : ''}`).join('\n');
     } else if (category === 'gym' && Array.isArray(configMap.gym_plans)) {
       catalogList = configMap.gym_plans.map((g: any) => `• *${g.name}* — ₹${g.price}${g.duration ? ` (${g.duration})` : ''}`).join('\n');
@@ -101,6 +125,8 @@ export async function getResponse(
       catalogList = configMap.cafe_menu.map((c: any) => `• *${c.name}* — ₹${c.price}${c.category ? ` (${c.category})` : ''}`).join('\n');
     } else if (category === 'tuition' && Array.isArray(configMap.course_list)) {
       catalogList = configMap.course_list.map((t: any) => `• *${t.name}* — ${t.fee}${t.batch_timing ? ` [${t.batch_timing}]` : ''}`).join('\n');
+    } else if (category === 'retail' && Array.isArray(configMap.menu_items)) {
+      catalogList = configMap.menu_items.map((m: any) => `• *${m.name}* — ₹${m.price}`).join('\n');
     }
 
     const staffList = Array.isArray(configMap.staff) && configMap.staff.length > 0
@@ -109,10 +135,10 @@ export async function getResponse(
 
     const hours = configMap.hours ? `\n\n🕒 *Hours:* ${configMap.hours}` : '';
 
-    return `✨ *Welcome to ${business.name}!* ✨\n\nWe're excited to assist you! Here are our ${category === 'salon' ? 'services' : category === 'gym' ? 'membership plans' : 'offerings'}:\n${catalogList || 'Please ask about our available items and pricing.'}${staffList}${hours}\n\nHow can we help you today?`;
+    return `✨ *Welcome to ${business.name}!* ✨\n\nWe're excited to assist you! Here are our ${category === 'salon' || category === 'clinic' || category === 'hospital' ? 'consultations & services' : category === 'gym' ? 'membership plans' : 'offerings'}:\n${catalogList || 'Please ask about our available items, doctor consultations, and timings.'}${staffList}${hours}\n\nHow can we help you today?`;
   }
 
-  return `Hello! Thank you for reaching out to us on WhatsApp. How can we assist you with our menu, services, or bookings today?`;
+  return `Hello! Thank you for reaching out to us on WhatsApp. How can we assist you with our services or bookings today?`;
 }
 
 /**

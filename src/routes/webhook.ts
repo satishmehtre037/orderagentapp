@@ -364,9 +364,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
         console.log(JSON.stringify(capturedData, null, 2));
 
         const defaultType =
-          business.category === 'salon'
+          business.category === 'salon' || business.category === 'clinic' || business.category === 'hospital'
             ? 'booking'
-            : business.category === 'tuition'
+            : business.category === 'tuition' || business.category === 'real_estate' || business.category === 'ca_firm'
             ? 'lead'
             : 'order';
         const captureType = capturedData.type || defaultType;

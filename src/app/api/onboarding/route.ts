@@ -240,7 +240,7 @@ export async function POST(req: Request) {
         config_key: 'cafe_menu',
         config_value: formData.cafe_menu || [],
       });
-    } else if (category === 'clinic' || category === 'real_estate' || category === 'custom') {
+    } else if (category === 'clinic' || category === 'hospital' || category === 'ca_firm' || category === 'real_estate' || category === 'custom') {
       configRows.push({
         business_id: businessId,
         config_key: 'services',
