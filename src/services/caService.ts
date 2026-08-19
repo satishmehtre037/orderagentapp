@@ -26,35 +26,77 @@ export function normalizePhoneNumber(phone: string): string {
 }
 
 /**
- * Finds a registered CA client by phone or email
+ * Finds a registered CA client by phone or email (with fallback to compliance/document records)
  */
 export async function findCAClient(identifier: { phone?: string; email?: string; businessId?: string }): Promise<CAClient | null> {
   const cleanPhone = identifier.phone ? normalizePhoneNumber(identifier.phone) : '';
+  const last10 = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
   const cleanEmail = identifier.email?.trim().toLowerCase() || '';
 
   try {
+    // 1. Search ca_clients table
     let query = supabase.from('ca_clients').select('*');
 
-    if (identifier.businessId) {
-      query = query.eq('business_id', identifier.businessId);
-    }
-
     if (cleanPhone && cleanEmail) {
-      query = query.or(`phone.ilike.%${cleanPhone}%,email.ilike.%${cleanEmail}%`);
+      query = query.or(`phone.ilike.%${last10}%,email.ilike.%${cleanEmail}%`);
     } else if (cleanPhone) {
-      query = query.or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${cleanPhone.slice(-10)}%`);
+      query = query.or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${last10}%`);
     } else if (cleanEmail) {
       query = query.ilike('email', cleanEmail);
     } else {
       return null;
     }
 
-    const { data, error } = await query.limit(1).maybeSingle();
-    if (error) {
-      console.warn('[CAService] Client lookup error:', error.message);
-      return null;
+    const { data: clientData } = await query.limit(1).maybeSingle();
+    if (clientData) {
+      return clientData as CAClient;
     }
-    return data as CAClient | null;
+
+    // 2. Fallback: check if client has compliance calendar or document tracker records
+    if (last10) {
+      const { data: compData } = await supabase
+        .from('ca_compliance_calendar')
+        .select('*')
+        .or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${last10}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (compData) {
+        return {
+          id: compData.client_id || `temp-${last10}`,
+          business_id: compData.business_id || identifier.businessId,
+          client_name: compData.client_name || 'Valued Client',
+          phone: compData.phone || cleanPhone,
+          email: compData.email,
+          entity_type: 'Proprietorship',
+          status: 'Active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as CAClient;
+      }
+
+      const { data: docData } = await supabase
+        .from('ca_documents_tracker')
+        .select('*')
+        .or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${last10}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (docData) {
+        return {
+          id: docData.client_id || `temp-${last10}`,
+          business_id: docData.business_id || identifier.businessId,
+          client_name: docData.client_name || 'Valued Client',
+          phone: docData.phone || cleanPhone,
+          entity_type: 'Proprietorship',
+          status: 'Active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as CAClient;
+      }
+    }
+
+    return null;
   } catch (err: any) {
     console.error('[CAService] findCAClient exception:', err.message);
     return null;
@@ -62,15 +104,29 @@ export async function findCAClient(identifier: { phone?: string; email?: string;
 }
 
 /**
- * Fetches live compliance records for a client
+ * Fetches live compliance records for a client by ID and/or phone
  */
-export async function getClientCompliances(clientId: string): Promise<CAComplianceRecord[]> {
+export async function getClientCompliances(clientId?: string, phone?: string): Promise<CAComplianceRecord[]> {
   try {
-    const { data, error } = await supabase
-      .from('ca_compliance_calendar')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('due_date', { ascending: true });
+    const cleanPhone = phone ? normalizePhoneNumber(phone) : '';
+    const last10 = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+
+    let query = supabase.from('ca_compliance_calendar').select('*');
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isValidUuid = clientId && uuidRegex.test(clientId);
+
+    if (isValidUuid && last10) {
+      query = query.or(`client_id.eq.${clientId},phone.ilike.%${last10}%`);
+    } else if (isValidUuid) {
+      query = query.eq('client_id', clientId);
+    } else if (last10) {
+      query = query.or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${last10}%`);
+    } else {
+      return [];
+    }
+
+    const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) {
       console.warn('[CAService] getClientCompliances error:', error.message);
@@ -84,15 +140,29 @@ export async function getClientCompliances(clientId: string): Promise<CAComplian
 }
 
 /**
- * Fetches pending & requested documents for a client
+ * Fetches pending & requested documents for a client by ID and/or phone
  */
-export async function getClientDocuments(clientId: string): Promise<CADocumentTracker[]> {
+export async function getClientDocuments(clientId?: string, phone?: string): Promise<CADocumentTracker[]> {
   try {
-    const { data, error } = await supabase
-      .from('ca_documents_tracker')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('requested_date', { ascending: false });
+    const cleanPhone = phone ? normalizePhoneNumber(phone) : '';
+    const last10 = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+
+    let query = supabase.from('ca_documents_tracker').select('*');
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isValidUuid = clientId && uuidRegex.test(clientId);
+
+    if (isValidUuid && last10) {
+      query = query.or(`client_id.eq.${clientId},phone.ilike.%${last10}%`);
+    } else if (isValidUuid) {
+      query = query.eq('client_id', clientId);
+    } else if (last10) {
+      query = query.or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${last10}%`);
+    } else {
+      return [];
+    }
+
+    const { data, error } = await query.order('requested_date', { ascending: false });
 
     if (error) {
       console.warn('[CAService] getClientDocuments error:', error.message);
@@ -115,8 +185,8 @@ export async function handleCAClientQuery(
   firmName = 'Webcore CA & Advisory'
 ): Promise<string> {
   const [compliances, documents] = await Promise.all([
-    getClientCompliances(client.id),
-    getClientDocuments(client.id),
+    getClientCompliances(client.id, client.phone),
+    getClientDocuments(client.id, client.phone),
   ]);
 
   const systemPrompt = buildCASupportPrompt(firmName, client.client_name, compliances, documents);
