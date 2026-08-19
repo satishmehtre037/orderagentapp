@@ -173,3 +173,45 @@ ${recentMessages}`;
   return null;
 }
 
+/**
+ * Direct chat completion against Groq models with dynamic fallback cascade
+ */
+export async function getGroqChatCompletion(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+  options: { temperature?: number; maxTokens?: number } = {}
+): Promise<string> {
+  const groqClient = getGroqClient();
+  if (!groqClient) {
+    throw new Error('Groq client not initialized');
+  }
+
+  const groqModels = [
+    process.env.GROQ_MODEL,
+    'qwen/qwen2.5-27b',
+    'groq/compound',
+    'groq/compound-mini',
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'llama3-8b-8192',
+  ].filter(Boolean) as string[];
+
+  for (const model of groqModels) {
+    try {
+      const completion = await groqClient.chat.completions.create({
+        model,
+        messages,
+        temperature: options.temperature ?? 0.3,
+        max_tokens: options.maxTokens ?? 1024,
+      });
+
+      const reply = completion.choices[0]?.message?.content?.trim();
+      if (reply) return reply;
+    } catch (err: any) {
+      console.warn(`[Groq AI] Model ${model} failed (${err.message}). Trying next...`);
+    }
+  }
+
+  throw new Error('All Groq models failed');
+}
+
+

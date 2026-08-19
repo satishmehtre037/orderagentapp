@@ -232,6 +232,15 @@ Available Properties / Configurations:
 
 Office Hours:
 {{hours}}`,
+  ca_firm: `You are the executive AI support assistant for {{business_name}} (Chartered Accountancy & Tax Advisory Firm).
+Help clients and prospects with tax compliance, GST returns, ITR filings, ROC compliance, audit queries, and document checklist inquiries.
+
+Services & Advisory Portfolio:
+{{services}}
+{{menu_items}}
+
+Office Hours & Partner Availability:
+{{hours}}`,
 };
 
 const DEFAULT_FALLBACK_TEMPLATE = `You are the official customer service assistant for {{business_name}}.
@@ -249,6 +258,7 @@ const CAPTURE_TYPE_BY_CATEGORY: Record<string, CaptureType> = {
   clinic: 'booking',
   tuition: 'lead',
   real_estate: 'lead',
+  ca_firm: 'lead',
   bakery: 'order',
   cafe: 'order',
   retail: 'order',
@@ -586,4 +596,146 @@ export async function buildSystemPromptWithMeta(
     businessId,
     generatedAt: new Date().toISOString(),
   };
+}
+
+// ===========================================================================
+// Specialized CA Firm Automation Suite Prompt Builders
+// ===========================================================================
+
+export function buildCASupportPrompt(
+  firmName: string,
+  clientName: string,
+  complianceRows: Array<{ compliance_type: string; due_date: string; status: string }>,
+  docRows: Array<{ document_name: string; compliance_type: string; status: string }>
+): string {
+  const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const complianceLines = complianceRows.length
+    ? complianceRows.map((r) => `- ${r.compliance_type}: due ${r.due_date}, status ${r.status}`).join('\n')
+    : '- No compliance records currently on file.';
+
+  const docLines = docRows.length
+    ? docRows.map((r) => `- ${r.document_name} (${r.compliance_type}): ${r.status}`).join('\n')
+    : '- No pending document requests.';
+
+  return `You are the executive AI support assistant for ${firmName}, a Chartered Accountancy & Tax Advisory firm in India. Today is ${todayStr}.
+Client Name: ${clientName}
+
+Client Live Compliance Calendar:
+${complianceLines}
+
+Client Document Status:
+${docLines}
+
+### Strict Guidelines:
+1. Answer GST, ITR, TDS, ROC, and tax compliance queries clearly, crisply, and professionally.
+2. Use ONLY the live data above for this client's specific due dates, pending documents, or filing statuses. NEVER invent or hallucinate dates or tax figures.
+3. If an inquiry requires complex tax planning or official signing/certification, politely clarify that a Chartered Accountant / Partner from the team will review and connect directly.
+4. Keep WhatsApp responses concise (3-5 lines), well-structured with bullet points where appropriate.
+5. Default to clean, professional English. If the client speaks in Hindi/Hinglish, you may politely mirror their language.
+6. Sign off as "Team ${firmName}".`;
+}
+
+export function buildCALeadQualificationPrompt(firmName: string): string {
+  const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return `You are the lead-qualification AI assistant for ${firmName}, a Chartered Accountancy & Advisory firm in India. Today is ${todayStr}.
+You are chatting on WhatsApp with a prospective client who has just reached out.
+
+Your objectives:
+1. Warmly acknowledge their inquiry in a crisp, courteous, professional manner.
+2. Ask 1-2 focused questions at a time (never a long questionnaire) to identify:
+   - Service needed (e.g. GST registration/filing, ITR filing, Company/LLP incorporation, Tax Audit, Bookkeeping, ROC compliance, etc.)
+   - Business entity type (Individual / Proprietorship / Partnership / Private Limited / LLP)
+   - Urgency / timeline.
+3. Once the basic requirement is clear, let them know that a senior CA from the team will connect shortly with the exact roadmap and quotation.
+4. Keep messages concise (2-4 lines). Never quote arbitrary pricing yourself; state that the partner will provide a customized quote.
+5. Default to polished English; switch to Hinglish only if the prospect initiated in Hinglish.`;
+}
+
+export function buildCALeadClassifierPrompt(userMessage: string, assistantReply: string): string {
+  return `You are a classification assistant for a CA firm's lead pipeline.
+Based on this conversation exchange, output STRICT JSON only (no markdown, no backticks, no preamble):
+{"requirement": "<GST Registration / ITR Filing / Company Incorporation / Tax Audit / Bookkeeping / ROC Compliance / Other / Unclear>", "business_type": "<Individual / Proprietorship / Partnership / Company / Unclear>", "urgency": "<High / Medium / Low / Unclear>", "score": "<Hot / Warm / Cold>"}
+
+Scoring Rules:
+- Score "Hot" if urgency is High, immediate deadline, or explicit intent to start now.
+- Score "Warm" if interested in service but timeline is flexible.
+- Score "Cold" if vague inquiry or just casual browsing.
+
+Prospect Message: ${userMessage}
+Assistant Reply: ${assistantReply}`;
+}
+
+export function buildCADocumentRequestPrompt(firmName: string, clientName: string, complianceType: string, docList: string): string {
+  return `Write a short, polite, professional document checklist request message (WhatsApp/Email friendly, 3-5 lines) on behalf of ${firmName} to client "${clientName}" for their upcoming "${complianceType}" work.
+Include this exact document checklist:
+${docList}
+
+Ask them to share these documents at the earliest to ensure timely filing. Sign off as "Team ${firmName}".`;
+}
+
+export function buildCAComplianceReminderPrompt(
+  firmName: string,
+  clientName: string,
+  complianceType: string,
+  dueDate: string,
+  stage: 'friendly_7d' | 'reminder_3d' | 'urgent_1d' | 'due_today' | 'overdue',
+  daysOverdue: number
+): string {
+  return `Write a concise, professional compliance deadline reminder (3-5 lines) from ${firmName} to client "${clientName}".
+Compliance: ${complianceType}
+Due Date: ${dueDate}
+Stage: ${stage} (${stage === 'friendly_7d' ? 'Gentle heads up' : stage === 'reminder_3d' ? 'Clear reminder' : stage === 'urgent_1d' ? 'Urgent tone, due tomorrow' : stage === 'due_today' ? 'Due today, immediate action requested' : `Overdue by ${daysOverdue} days, firm but polite warning of possible late fee/penalty risk`})
+
+Tone must strictly match the stage. Ask them to share any remaining documents or confirmation to avoid delayed filing. Sign off as "Team ${firmName}".`;
+}
+
+export function buildCADocumentFollowupPrompt(
+  firmName: string,
+  clientName: string,
+  documentName: string,
+  complianceType: string,
+  attemptNumber: number
+): string {
+  return `Write a short, professional follow-up message (WhatsApp/Email friendly, 2-4 lines) from ${firmName} reminding client "${clientName}" to share their pending document "${documentName}" for "${complianceType}".
+This is follow-up attempt #${attemptNumber} (${attemptNumber === 1 ? 'Gentle reminder' : attemptNumber === 2 ? 'Clear follow-up' : 'Firm reminder mentioning that delay will impact filing timeline'}).
+Ask them to upload or reply with the document at the earliest. Sign off as "Team ${firmName}".`;
+}
+
+export function buildCALeadFollowupPrompt(
+  firmName: string,
+  leadName: string,
+  requirement: string,
+  attemptNumber: number
+): string {
+  return `Write a short, friendly, non-intrusive follow-up message (2-4 lines) from ${firmName} to prospective client "${leadName}" regarding their inquiry about "${requirement}".
+This is follow-up attempt #${attemptNumber}. Keep it conversational, helpful, and invite them to ask any questions or schedule a quick call. Sign off as "Team ${firmName}".`;
+}
+
+export function buildCAInvoiceReminderPrompt(
+  firmName: string,
+  clientName: string,
+  invoiceId: string,
+  amount: number,
+  currency: string,
+  dueDate: string,
+  stage: 'upcoming_3d' | 'due_today' | 'overdue_mild' | 'overdue_moderate' | 'overdue_severe',
+  daysOverdue: number
+): string {
+  return `Write a professional payment reminder (3-5 lines) from ${firmName} to client "${clientName}".
+Invoice ID: ${invoiceId}
+Amount Due: ${currency} ${amount}
+Due Date: ${dueDate}
+Stage: ${stage} (${stage === 'upcoming_3d' ? 'Friendly upcoming notice' : stage === 'due_today' ? 'Due today' : stage === 'overdue_mild' ? 'Polite overdue reminder' : stage === 'overdue_moderate' ? 'Firm overdue reminder (8-15 days)' : `Severely overdue (${daysOverdue} days), formal request for settlement`})
+
+Stay professional and courteous at all times. Include a request to settle the invoice or share the UTR/transaction details if already paid. Sign off as "Accounts Team, ${firmName}".`;
+}
+
+export function buildCAPaymentThanksPrompt(
+  firmName: string,
+  clientName: string,
+  invoiceId: string,
+  amount: number,
+  currency: string
+): string {
+  return `Write a warm, professional payment receipt acknowledgement (2-3 lines) from ${firmName} to "${clientName}" confirming receipt of ${currency} ${amount} for Invoice #${invoiceId}. Sign off as "Accounts Team, ${firmName}".`;
 }

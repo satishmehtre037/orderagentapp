@@ -9,6 +9,10 @@ import { OrdersLedgerTab } from '../../components/dashboard/OrdersLedgerTab';
 import { ConversationsTab } from '../../components/dashboard/ConversationsTab';
 import { EditBusinessInfoTab } from '../../components/dashboard/EditBusinessInfoTab';
 import { BillingTab } from '../../components/dashboard/BillingTab';
+import CAComplianceTab from '../../components/dashboard/ca/CAComplianceTab';
+import CADocumentsTab from '../../components/dashboard/ca/CADocumentsTab';
+import CALeadsTab from '../../components/dashboard/ca/CALeadsTab';
+import CAAutomationControlTab from '../../components/dashboard/ca/CAAutomationControlTab';
 import { resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
 import { useToast } from '../../components/ui/ToastContext';
 import { ThemeToggle } from '../../components/ui/ThemeContext';
@@ -34,6 +38,10 @@ import {
   Dumbbell,
   GraduationCap,
   Coffee,
+  Calendar,
+  FileText,
+  Users,
+  Briefcase,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -386,53 +394,131 @@ export default function DashboardPage() {
 
         {/* Desktop & Tablet Segmented Navigation Tabs */}
         <div className="hidden sm:flex bg-slate-200/60 dark:bg-slate-800/80 p-1 rounded-xl items-center space-x-1 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
-              activeTab === 'orders'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
-            }`}
-          >
-            {renderCategoryIcon('w-4 h-4')}
-            <span>{captureTypeLabel} & Ledger</span>
-          </button>
+          {effectiveCategory === 'ca_firm' ? (
+            <>
+              <button
+                onClick={() => setActiveTab('ca_compliance')}
+                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'ca_compliance'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Tax Calendar</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('conversations')}
-            className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
-              activeTab === 'conversations'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Live Conversations</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('ca_documents')}
+                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'ca_documents'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-blue-500" />
+                <span>Doc Tracker</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('edit_info')}
-            className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
-              activeTab === 'edit_info'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            <span>Store Settings & Catalog</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('ca_leads')}
+                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'ca_leads'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-rose-500" />
+                <span>Leads CRM</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('billing')}
-            className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
-              activeTab === 'billing'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
-            }`}
-          >
-            <CreditCard className="w-4 h-4" />
-            <span>Billing & Pro Plans</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('ca_automation')}
+                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'ca_automation'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Bot className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Cron Engines</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('conversations')}
+                className={`flex-1 min-w-[120px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'conversations'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Live Chats</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('billing')}
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'billing'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Billing</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
+                  activeTab === 'orders'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                {renderCategoryIcon('w-4 h-4')}
+                <span>{captureTypeLabel} & Ledger</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('conversations')}
+                className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
+                  activeTab === 'conversations'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Live Conversations</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('edit_info')}
+                className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
+                  activeTab === 'edit_info'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                <span>Store Settings & Catalog</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('billing')}
+                className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-2 ${
+                  activeTab === 'billing'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Billing & Pro Plans</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Tab Content Body */}
@@ -442,6 +528,34 @@ export default function DashboardPage() {
               businessId={business?.id || 'demo-business-id'}
               category={business?.category || 'bakery'}
               businessName={business?.name || 'Agento AI Store'}
+            />
+          )}
+
+          {activeTab === 'ca_compliance' && (
+            <CAComplianceTab
+              businessId={business?.id}
+              businessName={business?.name}
+            />
+          )}
+
+          {activeTab === 'ca_documents' && (
+            <CADocumentsTab
+              businessId={business?.id}
+              businessName={business?.name}
+            />
+          )}
+
+          {activeTab === 'ca_leads' && (
+            <CALeadsTab
+              businessId={business?.id}
+              businessName={business?.name}
+            />
+          )}
+
+          {activeTab === 'ca_automation' && (
+            <CAAutomationControlTab
+              businessId={business?.id}
+              businessName={business?.name}
             />
           )}
 
@@ -470,57 +584,111 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Mobile Native Bottom Navigation Bar (iOS Frosted Glass) */}
+      {/* Mobile Native Bottom Navigation Bar */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/85 dark:bg-slate-900/90 border-t border-slate-200/60 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-3 py-2 flex items-center justify-around pb-safe transition-colors duration-200">
-        <button
-          onClick={() => setActiveTab('orders')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-            activeTab === 'orders'
-              ? 'text-slate-950 dark:text-white font-bold scale-105'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-        >
-          {renderCategoryIcon(
-            `w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`
-          )}
-          <span className="text-[10px] tracking-tight font-medium">{captureTypeLabel}</span>
-        </button>
+        {effectiveCategory === 'ca_firm' ? (
+          <>
+            <button
+              onClick={() => setActiveTab('ca_compliance')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'ca_compliance'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Calendar className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Calendar</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('conversations')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-            activeTab === 'conversations'
-              ? 'text-slate-950 dark:text-white font-bold scale-105'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-        >
-          <MessageSquare className={`w-5 h-5 mb-0.5 ${activeTab === 'conversations' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight font-medium">Live Chats</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('ca_documents')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'ca_documents'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <FileText className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Docs</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('edit_info')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-            activeTab === 'edit_info'
-              ? 'text-slate-950 dark:text-white font-bold scale-105'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-        >
-          <Settings className={`w-5 h-5 mb-0.5 ${activeTab === 'edit_info' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight font-medium">Store Info</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('ca_leads')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'ca_leads'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Leads</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('billing')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-            activeTab === 'billing'
-              ? 'text-slate-950 dark:text-white font-bold scale-105'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-        >
-          <CreditCard className={`w-5 h-5 mb-0.5 ${activeTab === 'billing' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10px] tracking-tight font-medium">Plan</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('ca_automation')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'ca_automation'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Bot className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Cron</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'orders'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              {renderCategoryIcon(
+                `w-5 h-5 mb-0.5 ${activeTab === 'orders' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`
+              )}
+              <span className="text-[10px] tracking-tight font-medium">{captureTypeLabel}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('conversations')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'conversations'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <MessageSquare className={`w-5 h-5 mb-0.5 ${activeTab === 'conversations' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
+              <span className="text-[10px] tracking-tight font-medium">Live Chats</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('edit_info')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'edit_info'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Settings className={`w-5 h-5 mb-0.5 ${activeTab === 'edit_info' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
+              <span className="text-[10px] tracking-tight font-medium">Store Info</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'billing'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <CreditCard className={`w-5 h-5 mb-0.5 ${activeTab === 'billing' ? 'text-slate-950 dark:text-white stroke-[2.5]' : 'stroke-[1.8]'}`} />
+              <span className="text-[10px] tracking-tight font-medium">Plan</span>
+            </button>
+          </>
+        )}
       </nav>
 
       {/* Clean Modern Footer */}

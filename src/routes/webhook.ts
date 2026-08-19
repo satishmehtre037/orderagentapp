@@ -13,6 +13,12 @@ import { buildSystemPrompt } from '../services/promptBuilder';
 import { getResponse, extractStructuredCapture } from '../services/groqService';
 import { sendMessage } from '../services/whatsappService';
 import { downloadWhatsAppMedia, transcribeAudioWithGroq } from '../services/whisperService';
+import {
+  findCAClient,
+  handleCAClientQuery,
+  processIncomingDocument,
+  handleCALeadInquiry,
+} from '../services/caService';
 
 const router = Router();
 
@@ -59,6 +65,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const change = entry?.changes?.[0];
     const value = change?.value;
     const message = value?.messages?.[0];
+    const contactProfile = value?.contacts?.[0];
 
     if (!message) {
       return;
@@ -68,8 +75,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const customerNumber = message.from;
     let messageText = '';
     let isVoiceNote = false;
+    let isMediaDocument = false;
+    let mediaPayload: { mediaId?: string; mimeType?: string; filename?: string } = {};
 
-    // Handle Text Messages vs WhatsApp Voice Notes (Audio)
+    // Handle Text Messages vs WhatsApp Voice Notes vs Documents/Images
     if (message.type === 'text') {
       messageText = message.text?.body || '';
     } else if (message.type === 'audio' || message.type === 'voice') {
@@ -94,17 +103,26 @@ router.post('/webhook', async (req: Request, res: Response) => {
         await sendMessage(customerNumber, businessNumber, failText);
         return;
       }
+    } else if (message.type === 'document' || message.type === 'image') {
+      isMediaDocument = true;
+      const mediaObj = message.document || message.image;
+      mediaPayload = {
+        mediaId: mediaObj?.id,
+        mimeType: mediaObj?.mime_type,
+        filename: mediaObj?.filename || (message.type === 'image' ? 'photo.jpg' : 'document.pdf'),
+      };
+      messageText = mediaObj?.caption || `[Attached ${message.type === 'image' ? 'Image' : 'Document'}: ${mediaPayload.filename}]`;
     } else {
-      console.log(`[Webhook] Ignored non-text/non-audio message type: ${message.type}`);
+      console.log(`[Webhook] Ignored non-text/non-audio/non-media message type: ${message.type}`);
       return;
     }
 
-    if (!messageText.trim()) {
+    if (!messageText.trim() && !isMediaDocument) {
       return;
     }
 
     console.log(`\n======================================================`);
-    console.log(`[Webhook] 📥 INCOMING MESSAGE RECEIVED ${isVoiceNote ? '(🎙️ Voice Note)' : '(💬 Text)'}`);
+    console.log(`[Webhook] 📥 INCOMING MESSAGE RECEIVED ${isVoiceNote ? '(🎙️ Voice Note)' : isMediaDocument ? '(📄 Document/Image)' : '(💬 Text)'}`);
     console.log(`[Webhook] Business Number: ${businessNumber}`);
     console.log(`[Webhook] Customer Number: ${customerNumber}`);
     console.log(`[Webhook] Message Content: "${messageText}"`);
@@ -118,7 +136,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
       return;
     }
 
-    console.log(`[Webhook Pipeline] ✅ Using business: "${business.name}" (${business.id})`);
+    console.log(`[Webhook Pipeline] ✅ Using business: "${business.name}" (${business.id}) [Category: ${business.category}]`);
 
     // 2. CHECK SUBSCRIPTION & PAUSE STATUS GUARD
     const configs = await getBusinessConfigs(business.id);
@@ -130,7 +148,6 @@ router.post('/webhook', async (req: Request, res: Response) => {
       console.log(
         `[Webhook Pipeline] ⏸️ Business "${business.name}" AI Agent is PAUSED by store owner. Saving message to ledger and skipping AI processing.`
       );
-      // Save inbound customer message so owner can view and reply manually
       await saveConversationMessage(business.id, customerNumber, 'inbound', messageText);
       return;
     }
@@ -146,20 +163,55 @@ router.post('/webhook', async (req: Request, res: Response) => {
         `[Webhook Pipeline] ⚠️ Business "${business.name}" (${business.id}) trial EXPIRED (End Date: ${business.trial_end_date}). AI Agent is paused.`
       );
 
-      // Save inbound message
       await saveConversationMessage(business.id, customerNumber, 'inbound', messageText);
-
-      // Send polite expiration notice to customer
       const unavailableNotice =
         `⚠️ *${business.name} Support Notice*\nOur automated AI assistant trial period has ended. Please contact our store team directly or visit your owner dashboard to renew the subscription plan (₹1/month) and resume instant AI replies.`;
       await sendMessage(customerNumber, business.whatsapp_number, unavailableNotice);
-
-      // Save outbound notice
       await saveConversationMessage(business.id, customerNumber, 'outbound', unavailableNotice);
       return;
     }
 
-    // 3. Save incoming message to database
+    // --------------------------------------------------------------------------
+    // 3. CA FIRM AUTOMATION SUITE ROUTER (Branch 1 from n8n)
+    // --------------------------------------------------------------------------
+    if (business.category === 'ca_firm') {
+      const messageToSave = isMediaDocument ? `📄 [Document Upload]: ${mediaPayload.filename}` : isVoiceNote ? `🎙️ [Voice Note]: ${messageText}` : messageText;
+      await saveConversationMessage(business.id, customerNumber, 'inbound', messageToSave);
+
+      // Check if sender is a registered CA Client
+      const caClient = await findCAClient({ phone: customerNumber, businessId: business.id });
+
+      if (caClient) {
+        if (isMediaDocument) {
+          // Known client + media -> Process document upload and acknowledge
+          const docRes = await processIncomingDocument(caClient, mediaPayload, business.name);
+          await sendMessage(customerNumber, business.whatsapp_number, docRes.text);
+          await saveConversationMessage(business.id, customerNumber, 'outbound', docRes.text);
+          return;
+        } else {
+          // Known client + text -> AI Support Agent with live compliance calendar & document context
+          const supportReply = await handleCAClientQuery(caClient, messageText, 'whatsapp', business.name);
+          await sendMessage(customerNumber, business.whatsapp_number, supportReply);
+          await saveConversationMessage(business.id, customerNumber, 'outbound', supportReply);
+          return;
+        }
+      } else {
+        // Unknown sender -> Lead Qualification Agent & Classification
+        const leadRes = await handleCALeadInquiry(
+          customerNumber,
+          messageText,
+          contactProfile?.profile?.name,
+          'WhatsApp',
+          business.id,
+          business.name
+        );
+        await sendMessage(customerNumber, business.whatsapp_number, leadRes.replyText);
+        await saveConversationMessage(business.id, customerNumber, 'outbound', leadRes.replyText);
+        return;
+      }
+    }
+
+    // 3. Save incoming message to database (Standard category pipeline)
     const messageToSave = isVoiceNote ? `🎙️ [Voice Note]: ${messageText}` : messageText;
     await saveConversationMessage(business.id, customerNumber, 'inbound', messageToSave);
 

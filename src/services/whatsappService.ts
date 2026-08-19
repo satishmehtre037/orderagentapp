@@ -74,3 +74,15 @@ export async function sendMessage(
     console.error(`[WhatsApp Service Error] Network/API error sending message:`, error?.message || error);
   }
 }
+
+/**
+ * Convenient shorthand for sending messages without explicitly supplying business number
+ */
+export async function sendWhatsAppMessage(
+  toNumber: string,
+  message: string,
+  businessWhatsappNumber = ''
+): Promise<void> {
+  return sendMessage(toNumber, businessWhatsappNumber, message);
+}
+

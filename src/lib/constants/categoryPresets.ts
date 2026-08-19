@@ -187,6 +187,30 @@ export const CATEGORY_PRESETS: Record<BusinessCategory, CategoryPresetData> = {
       },
     ],
   },
+  ca_firm: {
+    hours: 'Mon - Sat, 9:30 AM - 7:00 PM',
+    services: [
+      { name: 'GST Registration & Monthly Return Filing (GSTR-1 / 3B)', price: 1500, duration: 'Monthly' },
+      { name: 'Income Tax Return (ITR-1 / 2 / 3 / 4 / Corporate)', price: 2000, duration: 'Annual' },
+      { name: 'TDS Quarterly Return & 26AS Reconciliation', price: 1200, duration: 'Quarterly' },
+      { name: 'Company & LLP Incorporation with MCA Compliance', price: 7500, duration: 'One-time' },
+      { name: 'Tax Audit, Bookkeeping & Financial Statement Prep', price: 5000, duration: 'Custom' },
+    ],
+    staff: [
+      { name: 'Senior Partner', specialty: 'Direct Tax & Corporate Structuring' },
+      { name: 'GST Manager', specialty: 'Indirect Tax & Input Tax Credit Audits' },
+    ],
+    faqs: [
+      {
+        question: 'What documents are needed for GST or ITR filing?',
+        answer: 'You can directly upload your bank statements, purchase/sales invoices, or Form 26AS here on WhatsApp. Our automated system records and queues them for verification.',
+      },
+      {
+        question: 'How do you track compliance due dates?',
+        answer: 'Our autonomous engine tracks your GST, ITR, and TDS due dates in real time and sends you timely alerts 7 days, 3 days, and 1 day before the deadline.',
+      },
+    ],
+  },
   custom: {
     hours: 'Mon - Sun, 9:00 AM - 8:00 PM',
     services: [
@@ -217,6 +241,9 @@ export const resolveCategoryFromNameOrType = (
   }
 
   // If category is default/fallback, detect accurately from business name
+  if (/ca\b|chartered|tax|accountant|accounting|audit|gst\b|itr\b|roc\b|advisory|finances/i.test(name)) {
+    return 'ca_firm';
+  }
   if (/boutique|retail|fashion|apparel|clothing|saree|garment|kurti|dress|wear|collection|store/i.test(name)) {
     return 'retail';
   }

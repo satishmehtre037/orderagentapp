@@ -6,6 +6,8 @@ import webhookRouter from './routes/webhook';
 import billingRouter from './routes/billing';
 import invoiceRouter from './routes/invoice';
 import paymentRouter from './routes/payment';
+import { caRouter } from './routes/caRoutes';
+import { initCACronScheduler } from './services/caCronService';
 
 const app = express();
 
@@ -26,6 +28,10 @@ app.use('/', webhookRouter);
 app.use('/', invoiceRouter);
 app.use('/billing', billingRouter);
 app.use('/', paymentRouter);
+app.use('/api/ca', caRouter);
+
+// Initialize CA Firm 4-Daily Automated Cron Schedulers
+initCACronScheduler();
 
 // Start periodic trial expiration checker (every 1 hour)
 setInterval(async () => {

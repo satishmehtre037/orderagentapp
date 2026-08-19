@@ -94,6 +94,12 @@ const CATEGORY_HEADER_CONFIG: Record<
     icon: Building2,
     recordLabel: 'Record Site Visit',
   },
+  ca_firm: {
+    title: 'CA & Tax Compliance Inquiries',
+    subtitle: 'Tax returns, GST, ITR, document checklists & client queries captured by AI',
+    icon: FileText,
+    recordLabel: 'Record Tax Entry',
+  },
   custom: {
     title: 'Client Inquiries & Bookings',
     subtitle: 'Custom business requests, leads & appointments captured by AI',
