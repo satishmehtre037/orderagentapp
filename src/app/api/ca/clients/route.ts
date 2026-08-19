@@ -26,9 +26,13 @@ export async function GET(req: Request) {
     for (const c of (clientsData || [])) {
       const cleanPhone = (c.phone || '').replace(/\D/g, '').slice(-10);
       if (cleanPhone) {
+        let cleanName = (c.client_name || '').trim();
+        if (cleanName.includes('Lead from Automation')) cleanName = 'Test Client';
+        if (cleanName.length > 30) cleanName = cleanName.slice(0, 30);
+
         clientMap.set(cleanPhone, {
           id: c.id,
-          client_name: c.client_name,
+          client_name: cleanName || 'Valued Client',
           phone: c.phone,
           email: c.email,
           entity_type: c.entity_type || 'Proprietorship',
@@ -40,9 +44,15 @@ export async function GET(req: Request) {
     for (const l of (leadsData || [])) {
       const cleanPhone = (l.phone || '').replace(/\D/g, '').slice(-10);
       if (cleanPhone && !clientMap.has(cleanPhone)) {
+        let cleanName = (l.name || '').trim();
+        if (cleanName.includes('Lead from Automation') || cleanName.includes('Diagnostic Test')) {
+          continue; // Skip internal diagnostic test leads
+        }
+        if (cleanName.length > 30) cleanName = cleanName.slice(0, 30);
+
         clientMap.set(cleanPhone, {
           id: l.id,
-          client_name: l.name || 'Valued Client',
+          client_name: cleanName || 'Valued Client',
           phone: l.phone,
           email: l.email,
           entity_type: l.business_type || 'Proprietorship',
