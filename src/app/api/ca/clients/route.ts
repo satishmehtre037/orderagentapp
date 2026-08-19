@@ -77,28 +77,78 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { business_id, client_name, phone, email, entity_type, gstin, pan, partner_assigned } = body;
 
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+    const last10 = cleanPhone.slice(-10);
+
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const validBusinessId = business_id && uuidRegex.test(business_id) && business_id !== 'demo-business-id'
       ? business_id
       : null;
 
-    const { data, error } = await supabase
-      .from('ca_clients')
-      .insert({
-        business_id: validBusinessId,
-        client_name,
-        phone,
-        email: email || null,
-        entity_type: entity_type || 'Proprietorship',
-        gstin: gstin || null,
-        pan: pan || null,
-        partner_assigned: partner_assigned || null,
-      })
-      .select()
-      .single();
+    // Check if client with this phone already exists
+    let existingClient = null;
+    if (last10) {
+      const { data } = await supabase
+        .from('ca_clients')
+        .select('*')
+        .or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${last10}%`)
+        .maybeSingle();
+      existingClient = data;
+    }
 
-    if (error) throw error;
-    return NextResponse.json({ success: true, client: data });
+    let clientRecord = null;
+    if (existingClient) {
+      const { data: updated, error: updateErr } = await supabase
+        .from('ca_clients')
+        .update({
+          client_name: client_name || existingClient.client_name,
+          email: email || existingClient.email,
+          entity_type: entity_type || existingClient.entity_type || 'Proprietorship',
+          gstin: gstin || existingClient.gstin,
+          pan: pan || existingClient.pan,
+          partner_assigned: partner_assigned || existingClient.partner_assigned,
+          status: 'Active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingClient.id)
+        .select()
+        .single();
+
+      if (updateErr) throw updateErr;
+      clientRecord = updated;
+    } else {
+      const { data: inserted, error: insertErr } = await supabase
+        .from('ca_clients')
+        .insert({
+          business_id: validBusinessId,
+          client_name,
+          phone,
+          email: email || null,
+          entity_type: entity_type || 'Proprietorship',
+          gstin: gstin || null,
+          pan: pan || null,
+          partner_assigned: partner_assigned || null,
+          status: 'Active',
+        })
+        .select()
+        .single();
+
+      if (insertErr) throw insertErr;
+      clientRecord = inserted;
+    }
+
+    // Also update any matching leads in ca_leads to 'Converted'
+    if (last10) {
+      await supabase
+        .from('ca_leads')
+        .update({
+          status: 'Converted',
+          updated_at: new Date().toISOString(),
+        })
+        .or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${last10}%`);
+    }
+
+    return NextResponse.json({ success: true, client: clientRecord });
   } catch (err: any) {
     console.error('[CA Client Create Error]:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

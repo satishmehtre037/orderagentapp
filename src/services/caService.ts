@@ -184,6 +184,38 @@ export async function handleCAClientQuery(
   channel: 'whatsapp' | 'email' | 'web' = 'whatsapp',
   firmName = 'Webcore CA & Advisory'
 ): Promise<string> {
+  const lowerMsg = userMessage.trim().toLowerCase();
+  if (
+    lowerMsg === 'confirm' ||
+    lowerMsg === 'proceed' ||
+    lowerMsg === 'yes' ||
+    lowerMsg === 'accepted' ||
+    lowerMsg.startsWith('confirm') ||
+    lowerMsg.startsWith('proceed')
+  ) {
+    const welcomeConfirm =
+      `🎉 *Welcome to ${firmName}!* 🏛️\n\n` +
+      `Dear ${client.client_name},\n` +
+      `Thank you for confirming! Your engagement has been officially confirmed and activated.\n\n` +
+      `📋 *Next Steps:*\n` +
+      `1️⃣ Our team is setting up your compliance ledger.\n` +
+      `2️⃣ We will send you your tailored document checklist shortly.\n` +
+      `3️⃣ You can ask questions in this chat 24/7 regarding your tax deadlines or filing status!\n\n` +
+      `We look forward to serving you!`;
+
+    await logCAQuery({
+      business_id: client.business_id,
+      client_id: client.id,
+      phone: client.phone,
+      email: client.email,
+      channel,
+      query_text: userMessage,
+      ai_response: welcomeConfirm,
+    });
+
+    return welcomeConfirm;
+  }
+
   const [compliances, documents] = await Promise.all([
     getClientCompliances(client.id, client.phone),
     getClientDocuments(client.id, client.phone),
@@ -361,6 +393,90 @@ export async function handleCALeadInquiry(
       status: 'New',
       created_at: new Date().toISOString(),
     } as any;
+  }
+
+  // 1.5 Check if user is confirming / accepting the proposal quotation
+  const lowerMsg = userMessage.trim().toLowerCase();
+  const isConfirmKeyword =
+    lowerMsg === 'confirm' ||
+    lowerMsg === 'proceed' ||
+    lowerMsg === 'yes' ||
+    lowerMsg === 'accepted' ||
+    lowerMsg === 'i confirm' ||
+    lowerMsg.startsWith('confirm') ||
+    lowerMsg.startsWith('proceed') ||
+    lowerMsg.includes('confirm engagement') ||
+    lowerMsg.includes('please proceed');
+
+  if (isConfirmKeyword) {
+    const clientName = existingLead.name || contactName || 'Valued Client';
+    
+    // 1. Auto Onboard into ca_clients
+    const { data: existingClient } = await supabase
+      .from('ca_clients')
+      .select('*')
+      .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+      .maybeSingle();
+
+    if (!existingClient) {
+      await supabase.from('ca_clients').insert({
+        business_id: validBusinessId,
+        client_name: clientName,
+        phone: cleanPhone,
+        entity_type: existingLead.business_type || 'Private Limited',
+        status: 'Active',
+      });
+    }
+
+    // 2. Mark ca_leads as Converted
+    await supabase
+      .from('ca_leads')
+      .update({
+        status: 'Converted',
+        qualification_score: 'Hot',
+        notes: `${existingLead.notes ? existingLead.notes + '\n' : ''}[${new Date().toISOString().slice(0, 10)}] Engagement confirmed via WhatsApp ('${userMessage}').`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existingLead.id);
+
+    existingLead.status = 'Converted';
+
+    // 3. Dispatch Partner Alert
+    await sendPartnerAlert({
+      type: 'hot_lead',
+      title: '🎉 New Client Engagement Confirmed (WhatsApp)',
+      details: {
+        name: clientName,
+        phone: cleanPhone,
+        status: 'Converted to Active Client',
+        service: existingLead.requirement || 'CA & Tax Advisory',
+        confirmation: userMessage,
+      },
+    });
+
+    const welcomeLetter =
+      `🎉 *Welcome to ${firmName}!* 🏛️\n\n` +
+      `Dear ${clientName},\n` +
+      `Thank you for confirming! We are delighted to officially onboard you as a valued client of our firm. Your engagement for *Corporate Compliance & Tax Advisory* is now active.\n\n` +
+      `📋 *Your Onboarding Roadmap:*\n` +
+      `1️⃣ *Client Profile:* Initialized in our Compliance & Filing Directory.\n` +
+      `2️⃣ *Tax Calendar:* Active statutory deadline tracking (GST, ITR & Audit).\n` +
+      `3️⃣ *Document Checklist:* Our team will dispatch your specific filing checklist shortly.\n` +
+      `4️⃣ *24/7 AI Desk:* You can message this WhatsApp chat anytime to check upcoming due dates or pending documents.\n\n` +
+      `👨‍💼 *Assigned Partner:* Senior CA Engagement Desk\n` +
+      `📞 *Priority Support:* Direct WhatsApp Desk Active\n\n` +
+      `We look forward to a successful and seamless financial partnership!`;
+
+    await logCAQuery({
+      business_id: businessId,
+      client_id: existingLead.id,
+      phone: cleanPhone,
+      channel: source.toLowerCase() as any,
+      query_text: userMessage,
+      ai_response: welcomeLetter,
+    });
+
+    return { replyText: welcomeLetter, lead: existingLead, isHot: true };
   }
 
   // 2. Generate Lead Qualification Agent Response
