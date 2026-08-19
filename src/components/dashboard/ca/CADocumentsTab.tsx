@@ -153,6 +153,20 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
     setRejectionModalDoc(null);
   };
 
+  const handleDeleteDocument = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this document tracker record?')) return;
+    try {
+      const res = await fetch(`/api/ca/documents?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setActionMessage('🗑️ Document tracker record deleted.');
+        setTimeout(() => setActionMessage(null), 4000);
+        fetchDocuments();
+      }
+    } catch (err) {
+      console.error('Delete doc error:', err);
+    }
+  };
+
   const getStatusBadge = (status: CADocStatus) => {
     if (status === 'Verified') {
       return (
@@ -386,6 +400,14 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                             {doc.followup_count || 0} nudges sent
                           </span>
                         )}
+
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          title="Delete this document record"
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

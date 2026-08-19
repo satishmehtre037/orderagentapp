@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle2, AlertTriangle, Clock, Plus, Search, Filter, Send, RefreshCw, FileText } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertTriangle, Clock, Plus, Search, Filter, Send, RefreshCw, FileText, Trash2, UserX } from 'lucide-react';
 import type { CAComplianceRecord, CAComplianceType, CAComplianceStatus } from '@/types';
 
 interface CAComplianceTabProps {
@@ -38,6 +38,41 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
       console.error('Failed to fetch compliances:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteCompliance = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this compliance record?')) return;
+    try {
+      const res = await fetch(`/api/ca/compliance?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setActionMessage('🗑️ Compliance record deleted.');
+        setTimeout(() => setActionMessage(null), 4000);
+        fetchCompliances();
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+    }
+  };
+
+  const handleDeleteClientComplete = async (clientId?: string, phone?: string, clientName?: string) => {
+    if (!confirm(`⚠️ DELETE CLIENT AND ALL DATA?\n\nThis will permanently delete "${clientName || 'this client'}" and ALL their compliance records, uploaded documents, and chat history from the database.`)) {
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams();
+      if (clientId) params.set('clientId', clientId);
+      if (phone) params.set('phone', phone);
+
+      const res = await fetch(`/api/ca/clients?${params.toString()}`, { method: 'DELETE' });
+      if (res.ok) {
+        setActionMessage(`🗑️ Client "${clientName || 'Client'}" and all associated data deleted from database.`);
+        setTimeout(() => setActionMessage(null), 5000);
+        fetchCompliances();
+      }
+    } catch (err) {
+      console.error('Client delete error:', err);
     }
   };
 
@@ -341,7 +376,7 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         {record.status !== 'Filed' && (
                           <>
                             <button
@@ -364,6 +399,22 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
                             {record.acknowledgement_number}
                           </span>
                         )}
+
+                        <button
+                          onClick={() => handleDeleteCompliance(record.id)}
+                          title="Delete this compliance record"
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteClientComplete(record.client_id, record.phone, record.client_name)}
+                          title={`Permanently delete client "${record.client_name}" and ALL records`}
+                          className="p-1 text-slate-400 hover:text-rose-700 hover:bg-rose-100 rounded-lg transition"
+                        >
+                          <UserX className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
