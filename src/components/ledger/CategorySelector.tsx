@@ -123,6 +123,26 @@ const CATEGORIES: CategoryConfig[] = [
     },
   },
   {
+    id: 'hospital',
+    title: 'Hospital & Multi-Specialty',
+    icon: Stethoscope,
+    description: 'Full hospital management — OPD tokens, inpatient care, surgery scheduling & 24/7 emergency AI automation.',
+    badge: 'OPD & IPD',
+    accent: {
+      iconBg: 'bg-red-100 text-red-700',
+      iconText: 'text-red-700',
+      selectedBorder: 'border-red-600',
+      selectedRing: 'ring-red-500/20',
+      badgeBg: 'bg-red-50 border-red-200 text-red-800',
+      badgeText: 'text-red-700',
+    },
+    capabilities: ['🏥 OPD Token Booking', '🛏️ Inpatient & Surgery', '🚑 24/7 Emergency AI'],
+    previewGreeting: {
+      text: '✨ *Welcome to MediCare Hospital!* ✨\n\nBook OPD appointments, view doctor schedules, get lab reports & emergency assistance — all via WhatsApp AI.',
+      subtext: 'Manages doctors, departments, patient records, voice calls & automated follow-ups',
+    },
+  },
+  {
     id: 'gym',
     title: 'Gym & Fitness',
     icon: Dumbbell,
