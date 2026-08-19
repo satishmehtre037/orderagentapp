@@ -46,15 +46,20 @@ export async function POST(req: Request) {
 
     // Record outbound pitch in conversations ledger
     try {
-      await supabaseAdmin.from('conversations').insert({
-        customer_number: cleanPhone,
-        message_text: pitchText,
-        message_direction: 'outbound',
-        sender: 'agent',
-        business_name: businessName,
-        category: category,
-        created_at: new Date().toISOString(),
-      });
+      let bizId: string | null = null;
+      const { data: bizList } = await supabaseAdmin.from('businesses').select('id').limit(1);
+      if (bizList && bizList.length > 0) {
+        bizId = bizList[0].id;
+      }
+
+      if (bizId) {
+        await supabaseAdmin.from('conversations').insert({
+          business_id: bizId,
+          customer_number: cleanPhone,
+          message_text: pitchText,
+          message_direction: 'outbound',
+        });
+      }
     } catch (convoErr) {
       console.warn('[Lead Hunter Convo Save Notice]:', convoErr);
     }

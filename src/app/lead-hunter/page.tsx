@@ -222,30 +222,80 @@ export default function LeadHunterPage() {
     addLog(`📱 Added your personal test lead (+918779841346). Click "Send Pitch" to test live!`, 'success');
   };
 
-  // Fetch Conversations / Threads
+  // Fetch Conversations / Threads (Merging server + local state)
   const fetchConversations = async () => {
     setIsLoadingChats(true);
+    let localSaved: any[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('webcore_lead_threads');
+        if (raw) localSaved = JSON.parse(raw);
+      } catch (e) {}
+    }
+
     try {
       const res = await fetch('/api/admin/lead-hunter/conversations');
       const data = await res.json();
-      if (data.success && data.threads) {
-        setChatThreads(data.threads);
-        if (!selectedThreadPhone && data.threads.length > 0) {
-          setSelectedThreadPhone(data.threads[0].phone);
+      const serverThreads: any[] = data.success && data.threads ? data.threads : [];
+
+      // Merge server threads and local threads by phone
+      const map: Record<string, any> = {};
+      [...localSaved, ...serverThreads].forEach((t) => {
+        const clean = t.phone.replace(/\D/g, '');
+        if (!map[clean]) {
+          map[clean] = t;
+        } else {
+          // Merge messages and pick latest
+          const existing = map[clean];
+          const allMsgs = [...(existing.messages || []), ...(t.messages || [])];
+          const seenMsgIds = new Set<string>();
+          const dedupedMsgs = allMsgs.filter((m) => {
+            const id = m.id || m.text;
+            if (seenMsgIds.has(id)) return false;
+            seenMsgIds.add(id);
+            return true;
+          });
+          map[clean] = {
+            ...existing,
+            ...t,
+            messages: dedupedMsgs,
+            last_message: t.last_message || existing.last_message,
+            last_timestamp: t.last_timestamp || existing.last_timestamp,
+          };
         }
+      });
+
+      const merged = Object.values(map).sort(
+        (a: any, b: any) => new Date(b.last_timestamp).getTime() - new Date(a.last_timestamp).getTime()
+      );
+
+      setChatThreads(merged);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('webcore_lead_threads', JSON.stringify(merged));
+      }
+      if (!selectedThreadPhone && merged.length > 0) {
+        setSelectedThreadPhone(merged[0].phone);
       }
     } catch (err: any) {
-      console.warn('[Fetch Conversations Notice]:', err.message);
+      if (localSaved.length > 0) {
+        setChatThreads(localSaved);
+        if (!selectedThreadPhone) setSelectedThreadPhone(localSaved[0].phone);
+      }
     } finally {
       setIsLoadingChats(false);
     }
   };
 
-  // Load chats when switching to 'chats' tab
+  // Load chats on initial mount & when switching to 'chats' tab
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchConversations();
+    }
+  }, [isAuthenticated, activeTab]);
+
   useEffect(() => {
     if (activeTab === 'chats' && isAuthenticated) {
-      fetchConversations();
-      const interval = setInterval(fetchConversations, 8000);
+      const interval = setInterval(fetchConversations, 6000);
       return () => clearInterval(interval);
     }
   }, [activeTab, isAuthenticated]);
@@ -313,6 +363,12 @@ export default function LeadHunterPage() {
 
   // Dispatch Single Pitch
   const sendSinglePitch = async (lead: ScrapedLead) => {
+    const cleanDigits = (lead.phone_number || '').replace(/\D/g, '');
+    if (cleanDigits.length < 10) {
+      addLog(`⚠️ Cannot send to "${lead.business_name}": Missing or incomplete phone number (${lead.phone_number || 'Empty'}). Edit in table to send!`, 'warn');
+      return;
+    }
+
     addLog(`Dispatching pitch to ${lead.business_name} (${lead.phone_number})...`, 'info');
     try {
       const res = await fetch('/api/admin/lead-hunter/send-pitch', {
@@ -330,6 +386,52 @@ export default function LeadHunterPage() {
         setLeads((prev) =>
           prev.map((l) => (l.id === lead.id ? { ...l, status: 'sent' } : l))
         );
+
+        const pitchContent = generatePitchText(lead, pitchType, customMessage, senderName);
+        const newMsg = {
+          id: `msg_pitch_${Date.now()}`,
+          text: pitchContent,
+          sender: 'bot',
+          timestamp: new Date().toISOString(),
+        };
+
+        setChatThreads((prev) => {
+          const clean = lead.phone_number.replace(/\D/g, '');
+          const existingIdx = prev.findIndex((t) => t.phone.replace(/\D/g, '') === clean);
+          let updated: any[];
+          if (existingIdx >= 0) {
+            updated = prev.map((t, idx) =>
+              idx === existingIdx
+                ? {
+                    ...t,
+                    last_message: pitchContent,
+                    last_sender: 'bot',
+                    last_timestamp: new Date().toISOString(),
+                    messages: [...(t.messages || []), newMsg],
+                  }
+                : t
+            );
+          } else {
+            updated = [
+              {
+                phone: lead.phone_number,
+                business_name: lead.business_name,
+                category: lead.category,
+                last_message: pitchContent,
+                last_sender: 'bot',
+                last_timestamp: new Date().toISOString(),
+                messages: [newMsg],
+              },
+              ...prev,
+            ];
+          }
+
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('webcore_lead_threads', JSON.stringify(updated));
+          }
+          return updated;
+        });
+
         addLog(`✅ WhatsApp Pitch delivered to ${lead.business_name}!`, 'success');
       } else {
         addLog(`⚠️ Failed delivering to ${lead.business_name}: ${data.error}`, 'warn');
@@ -341,9 +443,19 @@ export default function LeadHunterPage() {
 
   // Paced Campaign Dispatcher
   const handleStartPacedCampaign = async () => {
-    const queue = leads.filter((l) => selectedLeadIds.includes(l.id) && l.status === 'pending');
-    if (queue.length === 0) {
-      alert('No pending leads selected for dispatch.');
+    const validQueue = leads.filter(
+      (l) => selectedLeadIds.includes(l.id) && l.status === 'pending' && (l.phone_number || '').replace(/\D/g, '').length >= 10
+    );
+    const missingQueue = leads.filter(
+      (l) => selectedLeadIds.includes(l.id) && l.status === 'pending' && (l.phone_number || '').replace(/\D/g, '').length < 10
+    );
+
+    if (missingQueue.length > 0) {
+      addLog(`ℹ️ Skipped ${missingQueue.length} leads with missing phone numbers. Click Maps or edit their number in the table.`, 'warn');
+    }
+
+    if (validQueue.length === 0) {
+      alert('No pending leads with valid phone numbers selected. Please enter phone numbers in the table or click "Add My Number".');
       return;
     }
 
@@ -351,11 +463,11 @@ export default function LeadHunterPage() {
     setIsCampaignPaused(false);
     isRunningRef.current = true;
     isPausedRef.current = false;
-    setCampaignTotal(queue.length);
+    setCampaignTotal(validQueue.length);
     setCampaignCurrentIdx(0);
-    addLog(`🚀 Starting automated campaign: ${queue.length} leads with ${delaySeconds}s safe delay...`, 'info');
+    addLog(`🚀 Starting automated campaign: ${validQueue.length} verified leads with ${delaySeconds}s safe delay...`, 'info');
 
-    for (let i = 0; i < queue.length; i++) {
+    for (let i = 0; i < validQueue.length; i++) {
       if (!isRunningRef.current) break;
 
       while (isPausedRef.current) {
@@ -365,11 +477,11 @@ export default function LeadHunterPage() {
 
       if (!isRunningRef.current) break;
 
-      const lead = queue[i];
+      const lead = validQueue[i];
       setCampaignCurrentIdx(i + 1);
       await sendSinglePitch(lead);
 
-      if (i < queue.length - 1 && isRunningRef.current) {
+      if (i < validQueue.length - 1 && isRunningRef.current) {
         for (let c = delaySeconds; c > 0; c--) {
           if (!isRunningRef.current) break;
           while (isPausedRef.current) {
