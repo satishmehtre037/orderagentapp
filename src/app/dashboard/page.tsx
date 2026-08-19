@@ -105,6 +105,9 @@ export default function DashboardPage() {
         };
 
         setBusiness(resolvedBiz as Business);
+        if (resolvedCategory === 'ca_firm') {
+          setActiveTab('ca_compliance');
+        }
         if (typeof window !== 'undefined') {
           localStorage.setItem('biz_id', resData.business.id);
           localStorage.setItem('biz_category', resolvedCategory);

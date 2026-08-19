@@ -524,44 +524,52 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
 
       {/* Aggregate Metric Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Revenue */}
+        {/* Total Revenue / Invoiced */}
         <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm space-y-1">
           <span className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Total Revenue</span>
+            <span>{effectiveCategory === 'ca_firm' ? 'Total Fee Invoiced' : 'Total Revenue'}</span>
             <IndianRupee className="w-4 h-4 text-emerald-600" />
           </span>
           <div className="text-2xl font-bold text-slate-900">₹{stats.totalRev.toLocaleString('en-IN')}</div>
-          <span className="text-[11px] text-emerald-600 font-medium">From {orders.length} total orders</span>
+          <span className="text-[11px] text-emerald-600 font-medium">
+            {effectiveCategory === 'ca_firm' ? `From ${orders.length} total client billings` : `From ${orders.length} total orders`}
+          </span>
         </div>
 
         {/* Active In Progress */}
         <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm space-y-1">
           <span className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Active Orders</span>
+            <span>{effectiveCategory === 'ca_firm' ? 'Active Filings & Cases' : effectiveCategory === 'salon' || effectiveCategory === 'clinic' ? 'Active Appointments' : effectiveCategory === 'tuition' ? 'Active Inquiries' : 'Active Orders'}</span>
             <Package className="w-4 h-4 text-amber-500" />
           </span>
           <div className="text-2xl font-bold text-slate-900">{stats.activeCount}</div>
-          <span className="text-[11px] text-amber-600 font-medium">Pending fulfillment</span>
+          <span className="text-[11px] text-amber-600 font-medium">
+            {effectiveCategory === 'ca_firm' ? 'Pending completion / filing' : 'Pending fulfillment'}
+          </span>
         </div>
 
-        {/* Average Order Value */}
+        {/* Average Order Value / Billing */}
         <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm space-y-1">
           <span className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Avg Order Value</span>
+            <span>{effectiveCategory === 'ca_firm' ? 'Avg Client Fee / Retainer' : 'Avg Order Value'}</span>
             <TrendingUp className="w-4 h-4 text-blue-600" />
           </span>
           <div className="text-2xl font-bold text-slate-900">₹{stats.aov}</div>
-          <span className="text-[11px] text-slate-500">Per customer order</span>
+          <span className="text-[11px] text-slate-500">
+            {effectiveCategory === 'ca_firm' ? 'Per consultation / return' : 'Per customer order'}
+          </span>
         </div>
 
         {/* Completed Count */}
         <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm space-y-1">
           <span className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Completed</span>
-            <CheckCircle2 className="w-4 h-4 text-slate-600" />
+            <span>{effectiveCategory === 'ca_firm' ? 'Completed Filings' : 'Completed'}</span>
+            <CheckCircle2 className="w-4 h-4 text-slate-400" />
           </span>
           <div className="text-2xl font-bold text-slate-900">{stats.completedCount}</div>
-          <span className="text-[11px] text-slate-500">Successfully delivered</span>
+          <span className="text-[11px] text-slate-500">
+            {effectiveCategory === 'ca_firm' ? 'Successfully filed & billed' : 'Successfully delivered'}
+          </span>
         </div>
       </div>
 
