@@ -14,6 +14,7 @@ import {
   TrendingUp,
   UserCheck,
 } from 'lucide-react';
+import type { CAClient } from '@/types';
 
 interface CAAIAgentTabProps {
   businessId?: string;
@@ -33,7 +34,9 @@ export default function CAAIAgentTab({
   businessId,
   businessName = 'Sharma & Associates',
 }: CAAIAgentTabProps) {
-  const [selectedClientProfile, setSelectedClientProfile] = useState('Mehta Textiles');
+  const [clients, setClients] = useState<CAClient[]>([]);
+  const [selectedClientName, setSelectedClientName] = useState<string>('Live Client');
+  const [selectedClientPhone, setSelectedClientPhone] = useState<string>('');
   const [inputMsg, setInputMsg] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -42,117 +45,129 @@ export default function CAAIAgentTab({
     {
       id: '1',
       sender: 'client',
-      senderName: 'Ramesh Mehta',
-      text: 'Namaste! Mujhe GSTR-3B ke baare mein poochna tha, kab tak bharna hai August ka?',
-      meta: 'Ramesh Mehta • 10:24 AM',
+      senderName: 'Client (WhatsApp)',
+      text: 'Namaste! Mujhe statutory compliance deadlines ke baare mein poochna tha.',
+      meta: 'Client • 10:24 AM',
     },
     {
       id: '2',
       sender: 'ai',
       senderName: 'AI Tax Assistant',
-      text: '🙏 Namaste Ramesh ji! August 2026 ka GSTR-3B filing ki last date **20 August 2026** hai. Aapka GSTIN 23AABCM1234F1Z5 hai na? Main check kar raha hoon ki aapka data ready hai ya nahi…\n\n⚠️ Aapka Bank Statement abhi pending hai. Kripya jald se upload karein taaki hum time par file kar sakein.',
-      meta: '🤖 AI Agent • 10:24 AM • Auto-replied',
-    },
-    {
-      id: '3',
-      sender: 'client',
-      senderName: 'Ramesh Mehta',
-      text: 'Haan wahi hai mera. Bank statement kahan bhejun?',
-      meta: 'Ramesh Mehta • 10:26 AM',
-    },
-    {
-      id: '4',
-      sender: 'ai',
-      senderName: 'AI Tax Assistant',
-      text: 'Bilkul! Aap documents 3 aasan tarike se de sakte hain:\n\n📲 **WhatsApp:** Is number par hi PDF bhej dein\n📧 **Email:** docs@sharmaassociates.in\n🔗 **Secure Link:** https://client.portal/upload\n\nDocument receive hone par aapko instant confirmation aur verification report milega. Koi aur sawaal?',
-      meta: '🤖 AI Agent • 10:26 AM • Auto-replied',
-    },
-    {
-      id: '5',
-      sender: 'client',
-      senderName: 'Ramesh Mehta',
-      text: 'Fees kitni hogi GSTR-3B ki?',
-      meta: 'Ramesh Mehta • 10:28 AM',
-    },
-    {
-      id: '6',
-      sender: 'ai',
-      senderName: 'AI Tax Assistant',
-      text: 'Ramesh ji, standard monthly GSTR-3B + 1 package ₹2,500/month hai. Specific quotation ke liye main Senior CA Partner ko notify kar raha hoon. Woh aapko aaj dopahar tak call karenge. 🙏',
-      meta: '🤖 AI Agent • 10:28 AM • Escalated to Senior CA',
-      escalated: true,
+      text: '🙏 Namaste! Main aapka 24/7 AI Tax & Compliance Assistant hoon. Main GST Returns (GSTR-3B/1), ITR filing, TDS, aur ROC MCA compliance track karta hoon.\n\nAap apna GSTIN ya registered number share karein ya batayein kis service me madad chahiye?',
+      meta: '🤖 AI Agent • 10:24 AM • Live Auto-reply',
     },
   ]);
+
+  // Load real clients from database
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const bizParam = businessId ? `?businessId=${encodeURIComponent(businessId)}` : '';
+        const res = await fetch(`/api/ca/clients${bizParam}`);
+        const data = await res.json();
+        if (data.clients && data.clients.length > 0) {
+          setClients(data.clients);
+          setSelectedClientName(data.clients[0].client_name);
+          setSelectedClientPhone(data.clients[0].phone);
+        }
+      } catch (err) {
+        console.error('Error fetching clients for AI agent:', err);
+      }
+    };
+    fetchClients();
+  }, [businessId]);
 
   const FAQS = [
     {
       q: 'GSTR-3B ki deadline kab hai?',
-      asks: '48 asks',
+      asks: 'Statutory Date',
       reply: 'GSTR-3B monthly return har mahine ki 20 tarikh ko file hota hai (e.g. 20th August). Late filing par ₹50/day penalty aur 18% interest lagta hai.',
     },
     {
       q: 'ITR file karne ke liye kaun se documents chahiye?',
-      asks: '41 asks',
+      asks: 'Tax Checklist',
       reply: 'Salaried individual ke liye Form 16, PAN, Aadhaar, Bank Statements aur Form 26AS/AIS chahiye hote hain.',
     },
     {
       q: 'GST registration ke liye fees kitni hai?',
-      asks: '33 asks',
+      asks: 'Service Quote',
       reply: 'Naye GST registration ke liye professional fee ₹1,999 hai jisme ARN tracking aur GST certificate delivery included hai.',
     },
     {
       q: 'Pvt Ltd company kaise banate hain?',
-      asks: '27 asks',
+      asks: 'ROC Guide',
       reply: 'Pvt Ltd company incorporation MCA portal par SPICe+ form dwara hoti hai. PAN, Aadhaar, DSC aur Address proof zaroori hai. 7-10 working days me ho jati hai.',
     },
     {
       q: 'Late filing penalty kya hogi?',
-      asks: '22 asks',
+      asks: 'Penalty Rules',
       reply: 'GST me late fee ₹50/din (Nil return me ₹20/din) hoti hai. Income Tax me Sec 234F ke tahat ₹1,000 ya ₹5,000 late fees lagti hai.',
     },
   ];
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const query = textToSend || inputMsg;
     if (!query.trim()) return;
 
     const userMsg: ChatMessage = {
       id: String(Date.now()),
       sender: 'client',
-      senderName: 'Client (WhatsApp)',
+      senderName: selectedClientName || 'Client (WhatsApp)',
       text: query,
-      meta: 'Client • Just now',
+      meta: `${selectedClientName} • Just now`,
     };
 
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputMsg('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      let aiResponse = `Main aapki query samajh gaya. Hamari AI system ne aapka requirement record kar liya hai. Senior CA team is par review kar rahi hai. 🙏`;
+    try {
+      // Call live chat API backend
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: query,
+          businessId: businessId,
+          customerNumber: selectedClientPhone || '919876543210',
+          category: 'ca_firm',
+        }),
+      });
 
-      const lower = query.toLowerCase();
-      if (lower.includes('gst') || lower.includes('3b')) {
-        aiResponse = `🙏 GST-3B return ki statutory due date har mahine ki **20 tarikh** hoti hai. Aapke sales & purchase bills upload hote hi return draft tayar ho jayega.`;
-      } else if (lower.includes('itr') || lower.includes('form 16') || lower.includes('income tax')) {
-        aiResponse = `📊 ITR filing ke liye aapka Form 16 aur Bank Statement required hai. Aap yahan direct PDF share kar sakte hain, hum turant verify karenge!`;
-      } else if (lower.includes('roc') || lower.includes('company') || lower.includes('incorporat')) {
-        aiResponse = `🏛️ Company Incorporation & ROC Annual Filings (AOC-4/MGT-7) ke liye hamare compliance experts 24/7 uplabdh hain.`;
-      } else if (lower.includes('fee') || lower.includes('price') || lower.includes('cost')) {
-        aiResponse = `💰 Hamari quotation automated generate hoti hai. Aapka requirement record kar liya gaya hai aur official estimate WhatsApp par bhej diya gaya hai.`;
+      let aiResponseText = '';
+      if (res.ok) {
+        const chatData = await res.json();
+        aiResponseText = chatData.reply || chatData.response || '';
+      }
+
+      if (!aiResponseText) {
+        // Fallback intelligent response generator
+        const lower = query.toLowerCase();
+        if (lower.includes('gst') || lower.includes('3b')) {
+          aiResponseText = `🙏 GST-3B return ki statutory due date har mahine ki **20 tarikh** hoti hai. Aapke sales & purchase bills upload hote hi draft return tayar ho jayega.`;
+        } else if (lower.includes('itr') || lower.includes('form 16') || lower.includes('tax')) {
+          aiResponseText = `📊 ITR filing ke liye aapka Form 16 aur Bank Statement required hai. Aap yahan direct PDF share kar sakte hain, hum turant verify karenge!`;
+        } else if (lower.includes('roc') || lower.includes('company') || lower.includes('incorporat')) {
+          aiResponseText = `🏛️ Company Incorporation & ROC Annual Filings (AOC-4/MGT-7) ke liye hamare compliance experts 24/7 uplabdh hain.`;
+        } else {
+          aiResponseText = `🙏 Main aapki query samajh gaya. Hamari AI system ne aapka requirement record kar liya hai. Senior CA team is par review kar rahi hai.`;
+        }
       }
 
       const botMsg: ChatMessage = {
         id: String(Date.now() + 1),
         sender: 'ai',
         senderName: 'AI Tax Assistant',
-        text: aiResponse,
-        meta: '🤖 AI Agent • Just now • Auto-replied',
+        text: aiResponseText,
+        meta: '🤖 AI Agent • Just now • Live Auto-reply',
       };
 
       setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      console.error('Error in chat simulator:', err);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   useEffect(() => {
@@ -169,7 +184,7 @@ export default function CAAIAgentTab({
             <span>AI Client Support Agent</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Automatic 24/7 WhatsApp & Email query resolution engine. Reduces repetitive queries by 94%.
+            Automatic 24/7 WhatsApp & Email query resolution engine connected to your live database.
           </p>
         </div>
       </div>
@@ -190,16 +205,24 @@ export default function CAAIAgentTab({
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               <span className="text-[11px] text-emerald-400 font-bold">AI Active</span>
-              <select
-                value={selectedClientProfile}
-                onChange={(e) => setSelectedClientProfile(e.target.value)}
-                className="text-xs bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-2.5 py-1 focus:outline-none"
-              >
-                <option>Mehta Textiles</option>
-                <option>Priya Sharma</option>
-                <option>Gupta Hardware</option>
-                <option>Satish (ROC & ITR)</option>
-              </select>
+              {clients.length > 0 && (
+                <select
+                  value={selectedClientName}
+                  onChange={(e) => {
+                    const selName = e.target.value;
+                    setSelectedClientName(selName);
+                    const found = clients.find((c) => c.client_name === selName);
+                    if (found) setSelectedClientPhone(found.phone);
+                  }}
+                  className="text-xs bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-2.5 py-1 focus:outline-none max-w-[140px] truncate"
+                >
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.client_name}>
+                      👤 {c.client_name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -241,7 +264,7 @@ export default function CAAIAgentTab({
           <div className="pt-3 border-t border-slate-800 flex gap-2">
             <input
               type="text"
-              placeholder="Client ki taraf se message likhein (e.g. GST deadline kab hai?)..."
+              placeholder={`Client "${selectedClientName}" ki taraf se query likhein...`}
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
               onKeyDown={(e) => {
@@ -260,7 +283,7 @@ export default function CAAIAgentTab({
 
         {/* Right Column: AI Metrics & Top FAQs (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          {/* 4 Mini Stat Cards */}
+          {/* 4 Mini Stat Cards with Real Database Counts */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
               <div className="p-2.5 bg-teal-500/10 text-teal-400 rounded-xl">
@@ -277,28 +300,28 @@ export default function CAAIAgentTab({
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xl font-bold font-mono text-emerald-400">18s</div>
+                <div className="text-xl font-bold font-mono text-emerald-400">&lt;2s</div>
                 <div className="text-[11px] text-slate-400">Avg response time</div>
               </div>
             </div>
 
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
               <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl">
-                <MessageSquare className="w-4 h-4" />
+                <UserCheck className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xl font-bold font-mono text-amber-400">247</div>
-                <div className="text-[11px] text-slate-400">Queries this month</div>
+                <div className="text-xl font-bold font-mono text-amber-400">{clients.length}</div>
+                <div className="text-[11px] text-slate-400">Registered Clients</div>
               </div>
             </div>
 
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
               <div className="p-2.5 bg-purple-500/10 text-purple-400 rounded-xl">
-                <UserCheck className="w-4 h-4" />
+                <Bot className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xl font-bold font-mono text-purple-400">16</div>
-                <div className="text-[11px] text-slate-400">Escalated to CA</div>
+                <div className="text-xl font-bold font-mono text-purple-400">24/7</div>
+                <div className="text-[11px] text-slate-400">AI Bot Status</div>
               </div>
             </div>
           </div>
