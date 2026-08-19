@@ -95,11 +95,11 @@ export default function CAInvoicesTab({
 
   const handleSendWhatsAppReminder = async (inv: InvoiceItem) => {
     try {
-      setActionMessage(`📱 Sending WhatsApp payment reminder to ${inv.clientName}...`);
-      await fetch('/api/ca/cron/trigger/deadline_reminders', {
+      setActionMessage(`📱 Dispatching WhatsApp payment request & UPI link to ${inv.clientName}...`);
+      await fetch('/api/ca/cron/trigger/invoices', {
         method: 'POST',
       });
-      setActionMessage(`✅ WhatsApp payment reminder & UPI link dispatched to ${inv.clientName}!`);
+      setActionMessage(`✅ WhatsApp payment reminder & UPI QR dispatched to ${inv.clientName}!`);
       setTimeout(() => setActionMessage(null), 4000);
     } catch (e) {
       console.error('Error sending reminder:', e);
