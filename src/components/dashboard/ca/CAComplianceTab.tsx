@@ -247,7 +247,8 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
   const fetchCompliances = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ca/compliance');
+      const bizParam = businessId ? `?businessId=${encodeURIComponent(businessId)}` : '';
+      const res = await fetch(`/api/ca/compliance${bizParam}`);
       const data = await res.json();
       if (data.compliances) {
         setCompliances(data.compliances);
@@ -261,7 +262,8 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
 
   const fetchClients = async () => {
     try {
-      const res = await fetch('/api/ca/clients');
+      const bizParam = businessId ? `?businessId=${encodeURIComponent(businessId)}` : '';
+      const res = await fetch(`/api/ca/clients${bizParam}`);
       const data = await res.json();
       if (data.clients) {
         setClients(data.clients);
@@ -274,7 +276,7 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
   useEffect(() => {
     fetchCompliances();
     fetchClients();
-  }, []);
+  }, [businessId]);
 
   const handleDeleteCompliance = async (id: string) => {
     if (!confirm('Are you sure you want to delete this compliance record?')) return;

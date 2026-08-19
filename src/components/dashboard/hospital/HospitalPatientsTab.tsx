@@ -86,23 +86,29 @@ export default function HospitalPatientsTab({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
           <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">
-            {patients.length || 1284}
+            {patients.length}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Registered</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">89</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Active This Month</div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            {patients.filter((p) => p.status === 'Active' || !p.status).length}
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Active Patients</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-amber-500 font-mono">34</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">New This Week</div>
+          <div className="text-2xl font-bold text-amber-500 font-mono">
+            {patients.filter((p) => p.blood_group).length}
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Blood Profile Logged</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-teal-600 dark:text-teal-400 font-mono">247</div>
+          <div className="text-2xl font-bold text-teal-600 dark:text-teal-400 font-mono">
+            {patients.filter((p) => p.phone).length}
+          </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">WhatsApp Connected</div>
         </div>
       </div>

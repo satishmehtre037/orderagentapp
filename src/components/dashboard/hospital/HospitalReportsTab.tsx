@@ -117,7 +117,7 @@ export default function HospitalReportsTab({
             <span className="text-xs font-semibold uppercase tracking-wider">Reports Processed</span>
             <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">{reports.length || 34}</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">{reports.length}</div>
           <div className="text-[11px] text-teal-600 dark:text-teal-400 mt-1">100% AI OCR summarized</div>
         </div>
 
@@ -126,7 +126,7 @@ export default function HospitalReportsTab({
             <span className="text-xs font-semibold uppercase tracking-wider">Critical Alerts</span>
             <AlertCircle className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">{criticalCount || 3}</div>
+          <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">{criticalCount}</div>
           <div className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">Doctor alert + Voice call dispatched</div>
         </div>
 
@@ -135,7 +135,7 @@ export default function HospitalReportsTab({
             <span className="text-xs font-semibold uppercase tracking-wider">Delivered via WhatsApp</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">{deliveredCount || 31}</div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">{deliveredCount}</div>
           <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">Sent with secure download tokens</div>
         </div>
       </div>

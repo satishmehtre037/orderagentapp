@@ -26,7 +26,8 @@ export default function CALeadsTab({ businessId, businessName }: CALeadsTabProps
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ca/leads');
+      const bizParam = businessId ? `?businessId=${encodeURIComponent(businessId)}` : '';
+      const res = await fetch(`/api/ca/leads${bizParam}`);
       const data = await res.json();
       if (data.leads) {
         setLeads(data.leads);
@@ -40,7 +41,7 @@ export default function CALeadsTab({ businessId, businessName }: CALeadsTabProps
 
   useEffect(() => {
     fetchLeads();
-  }, []);
+  }, [businessId]);
 
   const handleConvertLeadToClient = async (lead: CALead) => {
     try {

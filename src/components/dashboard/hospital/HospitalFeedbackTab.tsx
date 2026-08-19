@@ -46,6 +46,12 @@ export default function HospitalFeedbackTab({ businessId }: HospitalFeedbackTabP
 
   const unhappyCount = feedbackList.filter((f) => (f.rating || 5) <= 3).length;
   const positiveCount = feedbackList.filter((f) => (f.rating || 5) >= 4).length;
+  const avgRating =
+    feedbackList.length > 0
+      ? (feedbackList.reduce((acc, f) => acc + (f.rating || 5), 0) / feedbackList.length).toFixed(1) + '★'
+      : '—';
+  const positivePercent =
+    feedbackList.length > 0 ? `${Math.round((positiveCount / feedbackList.length) * 100)}%` : '—';
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -73,22 +79,22 @@ export default function HospitalFeedbackTab({ businessId }: HospitalFeedbackTabP
       {/* KPI Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-amber-500 font-mono">4.6★</div>
+          <div className="text-2xl font-bold text-amber-500 font-mono">{avgRating}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Average Rating</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">82%</div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">{positivePercent}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Positive (4-5★)</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-rose-500 font-mono">{unhappyCount || 7}</div>
+          <div className="text-2xl font-bold text-rose-500 font-mono">{unhappyCount}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Unhappy (≤3★) Handled</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">{feedbackList.length || 143}</div>
+          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">{feedbackList.length}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Surveys Collected</div>
         </div>
       </div>

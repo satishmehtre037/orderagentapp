@@ -19,7 +19,7 @@ import {
   RefreshCw,
   Plus,
 } from 'lucide-react';
-import { HospitalAppointment, HospitalReport } from '@/types';
+import { HospitalAppointment, HospitalReport, HospitalVoiceCall, HospitalFeedback } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface HospitalDashboardOverviewTabProps {
@@ -36,16 +36,18 @@ export default function HospitalDashboardOverviewTab({
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<HospitalAppointment[]>([]);
   const [reports, setReports] = useState<HospitalReport[]>([]);
+  const [voiceCalls, setVoiceCalls] = useState<HospitalVoiceCall[]>([]);
+  const [feedbackList, setFeedbackList] = useState<HospitalFeedback[]>([]);
   const [stats, setStats] = useState({
     todayTotal: 0,
     completed: 0,
     pending: 0,
     missed: 0,
-    waHandled: 247,
-    aiCalls: 89,
-    remindersSent: 34,
-    reportsDelivered: 12,
-    avgFeedback: '4.6★',
+    waHandled: 0,
+    aiCalls: 0,
+    remindersSent: 0,
+    reportsDelivered: 0,
+    avgFeedback: '—',
   });
 
   const { showToast } = useToast();
@@ -54,42 +56,62 @@ export default function HospitalDashboardOverviewTab({
     try {
       setLoading(true);
       const todayStr = new Date().toISOString().split('T')[0];
+      const bizParam = businessId ? `business_id=${encodeURIComponent(businessId)}` : '';
 
-      // Fetch today's appointments
-      const apptRes = await fetch(`/api/hospital/appointments?${businessId ? `business_id=${businessId}&` : ''}date=${todayStr}`);
-      const apptData = await apptRes.json();
+      // Parallel fetch from real Supabase endpoints
+      const [apptRes, allApptRes, reportsRes, voiceRes, feedbackRes, convRes] = await Promise.all([
+        fetch(`/api/hospital/appointments?${bizParam ? `${bizParam}&` : ''}date=${todayStr}`),
+        fetch(`/api/hospital/appointments?${bizParam}`),
+        fetch(`/api/hospital/reports?${bizParam}`),
+        fetch(`/api/hospital/voice-calls?${bizParam}`),
+        fetch(`/api/hospital/feedback?${bizParam}`),
+        fetch(`/api/conversations?${businessId ? `businessId=${encodeURIComponent(businessId)}` : ''}`),
+      ]);
 
-      // Fetch all appointments for metrics
-      const allApptRes = await fetch(`/api/hospital/appointments?${businessId ? `business_id=${businessId}` : ''}`);
-      const allApptData = await allApptRes.json();
+      const [apptData, allApptData, reportsData, voiceData, feedbackData, convData] = await Promise.all([
+        apptRes.json(),
+        allApptRes.json(),
+        reportsRes.json(),
+        voiceRes.json(),
+        feedbackRes.json(),
+        convRes.json().catch(() => ({})),
+      ]);
 
-      // Fetch reports
-      const reportsRes = await fetch(`/api/hospital/reports?${businessId ? `business_id=${businessId}` : ''}`);
-      const reportsData = await reportsRes.json();
+      const allAppts: HospitalAppointment[] = allApptData.appointments || [];
+      const todayAppts: HospitalAppointment[] = apptData.appointments || [];
+      const allReports: HospitalReport[] = reportsData.reports || [];
+      const allCalls: HospitalVoiceCall[] = voiceData.calls || [];
+      const allFeedback: HospitalFeedback[] = feedbackData.feedback || [];
+      const totalConversations: number = Array.isArray(convData.conversations) ? convData.conversations.length : 0;
 
-      if (allApptData.success && Array.isArray(allApptData.appointments)) {
-        const list: HospitalAppointment[] = allApptData.appointments;
-        const comp = list.filter((a) => a.status === 'completed').length;
-        const pend = list.filter((a) => a.status === 'confirmed' || a.status === 'rescheduled').length;
-        const miss = list.filter((a) => a.status === 'missed').length;
+      setAppointments(todayAppts.length > 0 ? todayAppts : allAppts.slice(0, 5));
+      setReports(allReports.slice(0, 4));
+      setVoiceCalls(allCalls);
+      setFeedbackList(allFeedback);
 
-        setAppointments(apptData.appointments || list.slice(0, 5));
-        setStats((prev) => ({
-          ...prev,
-          todayTotal: list.length,
-          completed: comp,
-          pending: pend,
-          missed: miss,
-        }));
+      const comp = allAppts.filter((a) => a.status === 'completed').length;
+      const pend = allAppts.filter((a) => a.status === 'confirmed' || a.status === 'rescheduled').length;
+      const miss = allAppts.filter((a) => a.status === 'missed').length;
+      const remSent = allAppts.filter((a) => a.reminder_24h_sent || a.reminder_2h_sent).length;
+      const deliveredLabs = allReports.filter((r) => r.delivered_via_wa).length;
+
+      let avgRatingStr = '—';
+      if (allFeedback.length > 0) {
+        const sum = allFeedback.reduce((acc, f) => acc + (f.rating || 5), 0);
+        avgRatingStr = (sum / allFeedback.length).toFixed(1) + '★';
       }
 
-      if (reportsData.success && Array.isArray(reportsData.reports)) {
-        setReports(reportsData.reports.slice(0, 4));
-        setStats((prev) => ({
-          ...prev,
-          reportsDelivered: reportsData.reports.filter((r: HospitalReport) => r.delivered_via_wa).length,
-        }));
-      }
+      setStats({
+        todayTotal: todayAppts.length > 0 ? todayAppts.length : allAppts.length,
+        completed: comp,
+        pending: pend,
+        missed: miss,
+        waHandled: totalConversations,
+        aiCalls: allCalls.length,
+        remindersSent: remSent,
+        reportsDelivered: deliveredLabs,
+        avgFeedback: avgRatingStr,
+      });
     } catch (e) {
       console.error('Error fetching hospital dashboard overview data:', e);
     } finally {
@@ -100,6 +122,9 @@ export default function HospitalDashboardOverviewTab({
   useEffect(() => {
     fetchDashboardData();
   }, [businessId]);
+
+  const criticalReports = reports.filter((r) => r.is_critical);
+  const missedAppts = appointments.filter((a) => a.status === 'missed');
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -112,7 +137,7 @@ export default function HospitalDashboardOverviewTab({
             </span>
             <span className="flex items-center text-xs text-emerald-400 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5" />
-              Live Hospital Sync
+              Live Supabase Sync
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
@@ -166,7 +191,7 @@ export default function HospitalDashboardOverviewTab({
             </div>
           </div>
           <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-1 rounded-full border border-teal-500/30">
-            Active Engines
+            Live Supabase Records
           </span>
         </div>
 
@@ -176,7 +201,7 @@ export default function HospitalDashboardOverviewTab({
               {stats.waHandled}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              WhatsApp Triage
+              WhatsApp Messages
             </div>
           </div>
 
@@ -194,7 +219,7 @@ export default function HospitalDashboardOverviewTab({
               {stats.remindersSent}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Slot Reminders
+              Slot Reminders Sent
             </div>
           </div>
 
@@ -228,11 +253,11 @@ export default function HospitalDashboardOverviewTab({
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
-            {stats.todayTotal || 38}
+            {stats.todayTotal}
           </div>
           <div className="flex items-center text-[11px] text-teal-600 dark:text-teal-400 mt-1">
             <TrendingUp className="w-3.5 h-3.5 mr-1" />
-            <span>12% surge in OPD footfall</span>
+            <span>{stats.todayTotal > 0 ? `${stats.todayTotal} OPD Slots Active` : 'No slots booked yet'}</span>
           </div>
         </div>
 
@@ -244,11 +269,11 @@ export default function HospitalDashboardOverviewTab({
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
-            {stats.completed || 26}
+            {stats.completed}
           </div>
           <div className="flex items-center text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
             <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-            <span>Prescriptions logged</span>
+            <span>Consultations concluded</span>
           </div>
         </div>
 
@@ -260,7 +285,7 @@ export default function HospitalDashboardOverviewTab({
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
-            {stats.pending || 8}
+            {stats.pending}
           </div>
           <div className="flex items-center text-[11px] text-amber-600 dark:text-amber-400 mt-1">
             <Clock className="w-3.5 h-3.5 mr-1" />
@@ -276,11 +301,11 @@ export default function HospitalDashboardOverviewTab({
             </div>
           </div>
           <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">
-            {stats.missed || 4}
+            {stats.missed}
           </div>
           <div className="flex items-center text-[11px] text-rose-600 dark:text-rose-400 mt-1">
             <PhoneCall className="w-3.5 h-3.5 mr-1" />
-            <span>AI Voice Call Triggered</span>
+            <span>{stats.missed > 0 ? 'Follow-ups required' : 'Zero no-shows'}</span>
           </div>
         </div>
       </div>
@@ -293,7 +318,7 @@ export default function HospitalDashboardOverviewTab({
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Today&apos;s Active Consultation Queue
+                Active Consultation Queue
               </h3>
             </div>
             <button
@@ -308,10 +333,10 @@ export default function HospitalDashboardOverviewTab({
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-2">
+                  <th className="pb-2 font-semibold">Token</th>
                   <th className="pb-2 font-semibold">Patient</th>
                   <th className="pb-2 font-semibold">Attending Doctor</th>
                   <th className="pb-2 font-semibold">Slot Time</th>
-                  <th className="pb-2 font-semibold">Token</th>
                   <th className="pb-2 font-semibold">Status</th>
                   <th className="pb-2 font-semibold text-right">Quick Action</th>
                 </tr>
@@ -320,25 +345,25 @@ export default function HospitalDashboardOverviewTab({
                 {appointments.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-slate-500 dark:text-slate-400">
-                      No active appointments found for today. Click &quot;+ Book Consultation&quot; above to schedule one.
+                      No active appointments found. Click &quot;+ Book Consultation&quot; above to schedule one.
                     </td>
                   </tr>
                 ) : (
                   appointments.map((appt) => (
                     <tr key={appt.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        #{appt.token_number || '1'}
+                      </td>
                       <td className="py-3 font-medium text-slate-900 dark:text-white">
                         <div>{appt.patient_name}</div>
                         <div className="text-[10px] text-slate-600 dark:text-slate-400">{appt.patient_phone}</div>
                       </td>
                       <td className="py-3 text-slate-700 dark:text-slate-300">
-                        <div>{appt.doctor_name || 'Dr. Rajesh Gupta'}</div>
-                        <div className="text-[10px] text-teal-600 dark:text-teal-400">{appt.department || 'Cardiology'}</div>
+                        <div>{appt.doctor_name || 'Assigned On Duty'}</div>
+                        <div className="text-[10px] text-teal-600 dark:text-teal-400">{appt.department || 'General Medicine'}</div>
                       </td>
                       <td className="py-3 font-mono text-slate-600 dark:text-slate-400">
                         {new Date(appt.slot_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                        #{appt.token_number || '1'}
                       </td>
                       <td className="py-3">
                         <span
@@ -386,35 +411,39 @@ export default function HospitalDashboardOverviewTab({
             </div>
 
             <div className="space-y-2.5">
-              <div className="p-3 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs">
-                <div className="font-bold text-rose-800 dark:text-rose-300 flex items-center justify-between">
-                  <span>Priya Verma — Critical CBC</span>
-                  <span className="text-[10px] bg-rose-200 dark:bg-rose-900/80 px-1.5 py-0.5 rounded font-mono">Urgent</span>
+              {criticalReports.length === 0 && missedAppts.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                  <ShieldCheck className="w-8 h-8 mx-auto text-emerald-500/60" />
+                  <p className="font-semibold text-slate-700 dark:text-slate-300">All Clinical Queues Normal</p>
+                  <p className="text-[11px]">No critical lab abnormalities or unhandled emergencies.</p>
                 </div>
-                <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-1">
-                  Hemoglobin &lt; 7.0 g/dL. Automated AI Voice alert sent + attending doctor alerted.
-                </p>
-              </div>
+              ) : (
+                <>
+                  {criticalReports.map((r) => (
+                    <div key={r.id} className="p-3 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs">
+                      <div className="font-bold text-rose-800 dark:text-rose-300 flex items-center justify-between">
+                        <span>{r.patient_name} — {r.report_type}</span>
+                        <span className="text-[10px] bg-rose-200 dark:bg-rose-900/80 px-1.5 py-0.5 rounded font-mono">Critical</span>
+                      </div>
+                      <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-1">
+                        {r.ai_summary || 'Abnormal diagnostic readings detected. Doctor alerted.'}
+                      </p>
+                    </div>
+                  ))}
 
-              <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs">
-                <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center justify-between">
-                  <span>Rahul Sharma — 2nd No-Show</span>
-                  <span className="text-[10px] bg-amber-200 dark:bg-amber-900/80 px-1.5 py-0.5 rounded font-mono">Follow-up</span>
-                </div>
-                <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1">
-                  Cardiology follow-up missed twice. Re-booking prompt queued on WhatsApp.
-                </p>
-              </div>
-
-              <div className="p-3 bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 rounded-xl text-xs">
-                <div className="font-bold text-teal-800 dark:text-teal-300 flex items-center justify-between">
-                  <span>AI Agent WhatsApp Queue</span>
-                  <span className="text-[10px] bg-teal-200 dark:bg-teal-900/80 px-1.5 py-0.5 rounded font-mono">Live</span>
-                </div>
-                <p className="text-[11px] text-teal-700 dark:text-teal-300 mt-1">
-                  12 patient inquiries resolved automatically in the last 60 minutes.
-                </p>
-              </div>
+                  {missedAppts.map((a) => (
+                    <div key={a.id} className="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs">
+                      <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center justify-between">
+                        <span>{a.patient_name} — Missed Appointment</span>
+                        <span className="text-[10px] bg-amber-200 dark:bg-amber-900/80 px-1.5 py-0.5 rounded font-mono">No-Show</span>
+                      </div>
+                      <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1">
+                        Slot at {new Date(a.slot_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} was missed. Auto voice follow-up queued.
+                      </p>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -422,3 +451,4 @@ export default function HospitalDashboardOverviewTab({
     </div>
   );
 }
+

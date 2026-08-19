@@ -517,7 +517,8 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
   const fetchDocuments = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ca/documents');
+      const bizParam = businessId ? `?businessId=${encodeURIComponent(businessId)}` : '';
+      const res = await fetch(`/api/ca/documents${bizParam}`);
       const data = await res.json();
       if (data.documents) {
         setDocuments(data.documents);
@@ -531,7 +532,8 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
   const fetchClients = async () => {
     try {
-      const res = await fetch('/api/ca/clients');
+      const bizParam = businessId ? `?businessId=${encodeURIComponent(businessId)}` : '';
+      const res = await fetch(`/api/ca/clients${bizParam}`);
       const data = await res.json();
       if (data.clients) {
         setClients(data.clients);
@@ -544,7 +546,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
   useEffect(() => {
     fetchDocuments();
     fetchClients();
-  }, []);
+  }, [businessId]);
 
   const handleAddDocInput = () => {
     setDocListInputs([...docListInputs, '']);

@@ -109,23 +109,35 @@ export default function HospitalVoiceCallsTab({ businessId }: HospitalVoiceCalls
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
           <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">
-            {calls.length || 89}
+            {calls.length}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Calls Today</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Calls Logged</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">67%</div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            {calls.length > 0
+              ? `${Math.round(
+                  (calls.filter((c) => c.outcome === 'confirmed' || c.status === 'completed').length /
+                    calls.length) *
+                    100
+                )}%`
+              : '—'}
+          </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Connected & Confirmed</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-amber-500 font-mono">21</div>
+          <div className="text-2xl font-bold text-amber-500 font-mono">
+            {calls.filter((c) => c.outcome === 'reschedule_requested').length}
+          </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Rescheduled via Voice</div>
         </div>
 
         <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-rose-500 font-mono">8</div>
+          <div className="text-2xl font-bold text-rose-500 font-mono">
+            {calls.filter((c) => c.outcome === 'failed' || c.status === 'failed' || c.outcome === 'no_answer').length}
+          </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manual Alert Needed</div>
         </div>
       </div>
