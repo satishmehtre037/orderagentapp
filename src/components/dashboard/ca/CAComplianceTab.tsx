@@ -1,7 +1,5 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle2, AlertTriangle, Clock, Plus, Search, Filter, Send, RefreshCw, FileText, Trash2, UserX } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, CheckCircle2, AlertTriangle, Clock, Plus, Search, Filter, Send, RefreshCw, FileText, Trash2, UserX, ChevronDown, Check } from 'lucide-react';
 import type { CAComplianceRecord, CAComplianceType, CAComplianceStatus } from '@/types';
 
 interface CAComplianceTabProps {
@@ -19,6 +17,80 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
   const [submitting, setSubmitting] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
+  // Structured Compliance Groups
+  const COMPLIANCE_GROUPS = [
+    {
+      group: '🧾 GST Returns & Compliance',
+      items: [
+        { id: 'GST-3B', label: 'GST-3B Monthly Return & ITC' },
+        { id: 'GSTR-1', label: 'GSTR-1 Outward Supplies' },
+        { id: 'GSTR-9', label: 'GSTR-9 Annual Return & 9C' },
+        { id: 'GST-Registration', label: 'New GST Registration' },
+        { id: 'GST-LUT', label: 'GST LUT Filing' },
+        { id: 'GST-Notice', label: 'GST Notice Reply' },
+      ],
+    },
+    {
+      group: '📊 Income Tax & ITR Filings',
+      items: [
+        { id: 'ITR-1', label: 'ITR-1 Sahaj (Salaried)' },
+        { id: 'ITR-2', label: 'ITR-2 (Capital Gains)' },
+        { id: 'ITR-3', label: 'ITR-3 (Business & Profession)' },
+        { id: 'ITR-4', label: 'ITR-4 Sugam (Presumptive)' },
+        { id: 'ITR-5', label: 'ITR-5 (Firms & LLPs)' },
+        { id: 'ITR-6', label: 'ITR-6 (Companies / Pvt Ltd)' },
+        { id: 'ITR-7', label: 'ITR-7 (Trusts & NGOs)' },
+        { id: 'Advance-Tax-Q1', label: 'Advance Tax Q1 (June 15)' },
+        { id: 'Advance-Tax-Q2', label: 'Advance Tax Q2 (Sept 15)' },
+        { id: 'Advance-Tax-Q3', label: 'Advance Tax Q3 (Dec 15)' },
+        { id: 'Advance-Tax-Q4', label: 'Advance Tax Q4 (March 15)' },
+        { id: 'IT-Notice', label: 'Income Tax Notice Reply' },
+      ],
+    },
+    {
+      group: '💸 TDS & Withholding Tax',
+      items: [
+        { id: 'TDS-26Q', label: 'TDS Return (26Q - Vendors)' },
+        { id: 'TDS-24Q', label: 'TDS Salary (24Q - Payroll)' },
+        { id: 'TDS-27Q', label: 'TDS Foreign (27Q - NRI)' },
+        { id: 'TCS-27EQ', label: 'TCS Return (27EQ)' },
+      ],
+    },
+    {
+      group: '🏛️ MCA / ROC & Corporate Secretarial',
+      items: [
+        { id: 'ROC-AOC4', label: 'ROC AOC-4 (Financials Filing)' },
+        { id: 'ROC-MGT7', label: 'ROC MGT-7 (Annual Return)' },
+        { id: 'Company-Incorporation', label: 'Company Incorporation (SPICe+)' },
+        { id: 'LLP-Incorporation', label: 'LLP Incorporation & Annual Filing' },
+        { id: 'DIR-3-KYC', label: 'Director Annual KYC (DIR-3)' },
+        { id: 'DPT-3', label: 'DPT-3 Return of Deposits' },
+        { id: 'MSME-Form-1', label: 'MSME Form 1' },
+        { id: 'ROC-Change', label: 'Director / Office Change' },
+      ],
+    },
+    {
+      group: '💼 Audit & Assurance',
+      items: [
+        { id: 'Tax-Audit', label: 'Tax Audit (Sec 44AB & 3CD)' },
+        { id: 'Statutory-Audit', label: 'Statutory Company Audit' },
+        { id: 'Internal-Audit', label: 'Internal Audit & System Review' },
+        { id: 'Stock-Audit', label: 'Stock Audit & Inventory' },
+      ],
+    },
+    {
+      group: '🚀 Startup, Licensing & Advisory',
+      items: [
+        { id: 'Startup-India', label: 'Startup India (DPIIT) & 80-IAC' },
+        { id: 'MSME-Udyam', label: 'MSME / Udyam Registration' },
+        { id: 'IEC-License', label: 'Import Export Code (IEC)' },
+        { id: 'FSSAI-License', label: 'FSSAI Food License' },
+        { id: 'Trademark', label: 'Trademark & IP Filing' },
+        { id: 'Virtual-CFO', label: 'Virtual CFO & Monthly MIS' },
+      ],
+    },
+  ];
+
   // Form State for Add Compliance
   const [selectedClientId, setSelectedClientId] = useState('');
   const [formClientName, setFormClientName] = useState('');
@@ -27,6 +99,27 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
   const [formType, setFormType] = useState<CAComplianceType>('GST-3B');
   const [formDueDate, setFormDueDate] = useState('');
   const [clients, setClients] = useState<Array<{ id: string; client_name: string; phone: string; email?: string }>>([]);
+  const [isComplianceDropdownOpen, setIsComplianceDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsComplianceDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getSelectedComplianceLabel = () => {
+    for (const group of COMPLIANCE_GROUPS) {
+      const found = group.items.find((it) => it.id === formType);
+      if (found) return found.label;
+    }
+    return formType;
+  };
 
   const fetchCompliances = async () => {
     setLoading(true);
@@ -530,71 +623,62 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="relative" ref={dropdownRef}>
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Compliance Area *</label>
-                  <select
-                    value={formType}
-                    onChange={(e) => setFormType(e.target.value as any)}
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  
+                  {/* Trigger Button with Smooth Rounded Edges */}
+                  <button
+                    type="button"
+                    onClick={() => setIsComplianceDropdownOpen(!isComplianceDropdownOpen)}
+                    className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 border ${
+                      isComplianceDropdownOpen
+                        ? 'border-indigo-500 ring-2 ring-indigo-500/20'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                    } text-slate-900 dark:text-slate-100 rounded-2xl flex items-center justify-between transition-all duration-200 shadow-sm text-xs font-medium text-left`}
                   >
-                    <optgroup label="🧾 GST Returns & Compliance">
-                      <option value="GST-3B">GST-3B Monthly Return</option>
-                      <option value="GSTR-1">GSTR-1 Outward Supplies</option>
-                      <option value="GSTR-9">GSTR-9 Annual Return & 9C</option>
-                      <option value="GST-Registration">GST Registration</option>
-                      <option value="GST-LUT">GST LUT Filing</option>
-                      <option value="GST-Notice">GST Notice Reply</option>
-                    </optgroup>
+                    <span className="truncate pr-2">{getSelectedComplianceLabel()}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ${
+                        isComplianceDropdownOpen ? 'rotate-180 text-indigo-500' : ''
+                      }`}
+                    />
+                  </button>
 
-                    <optgroup label="📊 Income Tax & ITR Filings">
-                      <option value="ITR-1">ITR-1 Sahaj (Salaried)</option>
-                      <option value="ITR-2">ITR-2 (Capital Gains)</option>
-                      <option value="ITR-3">ITR-3 (Business & Profession)</option>
-                      <option value="ITR-4">ITR-4 Sugam (Presumptive)</option>
-                      <option value="ITR-5">ITR-5 (Firms & LLPs)</option>
-                      <option value="ITR-6">ITR-6 (Companies / Pvt Ltd)</option>
-                      <option value="ITR-7">ITR-7 (Trusts & NGOs)</option>
-                      <option value="Advance-Tax-Q1">Advance Tax Q1 (June 15)</option>
-                      <option value="Advance-Tax-Q2">Advance Tax Q2 (Sept 15)</option>
-                      <option value="Advance-Tax-Q3">Advance Tax Q3 (Dec 15)</option>
-                      <option value="Advance-Tax-Q4">Advance Tax Q4 (March 15)</option>
-                      <option value="IT-Notice">Income Tax Notice Reply</option>
-                    </optgroup>
-
-                    <optgroup label="💸 TDS & Withholding Tax">
-                      <option value="TDS-26Q">TDS Return (26Q - Vendors)</option>
-                      <option value="TDS-24Q">TDS Salary (24Q - Payroll)</option>
-                      <option value="TDS-27Q">TDS Foreign (27Q - NRI)</option>
-                      <option value="TCS-27EQ">TCS Return (27EQ)</option>
-                    </optgroup>
-
-                    <optgroup label="🏛️ MCA / ROC & Corporate Secretarial">
-                      <option value="ROC-AOC4">ROC AOC-4 (Financials Filing)</option>
-                      <option value="ROC-MGT7">ROC MGT-7 (Annual Return)</option>
-                      <option value="Company-Incorporation">Company Incorporation (SPICe+)</option>
-                      <option value="LLP-Incorporation">LLP Incorporation & Annual Filing</option>
-                      <option value="DIR-3-KYC">Director Annual KYC (DIR-3)</option>
-                      <option value="DPT-3">DPT-3 Return of Deposits</option>
-                      <option value="MSME-Form-1">MSME Form 1</option>
-                      <option value="ROC-Change">Director / Office Change</option>
-                    </optgroup>
-
-                    <optgroup label="💼 Audit & Assurance">
-                      <option value="Tax-Audit">Tax Audit (Sec 44AB & 3CD)</option>
-                      <option value="Statutory-Audit">Statutory Company Audit</option>
-                      <option value="Internal-Audit">Internal Audit & System Review</option>
-                      <option value="Stock-Audit">Stock Audit & Inventory</option>
-                    </optgroup>
-
-                    <optgroup label="🚀 Startup, Licensing & Advisory">
-                      <option value="Startup-India">Startup India (DPIIT) & 80-IAC</option>
-                      <option value="MSME-Udyam">MSME / Udyam Registration</option>
-                      <option value="IEC-License">Import Export Code (IEC)</option>
-                      <option value="FSSAI-License">FSSAI Food License</option>
-                      <option value="Trademark">Trademark & IP Filing</option>
-                      <option value="Virtual-CFO">Virtual CFO & Monthly MIS</option>
-                    </optgroup>
-                  </select>
+                  {/* Smooth Rounded Dropdown Popover */}
+                  {isComplianceDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto p-2 space-y-2.5 transition-all animate-in fade-in zoom-in-95 duration-150 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+                      {COMPLIANCE_GROUPS.map((grp) => (
+                        <div key={grp.group} className="space-y-1">
+                          <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                            {grp.group}
+                          </div>
+                          <div className="space-y-0.5">
+                            {grp.items.map((item) => {
+                              const isSelected = formType === item.id;
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormType(item.id as any);
+                                    setIsComplianceDropdownOpen(false);
+                                  }}
+                                  className={`w-full px-3 py-2 text-xs rounded-xl flex items-center justify-between transition-colors text-left ${
+                                    isSelected
+                                      ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 font-semibold'
+                                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-white'
+                                  }`}
+                                >
+                                  <span>{item.label}</span>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0 ml-2" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Due Date *</label>
