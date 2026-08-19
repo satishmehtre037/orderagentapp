@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Flame, Clock, CheckCircle2, MessageSquare, Search, Filter, RefreshCw, Phone, ArrowUpRight } from 'lucide-react';
+import { Users, Flame, Clock, CheckCircle2, MessageSquare, Search, Filter, RefreshCw, Phone, ArrowUpRight, FileText, Send, DollarSign, Trash2 } from 'lucide-react';
 import type { CALead, CALeadScore, CALeadStatus, CALeadUrgency } from '@/types';
 
 interface CALeadsTabProps {
@@ -16,6 +16,12 @@ export default function CALeadsTab({ businessId, businessName }: CALeadsTabProps
   const [scoreFilter, setScoreFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  // Proposal & Quotation Modal State
+  const [quoteModalLead, setQuoteModalLead] = useState<CALead | null>(null);
+  const [quoteFee, setQuoteFee] = useState<string>('15000');
+  const [quoteScope, setQuoteScope] = useState<string>('');
+  const [isSendingQuote, setIsSendingQuote] = useState<boolean>(false);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -51,6 +57,86 @@ export default function CALeadsTab({ businessId, businessName }: CALeadsTabProps
       }
     } catch (err) {
       console.error('Lead update error:', err);
+    }
+  };
+
+  const handleConvertLeadToClient = async (lead: CALead) => {
+    try {
+      // 1. Create client profile
+      const res = await fetch('/api/ca/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_id: businessId,
+          client_name: lead.name,
+          phone: lead.phone,
+          email: lead.email,
+          entity_type: lead.business_type || 'Proprietorship',
+        }),
+      });
+
+      // 2. Mark lead converted
+      await handleUpdateStatus(lead.id, 'Converted');
+      setActionMessage(`🎉 "${lead.name}" onboarded as official Client and added to Directory & Tax Calendar!`);
+      setTimeout(() => setActionMessage(null), 5000);
+      fetchLeads();
+    } catch (err) {
+      console.error('Convert lead error:', err);
+    }
+  };
+
+  const handleOpenQuoteModal = (lead: CALead) => {
+    setQuoteModalLead(lead);
+    setQuoteFee('15000');
+    setQuoteScope(`• ${lead.requirement || 'Compliance & Advisory Services'}
+• Verification of Financials & Portal Filing
+• Dedicated Senior CA Review & Support`);
+  };
+
+  const handleSendQuotationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quoteModalLead || !quoteModalLead.phone) return;
+
+    setIsSendingQuote(true);
+    try {
+      const res = await fetch('/api/ca/leads/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: quoteModalLead.id,
+          phone: quoteModalLead.phone,
+          client_name: quoteModalLead.name,
+          fee_amount: quoteFee,
+          service: quoteModalLead.requirement,
+          firm_name: businessName,
+          quotation_text: `📋 *Official Engagement Roadmap & Fee Quotation*
+From: *${businessName || 'Apex Tax & Financial Advisors'}*
+
+Dear *${quoteModalLead.name}*,
+Thank you for discussing your requirements with our firm for *${quoteModalLead.requirement || 'Corporate Compliance & Tax Services'}*.
+
+💼 *Scope of Work & Deliverables:*
+${quoteScope}
+
+💰 *Agreed Professional Fee:* *₹${Number(quoteFee).toLocaleString('en-IN')} (all-inclusive)*
+
+To confirm engagement and initiate onboarding, please reply *"CONFIRM"* or *"PROCEED"* to this chat.
+
+Best regards,
+*Senior Partner | ${businessName || 'Apex Tax & Financial Advisors'}*`,
+        }),
+      });
+
+      if (res.ok) {
+        setActionMessage(`🚀 Official quotation of ₹${Number(quoteFee).toLocaleString('en-IN')} dispatched to ${quoteModalLead.name}'s WhatsApp!`);
+        setTimeout(() => setActionMessage(null), 5000);
+        setQuoteModalLead(null);
+        fetchLeads();
+      }
+    } catch (err) {
+      console.error('Quotation error:', err);
+    } finally {
+      setIsSendingQuote(false);
     }
   };
 
@@ -119,7 +205,7 @@ export default function CALeadsTab({ businessId, businessName }: CALeadsTabProps
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight">CA Lead Pipeline</h2>
           <p className="text-slate-300 text-sm mt-0.5">
-            Auto-qualifies WhatsApp & Website inquiries, scores intent (Hot/Warm/Cold), and manages 3-day follow-ups.
+            Auto-qualifies WhatsApp & Website inquiries, scores intent (Hot/Warm/Cold), and dispatches custom CA quotations.
           </p>
         </div>
         <button
@@ -267,34 +353,34 @@ export default function CALeadsTab({ businessId, businessName }: CALeadsTabProps
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         {lead.phone && (
                           <a
                             href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition flex items-center gap-1 text-xs font-semibold"
-                            title="Chat on WhatsApp"
+                            className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition"
+                            title="Open Direct WhatsApp Chat"
                           >
                             <MessageSquare className="w-4 h-4" />
                           </a>
                         )}
 
+                        <button
+                          onClick={() => handleOpenQuoteModal(lead)}
+                          title="Draft & Send Senior CA Fee Quotation & Roadmap on WhatsApp"
+                          className="px-2.5 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition flex items-center gap-1"
+                        >
+                          <FileText className="w-3.5 h-3.5" /> Quote
+                        </button>
+
                         {lead.status !== 'Converted' && (
                           <button
-                            onClick={() => handleUpdateStatus(lead.id, 'Converted')}
+                            onClick={() => handleConvertLeadToClient(lead)}
+                            title="Onboard Prospect as Official CA Client"
                             className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
                           >
-                            Convert
-                          </button>
-                        )}
-
-                        {lead.status === 'New' && (
-                          <button
-                            onClick={() => handleUpdateStatus(lead.id, 'In-Progress')}
-                            className="px-2.5 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition"
-                          >
-                            Take Up
+                            Onboard
                           </button>
                         )}
                       </div>
@@ -306,6 +392,81 @@ export default function CALeadsTab({ businessId, businessName }: CALeadsTabProps
           </div>
         )}
       </div>
+
+      {/* Senior CA Quotation & Roadmap Modal */}
+      {quoteModalLead && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Send CA Quotation & Roadmap</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  To: <b>{quoteModalLead.name}</b> ({quoteModalLead.phone}) • {quoteModalLead.business_type || 'Entity'}
+                </p>
+              </div>
+              <button
+                onClick={() => setQuoteModalLead(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSendQuotationSubmit} className="space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Professional Fee Quotation (₹):
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                  <input
+                    type="number"
+                    value={quoteFee}
+                    onChange={(e) => setQuoteFee(e.target.value)}
+                    placeholder="15000"
+                    required
+                    className="w-full pl-8 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Scope of Services & Engagement Deliverables:
+                </label>
+                <textarea
+                  rows={4}
+                  value={quoteScope}
+                  onChange={(e) => setQuoteScope(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                />
+              </div>
+
+              <div className="p-3 bg-indigo-50 rounded-xl text-xs text-indigo-800 border border-indigo-100">
+                🚀 <b>WhatsApp Dispatch:</b> Clicking &quot;Dispatch Quotation&quot; will immediately format a formal proposal and send it directly to <b>{quoteModalLead.name}</b> on WhatsApp with accept/confirm instructions.
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setQuoteModalLead(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSendingQuote}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition flex items-center gap-1.5 text-xs disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {isSendingQuote ? 'Dispatching...' : 'Dispatch Quotation on WhatsApp'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
