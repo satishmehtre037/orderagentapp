@@ -185,7 +185,7 @@ export async function processIncomingDocument(
       }) || clientPending[0];
     }
 
-    const storageUrl = media.url || `https://wa-media-placeholder/${media.mediaId || Date.now()}`;
+    const storageUrl = media.url || (media.mediaId ? `/api/ca/media/${media.mediaId}` : '#');
 
     if (matchedDoc) {
       // Mark pending document as received
