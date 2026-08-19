@@ -81,9 +81,10 @@ export async function POST(req: Request) {
     const cleanSender = customerNumber.replace(/\D/g, '');
     const isSatishSelf = cleanSender === '918779841346' || cleanSender === '8779841346';
 
+    let bizId: string | null = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
+
     // 1. Immediately Save to conversations table in Supabase
     try {
-      let bizId: string | null = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
       const { data: bList } = await supabaseAdmin.from('businesses').select('id').limit(1);
       if (bList && bList.length > 0) bizId = bList[0].id;
 
@@ -124,16 +125,30 @@ export async function POST(req: Request) {
         const prospectConfirmText = `🙏 *Namaste! Thank you for showing interest in WebCore Studios.*\n\nOur Solutions Architect (*Satish Mehtre*) has received your response and will personally connect with you within *15 to 30 minutes* with your live custom demo & pricing!\n\nIf you need immediate assistance, feel free to call or WhatsApp us at *+91 87798 41346*. 🚀`;
         try {
           await sendWhatsAppTextMessage(customerNumber, prospectConfirmText);
+          await supabaseAdmin.from('conversations').insert({
+            business_id: bizId,
+            customer_number: customerNumber.startsWith('+') ? customerNumber : `+${customerNumber}`,
+            message_text: prospectConfirmText,
+            message_direction: 'outbound',
+          });
         } catch (err) {
           console.warn('[Prospect Confirm Error]:', err);
         }
+        return NextResponse.json({ success: true, status: 'PROSPECT_CONFIRMED' }, { status: 200 });
       } else if (isNegative) {
         const declineAckText = `Understood! Thank you for your time. 🙏\n\nFeel free to reach out to WebCore Studios anytime if you plan to upgrade your website, mobile app, or WhatsApp AI automation. Have a wonderful day ahead!`;
         try {
           await sendWhatsAppTextMessage(customerNumber, declineAckText);
+          await supabaseAdmin.from('conversations').insert({
+            business_id: bizId,
+            customer_number: customerNumber.startsWith('+') ? customerNumber : `+${customerNumber}`,
+            message_text: declineAckText,
+            message_direction: 'outbound',
+          });
         } catch (err) {
           console.warn('[Prospect Decline Error]:', err);
         }
+        return NextResponse.json({ success: true, status: 'PROSPECT_DECLINED' }, { status: 200 });
       }
     }
 

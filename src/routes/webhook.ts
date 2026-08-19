@@ -144,8 +144,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const isSatishSelf = cleanSender === '918779841346' || cleanSender === '8779841346';
 
     // Always save every inbound message into the conversations table for the live chat inbox
+    let bizId: string | null = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
     try {
-      let bizId: string | null = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
       const { data: bList } = await supabase.from('businesses').select('id').limit(1);
       if (bList && bList.length > 0) bizId = bList[0].id;
       if (bizId) {
@@ -182,16 +182,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
         const prospectConfirmText = `🙏 *Namaste! Thank you for showing interest in WebCore Studios.*\n\nOur Solutions Architect (*Satish Mehtre*) has received your response and will personally connect with you within *15 to 30 minutes* with your live custom demo & pricing!\n\nIf you need immediate assistance or want to talk right now, feel free to call or WhatsApp us anytime at *+91 87798 41346*. 🚀`;
         try {
           await sendMessage(customerNumber, businessNumber, prospectConfirmText);
+          await saveConversationMessage(bizId || 'e39dee77-e7b9-45cf-ad64-fd6400f59a29', customerNumber, 'outbound', prospectConfirmText);
         } catch (replyErr) {
           console.error('[Webhook Prospect Confirm Error]:', replyErr);
         }
+        return;
       } else if (isNegative) {
         const declineAckText = `Understood! Thank you for your time. 🙏\n\nFeel free to reach out to WebCore Studios anytime if you plan to upgrade your website, mobile app, or WhatsApp AI automation. Have a wonderful day ahead!`;
         try {
           await sendMessage(customerNumber, businessNumber, declineAckText);
+          await saveConversationMessage(bizId || 'e39dee77-e7b9-45cf-ad64-fd6400f59a29', customerNumber, 'outbound', declineAckText);
         } catch (replyErr) {
           console.error('[Webhook Prospect Decline Error]:', replyErr);
         }
+        return;
       }
     }
 

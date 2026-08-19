@@ -65,9 +65,7 @@ export async function getResponse(
           max_tokens: 1024,
         });
 
-        let reply = completion.choices[0]?.message?.content || '';
-        // Strip any thinking tags from reasoning models
-        reply = reply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+        let reply = cleanLLMOutput(completion.choices[0]?.message?.content || '');
 
         if (reply) {
           console.log(`[Groq AI Service] ✅ Generated response (${model}): ${reply.length} chars`);
@@ -208,6 +206,30 @@ ${recentMessages}`;
 /**
  * Direct chat completion against Groq models with dynamic fallback cascade
  */
+export function cleanLLMOutput(raw: string): string {
+  if (!raw) return '';
+  let cleaned = raw.trim();
+
+  // 1. Remove <think>...</think> XML blocks
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+  // 2. Remove markdown reasoning headings and chain-of-thought analysis
+  cleaned = cleaned.replace(/\*\*Reasoning[\s\S]*?\*\*Demo Message[^\n]*\n+/gi, '').trim();
+  cleaned = cleaned.replace(/\*\*Reasoning[\s\S]*?\n(?=>|Namaste|Hello|Thank you|Dear|Hi)/gi, '').trim();
+  cleaned = cleaned.replace(/^(?:\*\*Reasoning.*?\*\*|\*\*Thought.*?\*\*|\*\*Approach.*?\*\*)[\s\S]*?(?=(?:Namaste|Hello|Thank you|Dear|Hi|\*|\n\n[A-Z]))/gi, '').trim();
+
+  // 3. Strip quote symbols '>' at line starts if LLM wrapped output in blockquote
+  cleaned = cleaned.replace(/^>\s?/gm, '').trim();
+
+  // 4. Remove trailing meta-notes like "*After the prospect replies...*"
+  cleaned = cleaned.replace(/\*After the (?:prospect|client|user) replies[\s\S]*?\*/gi, '').trim();
+
+  return cleaned;
+}
+
+/**
+ * Direct chat completion against Groq models with dynamic fallback cascade
+ */
 export async function getGroqChatCompletion(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   options: { temperature?: number; maxTokens?: number } = {}
@@ -219,9 +241,6 @@ export async function getGroqChatCompletion(
 
   const groqModels = [
     process.env.GROQ_MODEL,
-    'qwen/qwen2.5-27b',
-    'groq/compound',
-    'groq/compound-mini',
     'llama-3.3-70b-versatile',
     'llama-3.1-8b-instant',
     'llama3-8b-8192',
@@ -231,12 +250,18 @@ export async function getGroqChatCompletion(
     try {
       const completion = await groqClient.chat.completions.create({
         model,
-        messages,
+        messages: [
+          {
+            role: 'system',
+            content: 'CRITICAL INSTRUCTION: Output ONLY the final customer-facing WhatsApp message. Never output reasoning, thoughts, numbered steps, or markdown explanations.',
+          },
+          ...messages,
+        ],
         temperature: options.temperature ?? 0.3,
         max_tokens: options.maxTokens ?? 1024,
       });
 
-      const reply = completion.choices[0]?.message?.content?.trim();
+      const reply = cleanLLMOutput(completion.choices[0]?.message?.content || '');
       if (reply) return reply;
     } catch (err: any) {
       console.warn(`[Groq AI] Model ${model} failed (${err.message}). Trying next...`);
