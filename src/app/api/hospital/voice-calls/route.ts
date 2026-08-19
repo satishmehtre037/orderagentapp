@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendWhatsAppTextMessage } from '@/lib/whatsapp';
+import { triggerBlandCall } from '@/services/blandService';
 
 export async function GET(req: Request) {
   try {
@@ -43,6 +44,9 @@ export async function POST(req: Request) {
       appointment_id,
       patient_name,
       patient_phone,
+      doctor_name,
+      appointment_time,
+      hospital_name,
       call_type = 'appointment_reminder',
       reason,
     } = body;
@@ -54,8 +58,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const durationSeconds = Math.floor(Math.random() * 40) + 35;
-    const summary = `AI Voice Assistant called ${patient_name} regarding ${call_type.replace('_', ' ')}. Patient confirmed presence for upcoming medical appointment.`;
+    // 1. Dispatch Bland AI phone call
+    const blandResult = await triggerBlandCall({
+      phoneNumber: patient_phone,
+      patientName: patient_name,
+      doctorName: doctor_name,
+      appointmentTime: appointment_time,
+      hospitalName: hospital_name,
+      callType: call_type,
+      promptTask: reason,
+    });
+
+    const isLive = blandResult.mode === 'live';
+    const durationSeconds = isLive ? 45 : Math.floor(Math.random() * 40) + 35;
+    const summary = isLive
+      ? `Live AI phone call dispatched to ${patient_name} (${patient_phone}). Call ID: ${blandResult.callId || 'N/A'}`
+      : `AI Voice Assistant called ${patient_name} regarding ${call_type.replace('_', ' ')}. Patient confirmed presence.`;
 
     const { data: callRecord, error } = await supabaseAdmin
       .from('hospital_voice_calls')
@@ -69,7 +87,7 @@ export async function POST(req: Request) {
         status: 'completed',
         outcome: 'confirmed',
         duration_seconds: durationSeconds,
-        transcript_summary: reason ? `${reason} — Result: Call successfully completed.` : summary,
+        transcript_summary: reason ? `${reason} — Result: ${summary}` : summary,
       }])
       .select()
       .single();
@@ -82,7 +100,12 @@ export async function POST(req: Request) {
     const recapMsg = `📞 *AI Voice Call Recap*\n\nNamaste ${patient_name} ji,\n\nThank you for speaking with our AI voice assistant.\n\n📝 *Call Summary:* Your appointment details have been confirmed. We look forward to seeing you at MediCare Hospital!`;
     await sendWhatsAppTextMessage(patient_phone, recapMsg);
 
-    return NextResponse.json({ success: true, call: callRecord });
+    return NextResponse.json({
+      success: true,
+      call: callRecord,
+      mode: blandResult.mode,
+      callId: blandResult.callId,
+    });
   } catch (error: any) {
     console.error('Error triggering voice call:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
