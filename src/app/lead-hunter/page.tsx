@@ -43,6 +43,7 @@ export default function LeadHunterPage() {
   const [selectedCategory, setSelectedCategory] = useState('clinic');
   const [city, setCity] = useState('Thane');
   const [leadVolume, setLeadVolume] = useState<number>(25);
+  const [noWebsiteOnly, setNoWebsiteOnly] = useState<boolean>(false);
   const [customSearchQuery, setCustomSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [leads, setLeads] = useState<ScrapedLead[]>([]);
@@ -103,6 +104,7 @@ export default function LeadHunterPage() {
           category: selectedCategory,
           city: city.trim(),
           count: leadVolume,
+          noWebsiteOnly,
           customQuery: customSearchQuery.trim() || undefined,
         }),
       });
@@ -111,7 +113,7 @@ export default function LeadHunterPage() {
         setLeads(data.leads);
         setSelectedLeadIds(data.leads.map((l: ScrapedLead) => l.id));
         setPreviewSampleLead(data.leads[0] || null);
-        addLog(`Found ${data.leads.length} verified ${selectedCategory} leads in ${city}`, 'success');
+        addLog(`Found ${data.leads.length} verified ${selectedCategory} leads in ${city} ${noWebsiteOnly ? '(Without Website 🔥)' : ''}`, 'success');
       }
     } catch (err: any) {
       addLog(`Search error: ${err.message}`, 'warn');
@@ -133,15 +135,19 @@ export default function LeadHunterPage() {
       const digits = clean.replace(/\D/g, '');
       if (digits.length >= 10) {
         const phone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
+        const name = clean.includes(',') ? clean.split(',')[0].trim() : `Business Contact (${digits.slice(-4)})`;
+        const addr = `${city || 'Local Area'} Directory Contact`;
         imported.push({
           id: `lead_pasted_${Date.now()}_${idx}`,
-          business_name: clean.includes(',') ? clean.split(',')[0].trim() : `Business Contact (${digits.slice(-4)})`,
+          business_name: name,
           category: selectedCategory,
           city: city || 'Local',
           phone_number: phone,
           rating: 4.5,
           reviews_count: 50,
-          address: `${city || 'Local Area'} Directory Contact`,
+          address: addr,
+          has_website: false,
+          maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + (city || 'India'))}`,
           status: 'pending',
         });
       }
@@ -169,6 +175,9 @@ export default function LeadHunterPage() {
       rating: 5.0,
       reviews_count: 120,
       address: `${city || 'Thane'} HQ (Personal Test Lead)`,
+      has_website: true,
+      website: 'https://webcorestudios.com',
+      maps_url: `https://www.google.com/maps/search/?api=1&query=Thane+West+Maharashtra`,
       status: 'pending',
     };
     setLeads((prev) => [myTestLead, ...prev.filter((l) => l.phone_number !== '+918779841346')]);
@@ -448,6 +457,15 @@ export default function LeadHunterPage() {
                 onChange={(e) => setCustomSearchQuery(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+              <label className="mt-2 flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={noWebsiteOnly}
+                  onChange={(e) => setNoWebsiteOnly(e.target.checked)}
+                  className="rounded border-slate-700 bg-slate-800 text-rose-500 focus:ring-rose-500"
+                />
+                <span className="text-[11px] font-bold text-rose-400">🔥 No Website Only (High-Conversion Leads)</span>
+              </label>
             </div>
           </div>
 
@@ -738,11 +756,54 @@ export default function LeadHunterPage() {
                             />
                           </td>
                           <td className="py-3 font-semibold text-white">
-                            <div>{lead.business_name}</div>
+                            <div className="flex items-center space-x-1.5">
+                              <a
+                                href={lead.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.business_name + ' ' + lead.address)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-indigo-400 underline-offset-2 hover:underline flex items-center space-x-1 font-bold group"
+                                title="Click to view and verify on Google Maps"
+                              >
+                                <span>{lead.business_name}</span>
+                                <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-indigo-400" />
+                              </a>
+                            </div>
                             <div className="text-[10px] text-slate-400 font-normal">{lead.address}</div>
+                            <div className="mt-1 flex items-center space-x-2">
+                              {!lead.has_website ? (
+                                <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded text-[9px] font-bold">
+                                  🔥 No Website (Hot Prospect)
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded text-[9px] font-medium">
+                                  🌐 Has Website
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 font-mono text-slate-300 whitespace-nowrap">
-                            {lead.phone_number}
+                            <div>{lead.phone_number}</div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <a
+                                href={lead.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.business_name + ' ' + lead.address)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-0.5"
+                              >
+                                <MapPin className="w-2.5 h-2.5" />
+                                <span>Maps</span>
+                              </a>
+                              <span className="text-slate-600">•</span>
+                              <a
+                                href={`https://wa.me/${lead.phone_number.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center space-x-0.5"
+                              >
+                                <MessageSquare className="w-2.5 h-2.5" />
+                                <span>Chat</span>
+                              </a>
+                            </div>
                           </td>
                           <td className="py-3">
                             <span className="inline-flex items-center space-x-1 text-amber-400 font-bold">
