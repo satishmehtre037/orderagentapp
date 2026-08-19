@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabaseClient } from '../../lib/supabase/client';
 import { PaymentEvent, BusinessCategory } from '../../types';
+import { getCategoryDisplayMetadata } from '../../lib/constants/categoryPresets';
 import {
   CreditCard,
   Sparkles,
@@ -48,6 +49,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
 }) => {
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(false);
+  const meta = getCategoryDisplayMetadata(category);
   const [payments, setPayments] = useState<PaymentEvent[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -674,16 +676,16 @@ export const BillingTab: React.FC<BillingTabProps> = ({
             </div>
           </div>
 
-          {/* Danger Zone / Delete CA Firm Account */}
+          {/* Danger Zone / Delete Account */}
           <div className="bg-rose-500/5 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 rounded-2xl p-5 space-y-4 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center space-x-2">
                   <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                  <h3 className="text-sm font-bold text-rose-950 dark:text-rose-300">Danger Zone: Delete CA Firm Account</h3>
+                  <h3 className="text-sm font-bold text-rose-950 dark:text-rose-300">Danger Zone: Delete {meta.entityName}</h3>
                 </div>
                 <p className="text-xs text-rose-700/80 dark:text-rose-400/80 mt-1">
-                  Permanently delete this firm profile, all client directories, tax calendar deadlines, document tracker history, and reset your account to fresh setup.
+                  Permanently delete this {meta.label.toLowerCase()} profile, {meta.itemDescription}, and reset your account to fresh setup.
                 </p>
               </div>
 
@@ -709,13 +711,13 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete CA Firm Account?</h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete {meta.entityName}?</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">This action is irreversible and permanent.</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-rose-50 dark:bg-rose-950/30 p-3 rounded-xl border border-rose-200 dark:border-rose-900/50">
-              ⚠️ Are you sure you want to permanently delete your CA firm profile? All registered clients, compliance calendar events, document tracker uploads, and WhatsApp conversation history will be wiped.
+              ⚠️ Are you sure you want to permanently delete your {meta.label.toLowerCase()} profile? All {meta.itemDescription} will be wiped.
             </p>
 
             <div className="flex items-center justify-end space-x-3 pt-2">

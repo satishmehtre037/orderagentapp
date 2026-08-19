@@ -28,7 +28,7 @@ import HospitalAutomationTab from '../../components/dashboard/hospital/HospitalA
 import HospitalNewAppointmentModal from '../../components/dashboard/hospital/HospitalNewAppointmentModal';
 import HospitalNewPatientModal from '../../components/dashboard/hospital/HospitalNewPatientModal';
 import HospitalUploadReportModal from '../../components/dashboard/hospital/HospitalUploadReportModal';
-import { resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
+import { resolveCategoryFromNameOrType, getCategoryDisplayMetadata } from '../../lib/constants/categoryPresets';
 import { useToast } from '../../components/ui/ToastContext';
 import { ThemeToggle } from '../../components/ui/ThemeContext';
 import {
@@ -152,10 +152,20 @@ export default function DashboardPage() {
           return;
         }
 
+        const storedCat = (typeof window !== 'undefined' ? localStorage.getItem('biz_category') : null) || 'hospital';
+        const isHospital = storedCat === 'hospital' || storedCat === 'clinic';
+        const isCA = storedCat === 'ca_firm';
+
+        const demoName = isHospital
+          ? 'MediCare Multi-Specialty Hospital'
+          : isCA
+          ? 'Sharma & Associates (CA Firm)'
+          : 'Apex Business Studio';
+
         setBusiness({
           id: 'demo-business-id',
-          name: 'Sharma & Associates (CA Firm)',
-          category: 'ca_firm',
+          name: demoName,
+          category: (storedCat as any) || 'hospital',
           whatsapp_number: 'Not configured',
           owner_email: userEmail,
           trial_end_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -163,7 +173,7 @@ export default function DashboardPage() {
           plan: 'trial',
           created_at: new Date().toISOString(),
         });
-        setActiveTab('ca_dashboard');
+        setActiveTab(isHospital ? 'hospital_dashboard' : isCA ? 'ca_dashboard' : 'orders');
       }
     } catch (err) {
       console.error('Error loading dashboard business record:', err);
@@ -351,20 +361,23 @@ export default function DashboardPage() {
       </header>
 
       {/* Demo Store Notice Banner */}
-      {business?.id === 'demo-business-id' && (
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white px-4 py-3 text-xs sm:text-sm font-medium flex flex-col sm:flex-row items-center justify-between gap-2 shadow-md">
-          <div className="flex items-center gap-2 text-center sm:text-left">
-            <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0" />
-            <span>You are currently in Preview Mode. Register your Chartered Accountant (CA) firm to activate live WhatsApp automation!</span>
+      {business?.id === 'demo-business-id' && (() => {
+        const demoMeta = getCategoryDisplayMetadata(business?.category, business?.name);
+        return (
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white px-4 py-3 text-xs sm:text-sm font-medium flex flex-col sm:flex-row items-center justify-between gap-2 shadow-md">
+            <div className="flex items-center gap-2 text-center sm:text-left">
+              <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0" />
+              <span>You are currently in Preview Mode. {demoMeta.bannerPrompt}</span>
+            </div>
+            <Link
+              href="/onboarding"
+              className="px-3.5 py-1.5 bg-white text-indigo-700 font-bold rounded-xl shadow hover:bg-indigo-50 transition whitespace-nowrap text-xs"
+            >
+              {demoMeta.bannerAction}
+            </Link>
           </div>
-          <Link
-            href="/onboarding"
-            className="px-3.5 py-1.5 bg-white text-indigo-700 font-bold rounded-xl shadow hover:bg-indigo-50 transition whitespace-nowrap text-xs"
-          >
-            Register My CA Firm →
-          </Link>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Trial Expired Alert Banner */}
       {isTrialExpired && business?.subscription_status !== 'active' && (

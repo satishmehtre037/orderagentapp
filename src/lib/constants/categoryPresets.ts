@@ -341,10 +341,112 @@ export const getCategoryReminderMessage = (
     case 'gym':
       return `🏋️ *Membership Renewal Reminder from ${cleanName}*\n\nHi! Your fitness pass with *${cleanName}* is up for renewal.\n\nWould you like to renew today and lock in your workout slots and member privileges?`;
 
-    case 'salon':
-      return `✂️ *Time for your Grooming Refresh at ${cleanName}!*\n\nHi! Ready for your regular haircut, styling, or spa session${lastItem ? ` (${lastItem})` : ''}?\n\nWe have priority slots available this week at *${cleanName}*. Reply to reserve your preferred timing!`;
+    case 'hospital':
+      return `🏥 *Hospital OPD & Health Checkup Reminder from ${cleanName}*\n\nNamaste! Following up from *${cleanName}*. Our multi-specialty OPD and diagnostic care desks are open with priority slots available${lastItem ? ` for ${lastItem}` : ''}.\n\nWould you like us to confirm an upcoming doctor consultation or diagnostic appointment for you?`;
+
+    case 'ca_firm':
+      return `📊 *Tax Compliance & Filing Reminder from ${cleanName}*\n\nDear Client, this is a reminder from *${cleanName}* regarding upcoming statutory tax deadlines and document submission${lastItem ? ` (${lastItem})` : ''}.\n\nPlease upload your pending invoices/documents directly here on WhatsApp to ensure timely compliance.`;
 
     default:
       return `✨ *Special Update from ${cleanName}*\n\nHi from *${cleanName}*! Following up to see if we can help you with any inquiries, orders, or services this week. Reply here to connect directly with us!`;
+  }
+};
+
+/**
+ * Returns dynamic UI display labels, subtitles, and delete warning metadata tailored to each category
+ */
+export const getCategoryDisplayMetadata = (category?: string, businessName?: string) => {
+  const resolved = resolveCategoryFromNameOrType(category, businessName);
+
+  switch (resolved as string) {
+    case 'hospital':
+      return {
+        label: 'Hospital & Healthcare',
+        entityName: 'Hospital Account',
+        itemDescription: 'registered patients, doctor rosters, OPD tokens, lab summaries, and voice call logs',
+        bannerPrompt: 'Register your Hospital to activate automated OPD token issuance, patient bookings, and WhatsApp triage!',
+        bannerAction: 'Register My Hospital →',
+      };
+    case 'clinic':
+      return {
+        label: 'Clinic & OPD Center',
+        entityName: 'Clinic Account',
+        itemDescription: 'patient appointment records, doctor schedules, and WhatsApp consultation logs',
+        bannerPrompt: 'Register your Clinic to activate automated patient appointments and WhatsApp reminders!',
+        bannerAction: 'Register My Clinic →',
+      };
+    case 'ca_firm':
+      return {
+        label: 'Chartered Accountant (CA Firm)',
+        entityName: 'CA Firm Account',
+        itemDescription: 'registered clients, compliance calendar events, document tracker uploads, and WhatsApp conversation history',
+        bannerPrompt: 'Register your Chartered Accountant (CA) firm to activate live WhatsApp automation!',
+        bannerAction: 'Register My CA Firm →',
+      };
+    case 'salon':
+      return {
+        label: 'Salon & Spa',
+        entityName: 'Salon & Spa Account',
+        itemDescription: 'client bookings, stylist schedules, service catalogs, and WhatsApp chats',
+        bannerPrompt: 'Register your Salon & Spa to activate automated appointment booking and customer reminders!',
+        bannerAction: 'Register My Salon →',
+      };
+    case 'real_estate':
+      return {
+        label: 'Real Estate Agency',
+        entityName: 'Real Estate Account',
+        itemDescription: 'property listings, site visit inquiries, buyer leads, and WhatsApp chats',
+        bannerPrompt: 'Register your Real Estate Agency to qualify buyer leads and schedule site tours on WhatsApp!',
+        bannerAction: 'Register My Agency →',
+      };
+    case 'tuition':
+      return {
+        label: 'Coaching & Academy',
+        entityName: 'Academy Account',
+        itemDescription: 'student inquiries, course batches, admission leads, and WhatsApp chats',
+        bannerPrompt: 'Register your Institute to capture student inquiries and manage admissions via WhatsApp!',
+        bannerAction: 'Register My Institute →',
+      };
+    case 'restaurant':
+    case 'cloud_kitchen':
+      return {
+        label: 'Restaurant & Kitchen',
+        entityName: 'Restaurant Account',
+        itemDescription: 'digital menus, takeaway orders, customer inquiries, and WhatsApp order history',
+        bannerPrompt: 'Register your Restaurant to take orders and table reservations 24/7 on WhatsApp!',
+        bannerAction: 'Register My Restaurant →',
+      };
+    case 'cafe':
+      return {
+        label: 'Cafe & Bistro',
+        entityName: 'Cafe Account',
+        itemDescription: 'beverage menus, food orders, table bookings, and WhatsApp chats',
+        bannerPrompt: 'Register your Cafe to take food orders and table bookings 24/7 on WhatsApp!',
+        bannerAction: 'Register My Cafe →',
+      };
+    case 'gym':
+      return {
+        label: 'Gym & Fitness Studio',
+        entityName: 'Fitness Studio Account',
+        itemDescription: 'member profiles, workout plans, renewal trackers, and WhatsApp chats',
+        bannerPrompt: 'Register your Gym to automate membership renewals and class bookings on WhatsApp!',
+        bannerAction: 'Register My Gym →',
+      };
+    case 'retail':
+      return {
+        label: 'Retail & Boutique',
+        entityName: 'Store Account',
+        itemDescription: 'product catalog items, buyer orders, inventory inquiries, and WhatsApp chats',
+        bannerPrompt: 'Register your Boutique to showcase products and take orders directly on WhatsApp!',
+        bannerAction: 'Register My Store →',
+      };
+    default:
+      return {
+        label: 'Business Account',
+        entityName: 'Business Account',
+        itemDescription: 'all catalog items, orders, lead records, and WhatsApp conversation history',
+        bannerPrompt: 'Register your business to activate 24/7 automated WhatsApp orders and customer replies!',
+        bannerAction: 'Register My Business →',
+      };
   }
 };
