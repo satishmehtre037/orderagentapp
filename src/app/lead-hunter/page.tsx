@@ -817,35 +817,72 @@ export default function LeadHunterPage() {
 
                       {/* Chat Messages Body */}
                       <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-950/70">
-                        {currentThread.messages.map((msg: any) => {
-                          const isClient = msg.sender === 'client';
-                          return (
-                            <div
-                              key={msg.id}
-                              className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
-                            >
-                              <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1 font-mono">
-                                <span>{isClient ? currentThread.business_name : 'Satish (WebCore)'}</span>
-                                <span>•</span>
-                                <span>
-                                  {new Date(msg.timestamp).toLocaleTimeString('en-IN', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </span>
-                              </div>
-                              <div
-                                className={`max-w-lg rounded-2xl px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap ${
-                                  isClient
-                                    ? 'bg-slate-800 text-white border border-slate-700 rounded-tl-sm shadow-md'
-                                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-sm shadow-lg shadow-indigo-600/20'
-                                }`}
-                              >
-                                {msg.text}
-                              </div>
+                        {currentThread.messages.length === 0 ? (
+                          <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
+                            <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                              <Bot className="w-7 h-7" />
                             </div>
-                          );
-                        })}
+                            <div>
+                              <h4 className="font-bold text-sm text-white">No Messages with {currentThread.business_name} Yet</h4>
+                              <p className="text-xs text-slate-400 max-w-sm mt-1">
+                                Send a personalized AI pitch or type a custom WhatsApp message in the input bar below.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const leadObj: ScrapedLead = leads.find((l) => l.phone_number === currentThread.phone) || {
+                                  id: `lead_${Date.now()}`,
+                                  business_name: currentThread.business_name,
+                                  category: currentThread.category || 'clinic',
+                                  city: city || 'Thane',
+                                  phone_number: currentThread.phone,
+                                  rating: 5.0,
+                                  reviews_count: 50,
+                                  address: `${city || 'Thane'}`,
+                                  has_website: false,
+                                  maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentThread.business_name)}`,
+                                  status: 'pending',
+                                };
+                                sendSinglePitch(leadObj);
+                              }}
+                              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center space-x-1.5"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>⚡ Send AI Pitch Package to this Lead</span>
+                            </button>
+                          </div>
+                        ) : (
+                          currentThread.messages.map((msg: any) => {
+                            const isClient = msg.sender === 'client';
+                            return (
+                              <div
+                                key={msg.id}
+                                className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
+                              >
+                                <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1 font-mono">
+                                  <span>{isClient ? currentThread.business_name : 'Satish (WebCore)'}</span>
+                                  <span>•</span>
+                                  <span>
+                                    {new Date(msg.timestamp).toLocaleTimeString('en-IN', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                </div>
+                                <div
+                                  className={`max-w-lg rounded-2xl px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap ${
+                                    isClient
+                                      ? 'bg-slate-800 text-white border border-slate-700 rounded-tl-sm shadow-md'
+                                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-sm shadow-lg shadow-indigo-600/20'
+                                  }`}
+                                >
+                                  {msg.text}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
 
                       {/* Quick Chat Reply Bar */}
@@ -1343,15 +1380,40 @@ export default function LeadHunterPage() {
                                     <span>Maps</span>
                                   </a>
                                   <span className="text-slate-600">•</span>
-                                  <a
-                                    href={`https://wa.me/${lead.phone_number.replace(/\D/g, '')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center space-x-0.5"
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const clean = lead.phone_number;
+                                      setChatThreads((prev) => {
+                                        const cleanDigits = clean.replace(/\D/g, '');
+                                        const exists = prev.find((t) => t.phone.replace(/\D/g, '') === cleanDigits);
+                                        if (!exists) {
+                                          const newT = {
+                                            phone: clean,
+                                            business_name: lead.business_name,
+                                            category: lead.category,
+                                            last_message: lead.status === 'sent' ? 'Pitch Sent' : 'Ready to chat',
+                                            last_sender: 'bot',
+                                            last_timestamp: new Date().toISOString(),
+                                            messages: [],
+                                          };
+                                          const updated = [newT, ...prev];
+                                          if (typeof window !== 'undefined') {
+                                            localStorage.setItem('webcore_lead_threads', JSON.stringify(updated));
+                                          }
+                                          return updated;
+                                        }
+                                        return prev;
+                                      });
+                                      setSelectedThreadPhone(clean);
+                                      setActiveTab('chats');
+                                    }}
+                                    className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center space-x-0.5"
+                                    title="Open full WhatsApp chat window for this lead"
                                   >
                                     <MessageSquare className="w-2.5 h-2.5" />
-                                    <span>Chat</span>
-                                  </a>
+                                    <span>Open Live Chat</span>
+                                  </button>
                                 </div>
                               </td>
                               <td className="py-3">
