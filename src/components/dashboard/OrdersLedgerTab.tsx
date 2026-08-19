@@ -70,6 +70,12 @@ const CATEGORY_HEADER_CONFIG: Record<
     icon: Stethoscope,
     recordLabel: 'Record Appointment',
   },
+  hospital: {
+    title: 'Hospital OPD & Inpatient Management',
+    subtitle: 'OPD tokens, inpatient admissions, surgeries & discharge summaries captured by AI',
+    icon: Stethoscope,
+    recordLabel: 'Record Appointment',
+  },
   gym: {
     title: 'Gym Memberships & Passes',
     subtitle: 'Member passes, trial inquiries & renewal plans captured by AI',

@@ -5,6 +5,7 @@ export type BusinessCategory =
   | 'gym'
   | 'tuition'
   | 'clinic'
+  | 'hospital'
   | 'retail'
   | 'real_estate'
   | 'ca_firm'

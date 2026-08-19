@@ -99,6 +99,30 @@ export const CATEGORY_PRESETS: Record<BusinessCategory, CategoryPresetData> = {
       },
     ],
   },
+  hospital: {
+    hours: '24/7 Emergency & Inpatient Services (OPD: Mon - Sat 9:00 AM - 6:00 PM)',
+    services: [
+      { name: 'Cardiology OPD Consultation', price: 800, duration: '30 mins' },
+      { name: 'Neurology Consultation', price: 1000, duration: '30 mins' },
+      { name: 'Orthopedics & Joint Care', price: 700, duration: '30 mins' },
+      { name: 'Comprehensive Pathology & Health Checkup', price: 3499, duration: '90 mins' },
+    ],
+    staff: [
+      { name: 'Dr. Sarah Jenkins', specialty: 'Cardiology (MD, DM)' },
+      { name: 'Dr. Rajesh Patel', specialty: 'Neurology (MD, DM)' },
+      { name: 'Dr. Vikram Seth', specialty: 'Orthopedics (MS, MCh)' },
+    ],
+    faqs: [
+      {
+        question: 'How do I book an OPD consultation token?',
+        answer: 'You can book directly via WhatsApp by selecting your department or doctor. A digital token and confirmation are issued immediately.',
+      },
+      {
+        question: 'Is the 24/7 emergency trauma centre available without appointment?',
+        answer: 'Yes, our emergency desk and ambulance helpline operate 24 hours a day with priority triage.',
+      },
+    ],
+  },
   gym: {
     hours: 'Mon - Sat, 6:00 AM - 10:30 PM (Sun 7:00 AM - 1:00 PM)',
     gym_plans: [
