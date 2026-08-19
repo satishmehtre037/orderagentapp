@@ -13,6 +13,10 @@ import CAComplianceTab from '../../components/dashboard/ca/CAComplianceTab';
 import CADocumentsTab from '../../components/dashboard/ca/CADocumentsTab';
 import CALeadsTab from '../../components/dashboard/ca/CALeadsTab';
 import CAAutomationControlTab from '../../components/dashboard/ca/CAAutomationControlTab';
+import CADashboardOverviewTab from '../../components/dashboard/ca/CADashboardOverviewTab';
+import CAInvoicesTab from '../../components/dashboard/ca/CAInvoicesTab';
+import CAAIAgentTab from '../../components/dashboard/ca/CAAIAgentTab';
+import CANewClientModal from '../../components/dashboard/ca/CANewClientModal';
 import { resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
 import { useToast } from '../../components/ui/ToastContext';
 import { ThemeToggle } from '../../components/ui/ThemeContext';
@@ -42,6 +46,10 @@ import {
   FileText,
   Users,
   Briefcase,
+  UserPlus,
+  Receipt,
+  Zap,
+  BarChart3,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -49,6 +57,7 @@ export default function DashboardPage() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('orders');
+  const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
 
   const [isBotPaused, setIsBotPaused] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
@@ -106,7 +115,7 @@ export default function DashboardPage() {
 
         setBusiness(resolvedBiz as Business);
         if (resolvedCategory === 'ca_firm') {
-          setActiveTab('ca_compliance');
+          setActiveTab('ca_dashboard');
         }
         if (typeof window !== 'undefined') {
           localStorage.setItem('biz_id', resData.business.id);
@@ -125,8 +134,8 @@ export default function DashboardPage() {
 
         setBusiness({
           id: 'demo-business-id',
-          name: 'Demo Store',
-          category: 'bakery',
+          name: 'Sharma & Associates (CA Firm)',
+          category: 'ca_firm',
           whatsapp_number: 'Not configured',
           owner_email: userEmail,
           trial_end_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -134,6 +143,7 @@ export default function DashboardPage() {
           plan: 'trial',
           created_at: new Date().toISOString(),
         });
+        setActiveTab('ca_dashboard');
       }
     } catch (err) {
       console.error('Error loading dashboard business record:', err);
@@ -187,15 +197,17 @@ export default function DashboardPage() {
     business?.subscription_status === 'expired' ||
     (business?.subscription_status === 'trial' && isTrialEnded);
 
-  const effectiveCategory = resolveCategoryFromNameOrType(business?.category, business?.name);
+  const effectiveCategory = business?.category || 'ca_firm';
 
   const captureTypeLabel =
-    effectiveCategory === 'salon' || effectiveCategory === 'clinic'
+    effectiveCategory === 'clinic'
       ? 'Appointments'
-      : effectiveCategory === 'tuition'
-      ? 'Inquiries'
       : effectiveCategory === 'real_estate'
       ? 'Site Visits'
+      : effectiveCategory === 'salon'
+      ? 'Appointments'
+      : effectiveCategory === 'tuition'
+      ? 'Admissions'
       : effectiveCategory === 'gym'
       ? 'Passes & Plans'
       : 'Orders';
@@ -214,6 +226,8 @@ export default function DashboardPage() {
         return <GraduationCap className={cls} />;
       case 'cafe':
         return <Coffee className={cls} />;
+      case 'ca_firm':
+        return <Briefcase className={cls} />;
       default:
         return <ShoppingBag className={cls} />;
     }
@@ -221,7 +235,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col antialiased text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
-      {/* Sleek iOS Frosted Top Navigation Bar */}
+      {/* Sleek Top Navigation Bar */}
       <header className="backdrop-blur-2xl bg-white/85 dark:bg-slate-900/85 border-b border-slate-200/60 dark:border-slate-800/80 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-2.5 sm:pt-3 pb-1.5 sm:pb-2 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2.5 min-w-0 pr-2">
@@ -232,14 +246,14 @@ export default function DashboardPage() {
             />
             <div className="min-w-0">
               <h1 className="text-sm font-extrabold text-slate-900 dark:text-white leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[280px]">
-                {business?.name || 'Agento AI Store'}
+                {business?.name || 'Sharma & Associates'}
               </h1>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-slate-200/70 dark:bg-slate-800 border border-slate-300/70 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-md font-bold tracking-wider">
-                  {effectiveCategory || business?.category || 'tuition'}
+                  {effectiveCategory === 'ca_firm' ? 'Chartered Accountant' : effectiveCategory}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                  24/7 AI Staff
+                  24/7 AI Practice
                 </span>
               </div>
             </div>
@@ -248,6 +262,17 @@ export default function DashboardPage() {
           <div className="flex items-center space-x-1.5 sm:space-x-2.5">
             {/* Dark / Light Mode Switch */}
             <ThemeToggle />
+
+            {/* Quick + New Client button for CA Firm */}
+            {effectiveCategory === 'ca_firm' && (
+              <button
+                onClick={() => setIsNewClientModalOpen(true)}
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 px-3 py-1.5 rounded-xl transition-all shadow-sm active:scale-95"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">+ New Client</span>
+              </button>
+            )}
 
             {/* Quick Bot Toggle */}
             <button
@@ -269,14 +294,6 @@ export default function DashboardPage() {
                 {pauseLoading ? 'Updating...' : isBotPaused ? 'AI Paused' : 'AI Active'}
               </span>
             </button>
-
-            <Link
-              href="/onboarding"
-              className="hidden lg:inline-flex items-center space-x-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 rounded-xl border border-indigo-300/50 dark:border-indigo-500/30 transition-all shadow-sm"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Register / Setup Firm</span>
-            </Link>
 
             <a
               href="https://web.whatsapp.com"
@@ -430,32 +447,44 @@ export default function DashboardPage() {
           {effectiveCategory === 'ca_firm' ? (
             <>
               <button
+                onClick={() => setActiveTab('ca_dashboard')}
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'ca_dashboard'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-teal-500" />
+                <span>Dashboard</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('ca_compliance')}
-                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_compliance'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Tax Calendar</span>
+                <span>Compliance</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_documents')}
-                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_documents'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5 text-blue-500" />
-                <span>Doc Tracker</span>
+                <span>Doc Hub</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_leads')}
-                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_leads'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
@@ -466,32 +495,56 @@ export default function DashboardPage() {
               </button>
 
               <button
+                onClick={() => setActiveTab('ca_invoices')}
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'ca_invoices'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Receipt className="w-3.5 h-3.5 text-amber-500" />
+                <span>Invoices & Fees</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('ca_agent')}
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'ca_agent'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <Bot className="w-3.5 h-3.5 text-purple-500" />
+                <span>AI Agent Desk</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('ca_automation')}
-                className={`flex-1 min-w-[130px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_automation'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Bot className="w-3.5 h-3.5 text-emerald-500" />
+                <Zap className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Cron Engines</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('conversations')}
-                className={`flex-1 min-w-[120px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'conversations'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Live Chats</span>
+                <span>Chats</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('billing')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 min-w-[90px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'billing'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
@@ -564,6 +617,15 @@ export default function DashboardPage() {
             />
           )}
 
+          {activeTab === 'ca_dashboard' && (
+            <CADashboardOverviewTab
+              businessId={business?.id}
+              businessName={business?.name}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onOpenNewClientModal={() => setIsNewClientModalOpen(true)}
+            />
+          )}
+
           {activeTab === 'ca_compliance' && (
             <CAComplianceTab
               businessId={business?.id}
@@ -580,6 +642,20 @@ export default function DashboardPage() {
 
           {activeTab === 'ca_leads' && (
             <CALeadsTab
+              businessId={business?.id}
+              businessName={business?.name}
+            />
+          )}
+
+          {activeTab === 'ca_invoices' && (
+            <CAInvoicesTab
+              businessId={business?.id}
+              businessName={business?.name}
+            />
+          )}
+
+          {activeTab === 'ca_agent' && (
+            <CAAIAgentTab
               businessId={business?.id}
               businessName={business?.name}
             />
@@ -615,12 +691,36 @@ export default function DashboardPage() {
             />
           )}
         </div>
+
+        {/* New Client Modal for CA Firm */}
+        <CANewClientModal
+          isOpen={isNewClientModalOpen}
+          onClose={() => setIsNewClientModalOpen(false)}
+          onClientAdded={() => {
+            setIsNewClientModalOpen(false);
+            loadDashboardData();
+          }}
+          businessId={business?.id}
+          businessName={business?.name}
+        />
       </main>
 
       {/* Mobile Native Bottom Navigation Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/85 dark:bg-slate-900/90 border-t border-slate-200/60 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-3 py-2 flex items-center justify-around pb-safe transition-colors duration-200">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/85 dark:bg-slate-900/90 border-t border-slate-200/60 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-2 py-2 flex items-center justify-around pb-safe transition-colors duration-200">
         {effectiveCategory === 'ca_firm' ? (
           <>
+            <button
+              onClick={() => setActiveTab('ca_dashboard')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'ca_dashboard'
+                  ? 'text-teal-600 dark:text-teal-400 font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Home</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('ca_compliance')}
               className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
@@ -646,27 +746,15 @@ export default function DashboardPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab('ca_leads')}
+              onClick={() => setActiveTab('ca_invoices')}
               className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-                activeTab === 'ca_leads'
-                  ? 'text-rose-600 dark:text-rose-400 font-bold scale-105'
+                activeTab === 'ca_invoices'
+                  ? 'text-amber-600 dark:text-amber-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Users className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Leads</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('ca_automation')}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-                activeTab === 'ca_automation'
-                  ? 'text-emerald-600 dark:text-emerald-400 font-bold scale-105'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <Bot className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Cron</span>
+              <Receipt className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Fees</span>
             </button>
 
             <button

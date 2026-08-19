@@ -100,9 +100,12 @@ export type DashboardTab =
   | 'conversations'
   | 'edit_info'
   | 'billing'
+  | 'ca_dashboard'
   | 'ca_compliance'
   | 'ca_documents'
   | 'ca_leads'
+  | 'ca_invoices'
+  | 'ca_agent'
   | 'ca_automation';
 
 // ==========================================
