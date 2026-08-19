@@ -156,22 +156,34 @@ export async function processIncomingDocument(
     const validBusinessId = client.business_id && uuidRegex.test(client.business_id) ? client.business_id : null;
     const validClientId = client.id && uuidRegex.test(client.id) ? client.id : null;
     const cleanPhone = normalizePhoneNumber(client.phone);
+    const last10 = cleanPhone.slice(-10);
 
-    // 1. Find the oldest pending document requested for this client (by client_id or phone)
-    let query = supabase
+    // 1. Fetch all pending documents for this client
+    const { data: pendingDocs } = await supabase
       .from('ca_documents_tracker')
       .select('*')
       .eq('status', 'Pending')
       .order('requested_date', { ascending: true });
 
-    if (validClientId) {
-      query = query.eq('client_id', validClientId);
-    } else if (cleanPhone) {
-      query = query.or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${cleanPhone.slice(-10)}%`);
-    }
+    // Filter in JS for 100% reliable matching by client_id or phone
+    const clientPending = (pendingDocs || []).filter((doc: any) => {
+      if (validClientId && doc.client_id === validClientId) return true;
+      if (!doc.phone) return false;
+      const docClean = normalizePhoneNumber(doc.phone);
+      return docClean === cleanPhone || (last10 && docClean.endsWith(last10));
+    });
 
-    const { data: pendingDocs } = await query.limit(1);
-    const matchedDoc = (pendingDocs && pendingDocs.length > 0) ? (pendingDocs[0] as CADocumentTracker) : undefined;
+    const filename = (media.filename || '').toLowerCase();
+
+    // Find best match by filename keywords or fallback to oldest
+    let matchedDoc: CADocumentTracker | undefined = undefined;
+    if (clientPending.length > 0) {
+      matchedDoc = clientPending.find((doc: any) => {
+        const nameLower = (doc.document_name || '').toLowerCase();
+        const keywords = nameLower.split(/[\s/,\-_()]+/).filter((k: string) => k.length > 2);
+        return keywords.some((k: string) => filename.includes(k));
+      }) || clientPending[0];
+    }
 
     const storageUrl = media.url || `https://wa-media-placeholder/${media.mediaId || Date.now()}`;
 
@@ -187,7 +199,7 @@ export async function processIncomingDocument(
         })
         .eq('id', matchedDoc.id);
 
-      const replyText = `Thank you ${client.client_name}! We have received your *${matchedDoc.document_name}* (${matchedDoc.compliance_type}). Our team will review and verify it shortly.`;
+      const replyText = `✅ Thank you ${client.client_name}! We have received your *${matchedDoc.document_name}* (${matchedDoc.compliance_type}). Our team will review and verify it shortly.`;
       return { text: replyText, matchedDoc };
     } else {
       // Create a generic received document entry
@@ -208,7 +220,7 @@ export async function processIncomingDocument(
         },
       ]);
 
-      const replyText = `Thank you ${client.client_name}, we have received your document (*${media.filename || 'Attachment'}*)! Our team will review it and get back to you if anything else is needed.`;
+      const replyText = `✅ Thank you ${client.client_name}, we have received your document (*${media.filename || 'Attachment'}*)! Our team will review it and get back to you if anything else is needed.`;
       return { text: replyText };
     }
   } catch (err: any) {
@@ -232,6 +244,11 @@ export async function handleCALeadInquiry(
 ): Promise<{ replyText: string; lead: CALead; isHot: boolean }> {
   const cleanPhone = normalizePhoneNumber(phone);
 
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const validBusinessId = businessId && uuidRegex.test(businessId) && businessId !== 'demo-business-id'
+    ? businessId
+    : null;
+
   // 1. Find or create lead record
   let existingLead: CALead | null = null;
   const { data: leadQuery } = await supabase
@@ -243,22 +260,37 @@ export async function handleCALeadInquiry(
   if (leadQuery) {
     existingLead = leadQuery as CALead;
   } else {
-    const { data: newLead } = await supabase
-      .from('ca_leads')
-      .insert([
-        {
-          business_id: businessId,
-          name: contactName || 'Prospective Client',
-          phone: cleanPhone,
-          source,
-          status: 'New',
-          followup_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-          followup_attempts: 0,
-        },
-      ])
-      .select('*')
-      .single();
-    existingLead = newLead as CALead;
+    try {
+      const { data: newLead } = await supabase
+        .from('ca_leads')
+        .insert([
+          {
+            business_id: validBusinessId,
+            name: contactName || 'Prospective Client',
+            phone: cleanPhone,
+            source,
+            status: 'New',
+            followup_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+            followup_attempts: 0,
+          },
+        ])
+        .select('*')
+        .single();
+      existingLead = newLead as CALead;
+    } catch (dbErr: any) {
+      console.warn('[CAService] Lead insert fallback:', dbErr.message);
+    }
+  }
+
+  if (!existingLead) {
+    existingLead = {
+      id: 'lead-' + Date.now(),
+      name: contactName || 'Prospective Client',
+      phone: cleanPhone,
+      source,
+      status: 'New',
+      created_at: new Date().toISOString(),
+    } as any;
   }
 
   // 2. Generate Lead Qualification Agent Response
