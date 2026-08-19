@@ -782,7 +782,21 @@ export default function LeadHunterPage() {
                             </div>
                           </td>
                           <td className="py-3 font-mono text-slate-300 whitespace-nowrap">
-                            <div>{lead.phone_number}</div>
+                            <div className="flex items-center space-x-1">
+                              <input
+                                type="text"
+                                value={lead.phone_number}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setLeads((prev) =>
+                                    prev.map((l) => (l.id === lead.id ? { ...l, phone_number: val } : l))
+                                  );
+                                }}
+                                placeholder="+91..."
+                                className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs text-white w-32 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                                title="Click to edit or paste verified mobile number"
+                              />
+                            </div>
                             <div className="flex items-center space-x-2 mt-1">
                               <a
                                 href={lead.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.business_name + ' ' + lead.address)}`}
