@@ -355,9 +355,17 @@ export default function DashboardPage() {
         {/* Top 3 Quick Stats Widgets */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Card 1: Live Plan / Trial Countdown */}
-          <div className="backdrop-blur-xl bg-white/75 dark:bg-slate-900/75 border border-white/60 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md">
+          <div
+            onClick={() => setActiveTab('billing')}
+            className="backdrop-blur-xl bg-white/75 dark:bg-slate-900/75 border border-white/60 dark:border-slate-800/80 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between transition-all hover:shadow-md cursor-pointer hover:border-indigo-400/80 group"
+          >
             <div className="space-y-1">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Plan & Subscription</span>
+              <div className="flex items-center space-x-1.5">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Plan & Subscription</span>
+                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">
+                  (Click to Manage →)
+                </span>
+              </div>
               <div className="flex items-center space-x-2">
                 <span className="text-lg font-bold text-slate-900 dark:text-white">
                   {business?.subscription_status === 'active'
@@ -383,11 +391,11 @@ export default function DashboardPage() {
                   ? 'Full WhatsApp AI Automation & Live CRM'
                   : isTrialEnded
                   ? 'Upgrade to continue automated replies'
-                  : 'Full access to WhatsApp automation'}
+                  : 'Tap here to view plans & billing details'}
               </p>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-300/40 dark:border-emerald-500/30 flex items-center justify-center shadow-inner">
-              <Clock className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-300/40 dark:border-indigo-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+              <CreditCard className="w-5 h-5" />
             </div>
           </div>
 
