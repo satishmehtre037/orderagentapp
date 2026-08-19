@@ -30,13 +30,19 @@ export async function GET(req: Request) {
         if (cleanName.includes('Lead from Automation')) cleanName = 'Test Client';
         if (cleanName.length > 30) cleanName = cleanName.slice(0, 30);
 
+        const matchingLead = (leadsData || []).find((l: any) => {
+          const lPhone = (l.phone || '').replace(/\D/g, '').slice(-10);
+          return lPhone === cleanPhone;
+        });
+
         clientMap.set(cleanPhone, {
           id: c.id,
           client_name: cleanName || 'Valued Client',
           phone: c.phone,
           email: c.email,
-          entity_type: c.entity_type || 'Proprietorship',
+          entity_type: c.entity_type || matchingLead?.business_type || 'Proprietorship',
           status: c.status || 'Active',
+          requirement: matchingLead?.requirement || c.notes || matchingLead?.notes || '',
         });
       }
     }
@@ -57,6 +63,7 @@ export async function GET(req: Request) {
           email: l.email,
           entity_type: l.business_type || 'Proprietorship',
           status: l.status === 'Converted' ? 'Active' : 'Lead',
+          requirement: l.requirement || l.notes || '',
         });
       }
     }

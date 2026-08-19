@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, CheckCircle2, AlertTriangle, Clock, Plus, Search, Filter, Send, RefreshCw, FileText, Trash2, UserX, ChevronDown, Check } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertTriangle, Clock, Plus, Search, Filter, Send, RefreshCw, FileText, Trash2, UserX, ChevronDown, Check, Sparkles } from 'lucide-react';
 import type { CAComplianceRecord, CAComplianceType, CAComplianceStatus } from '@/types';
 
 interface CAComplianceTabProps {
@@ -98,9 +98,132 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
   const [formEmail, setFormEmail] = useState('');
   const [formType, setFormType] = useState<CAComplianceType>('GST-3B');
   const [formDueDate, setFormDueDate] = useState('');
-  const [clients, setClients] = useState<Array<{ id: string; client_name: string; phone: string; email?: string }>>([]);
+  const [clients, setClients] = useState<Array<{ id: string; client_name: string; phone: string; email?: string; entity_type?: string; requirement?: string }>>([]);
   const [isComplianceDropdownOpen, setIsComplianceDropdownOpen] = useState(false);
+  const [autoCategorizedReason, setAutoCategorizedReason] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Auto-categorization algorithm based on Client Requirement / Inquiry
+  const detectComplianceCategory = (reqText = '', entityType = ''): { category: string; reason: string } => {
+    const text = (reqText + ' ' + entityType).toLowerCase();
+
+    // 1. ROC / MCA & Secretarial
+    if (text.includes('roc') || text.includes('aoc-4') || text.includes('aoc4') || text.includes('mgt-7') || text.includes('annual filing') || text.includes('mca') || text.includes('agm')) {
+      return { category: 'ROC-AOC4', reason: 'ROC Annual Compliance & Financials' };
+    }
+    if (text.includes('incorporat') || text.includes('pvt ltd') || text.includes('private limited') || text.includes('company formation') || text.includes('opc') || text.includes('start company') || text.includes('register company')) {
+      return { category: 'Company-Incorporation', reason: 'Company / Pvt Ltd Incorporation' };
+    }
+    if (text.includes('llp') || text.includes('limited liability')) {
+      return { category: 'LLP-Incorporation', reason: 'LLP Incorporation & Annual Filing' };
+    }
+    if (text.includes('dir-3') || text.includes('dir3') || text.includes('director kyc')) {
+      return { category: 'DIR-3-KYC', reason: 'Annual Director KYC' };
+    }
+    if (text.includes('dpt-3') || text.includes('dpt3') || text.includes('deposit')) {
+      return { category: 'DPT-3', reason: 'Return of Deposits' };
+    }
+
+    // 2. GST Suite
+    if (text.includes('gst reg') || text.includes('new gst') || text.includes('apply gst') || text.includes('gst number')) {
+      return { category: 'GST-Registration', reason: 'New GST Registration' };
+    }
+    if (text.includes('gstr-9') || text.includes('gstr9') || text.includes('9c') || text.includes('gst audit')) {
+      return { category: 'GSTR-9', reason: 'GSTR-9 Annual Return & 9C Audit' };
+    }
+    if (text.includes('gstr-1') || text.includes('gstr1') || text.includes('outward')) {
+      return { category: 'GSTR-1', reason: 'GSTR-1 Outward Supplies' };
+    }
+    if (text.includes('lut') || text.includes('export')) {
+      return { category: 'GST-LUT', reason: 'GST LUT for Export' };
+    }
+    if (text.includes('gst notice') || text.includes('drc-01') || text.includes('asmt')) {
+      return { category: 'GST-Notice', reason: 'GST Department Notice Reply' };
+    }
+    if (text.includes('gst') || text.includes('3b') || text.includes('monthly return')) {
+      return { category: 'GST-3B', reason: 'Monthly GST-3B Return & ITC' };
+    }
+
+    // 3. Tax Audit & Statutory Audits
+    if (text.includes('tax audit') || text.includes('44ab') || text.includes('3cd') || text.includes('3ca')) {
+      return { category: 'Tax-Audit', reason: 'Tax Audit (Section 44AB)' };
+    }
+    if (text.includes('statutory audit') || text.includes('company audit')) {
+      return { category: 'Statutory-Audit', reason: 'Statutory Company Audit' };
+    }
+    if (text.includes('internal audit') || text.includes('sop')) {
+      return { category: 'Internal-Audit', reason: 'Internal SOP & Process Audit' };
+    }
+    if (text.includes('stock audit') || text.includes('inventory audit')) {
+      return { category: 'Stock-Audit', reason: 'Physical Stock Audit' };
+    }
+
+    // 4. TDS / TCS
+    if (text.includes('tds 24q') || text.includes('salary tds') || text.includes('payroll') || text.includes('form 16')) {
+      return { category: 'TDS-24Q', reason: 'Payroll TDS Form 24Q' };
+    }
+    if (text.includes('tds 27q') || text.includes('nri') || text.includes('foreign remittance') || text.includes('15ca')) {
+      return { category: 'TDS-27Q', reason: 'Foreign Remittance TDS (27Q)' };
+    }
+    if (text.includes('tcs') || text.includes('27eq')) {
+      return { category: 'TCS-27EQ', reason: 'TCS Form 27EQ' };
+    }
+    if (text.includes('tds') || text.includes('26q') || text.includes('contractor') || text.includes('vendor')) {
+      return { category: 'TDS-26Q', reason: 'Vendor TDS Form 26Q' };
+    }
+
+    // 5. Income Tax & ITR
+    if (text.includes('itr-6') || text.includes('corporate tax') || text.includes('company itr')) {
+      return { category: 'ITR-6', reason: 'Corporate Income Tax (ITR-6)' };
+    }
+    if (text.includes('itr-5') || text.includes('firm itr') || text.includes('partnership tax')) {
+      return { category: 'ITR-5', reason: 'Partnership / LLP Tax (ITR-5)' };
+    }
+    if (text.includes('itr-4') || text.includes('44ad') || text.includes('44ada') || text.includes('presumptive') || text.includes('sugam')) {
+      return { category: 'ITR-4', reason: 'Presumptive Business Tax (ITR-4)' };
+    }
+    if (text.includes('itr-3') || text.includes('proprietor tax') || text.includes('business itr')) {
+      return { category: 'ITR-3', reason: 'Individual Business Tax (ITR-3)' };
+    }
+    if (text.includes('itr-2') || text.includes('capital gain') || text.includes('crypto') || text.includes('stock market')) {
+      return { category: 'ITR-2', reason: 'Capital Gains & House Property (ITR-2)' };
+    }
+    if (text.includes('itr-7') || text.includes('trust') || text.includes('ngo') || text.includes('12a') || text.includes('80g')) {
+      return { category: 'ITR-7', reason: 'Trust & NGO Tax (ITR-7)' };
+    }
+    if (text.includes('advance tax q1')) return { category: 'Advance-Tax-Q1', reason: 'Advance Tax Q1' };
+    if (text.includes('advance tax q2')) return { category: 'Advance-Tax-Q2', reason: 'Advance Tax Q2' };
+    if (text.includes('advance tax q3')) return { category: 'Advance-Tax-Q3', reason: 'Advance Tax Q3' };
+    if (text.includes('advance tax q4') || text.includes('advance tax')) return { category: 'Advance-Tax-Q4', reason: 'Advance Tax Q4' };
+    if (text.includes('income tax notice') || text.includes('143') || text.includes('148') || text.includes('defective return')) {
+      return { category: 'IT-Notice', reason: 'Income Tax Notice Reply' };
+    }
+    if (text.includes('itr') || text.includes('income tax') || text.includes('salary') || text.includes('sahaj')) {
+      return { category: 'ITR-1', reason: 'Salaried Individual Tax (ITR-1)' };
+    }
+
+    // 6. Startup & Licensing
+    if (text.includes('startup') || text.includes('dpiit') || text.includes('80iac') || text.includes('seed')) {
+      return { category: 'Startup-India', reason: 'Startup India DPIIT Recognition' };
+    }
+    if (text.includes('msme') || text.includes('udyam')) {
+      return { category: 'MSME-Udyam', reason: 'MSME Udyam Registration' };
+    }
+    if (text.includes('iec') || text.includes('import export')) {
+      return { category: 'IEC-License', reason: 'Import Export Code (IEC)' };
+    }
+    if (text.includes('fssai') || text.includes('food')) {
+      return { category: 'FSSAI-License', reason: 'FSSAI Food License' };
+    }
+    if (text.includes('trademark') || text.includes('brand') || text.includes('tm')) {
+      return { category: 'Trademark', reason: 'Trademark & IP Filing' };
+    }
+    if (text.includes('cfo') || text.includes('mis') || text.includes('accounting') || text.includes('bookkeeping')) {
+      return { category: 'Virtual-CFO', reason: 'Virtual CFO Advisory' };
+    }
+
+    return { category: 'GST-3B', reason: 'Standard GST-3B Filing' };
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -569,21 +692,34 @@ export default function CAComplianceTab({ businessId, businessName }: CAComplian
                       setFormClientName(found.client_name);
                       setFormPhone(found.phone);
                       setFormEmail(found.email || '');
+
+                      // Intelligent auto-categorization
+                      const detected = detectComplianceCategory(found.requirement, found.entity_type);
+                      setFormType(detected.category as any);
+                      setAutoCategorizedReason(`⚡ Auto-categorized: ${detected.reason}`);
                     } else {
                       setFormClientName('');
                       setFormPhone('');
                       setFormEmail('');
+                      setAutoCategorizedReason(null);
                     }
                   }}
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2 text-sm"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2 text-xs font-medium"
                 >
                   <option value="">-- Choose from Registered Clients & Leads --</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
-                      👤 {c.client_name} ({c.phone})
+                      👤 {c.client_name} ({c.phone}) {c.entity_type ? `• ${c.entity_type}` : ''}
                     </option>
                   ))}
                 </select>
+
+                {autoCategorizedReason && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 rounded-xl text-indigo-700 dark:text-indigo-300 text-xs font-medium animate-in fade-in slide-in-from-top-1 duration-200">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span>{autoCategorizedReason}</span>
+                  </div>
+                )}
               </div>
 
               <div>
