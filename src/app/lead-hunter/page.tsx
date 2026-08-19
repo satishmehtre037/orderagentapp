@@ -78,6 +78,17 @@ export default function LeadHunterPage() {
 
   const isRunningRef = useRef(false);
   const isPausedRef = useRef(false);
+  const chatMessagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll chat body to bottom when messages update
+  useEffect(() => {
+    if (activeTab === 'chats') {
+      const timer = setTimeout(() => {
+        chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+  }, [chatThreads, selectedThreadPhone, activeTab]);
 
   // Check saved session
   useEffect(() => {
@@ -238,19 +249,26 @@ export default function LeadHunterPage() {
       const data = await res.json();
       const serverThreads: any[] = data.success && data.threads ? data.threads : [];
 
-      // Merge server threads and local threads by clean phone
+      // Sanitize messages to eliminate any legacy reasoning artifacts
+      const sanitizedServer = serverThreads.map((t: any) => ({
+        ...t,
+        messages: (t.messages || []).filter((m: any) => !m.text.includes('**Reasoning') && !m.text.includes('<think>')),
+      }));
+
+      // Merge server threads and local threads by clean phone (Server takes priority)
       const map: Record<string, any> = {};
-      [...serverThreads, ...localSaved].forEach((t) => {
+      [...sanitizedServer, ...localSaved].forEach((t) => {
         const clean = (t.phone || '').replace(/\D/g, '');
         if (!clean) return;
         if (!map[clean]) {
           map[clean] = { ...t, messages: [...(t.messages || [])] };
         } else {
           const existing = map[clean];
-          const allMsgs = [...(existing.messages || []), ...(t.messages || [])];
+          const allMsgs = [...(t.messages || []), ...(existing.messages || [])];
           const seen = new Set<string>();
           const deduped = allMsgs
             .filter((m) => {
+              if (m.text.includes('**Reasoning') || m.text.includes('<think>')) return false;
               const key = `${m.sender}_${(m.text || '').trim()}`;
               if (seen.has(key)) return false;
               seen.add(key);
@@ -856,6 +874,28 @@ export default function LeadHunterPage() {
                         </div>
 
                         <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => fetchConversations()}
+                            className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center space-x-1 transition"
+                            title="Force sync latest messages from database"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isLoadingChats ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
+                            <span>Sync</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (typeof window !== 'undefined') {
+                                localStorage.removeItem('webcore_lead_threads');
+                              }
+                              fetchConversations();
+                            }}
+                            className="px-2.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold rounded-xl border border-rose-800/40 flex items-center space-x-1 transition"
+                            title="Purge local cache and reload clean server messages"
+                          >
+                            <span>Clear Cache</span>
+                          </button>
                           <a
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentThread.business_name)}`}
                             target="_blank"
@@ -915,35 +955,38 @@ export default function LeadHunterPage() {
                             </button>
                           </div>
                         ) : (
-                          currentThread.messages.map((msg: any) => {
-                            const isClient = msg.sender === 'client';
-                            return (
-                              <div
-                                key={msg.id}
-                                className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
-                              >
-                                <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1 font-mono">
-                                  <span>{isClient ? currentThread.business_name : 'Satish (WebCore)'}</span>
-                                  <span>•</span>
-                                  <span>
-                                    {new Date(msg.timestamp).toLocaleTimeString('en-IN', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
-                                  </span>
-                                </div>
+                          <>
+                            {currentThread.messages.map((msg: any) => {
+                              const isClient = msg.sender === 'client';
+                              return (
                                 <div
-                                  className={`max-w-lg rounded-2xl px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap ${
-                                    isClient
-                                      ? 'bg-slate-800 text-white border border-slate-700 rounded-tl-sm shadow-md'
-                                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-sm shadow-lg shadow-indigo-600/20'
-                                  }`}
+                                  key={msg.id}
+                                  className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
                                 >
-                                  {msg.text}
+                                  <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1 font-mono">
+                                    <span>{isClient ? currentThread.business_name : 'Satish (WebCore)'}</span>
+                                    <span>•</span>
+                                    <span>
+                                      {new Date(msg.timestamp).toLocaleTimeString('en-IN', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </span>
+                                  </div>
+                                  <div
+                                    className={`max-w-lg rounded-2xl px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap ${
+                                      isClient
+                                        ? 'bg-slate-800 text-white border border-slate-700 rounded-tl-sm shadow-md'
+                                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-sm shadow-lg shadow-indigo-600/20'
+                                    }`}
+                                  >
+                                    {msg.text}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })
+                              );
+                            })}
+                            <div ref={chatMessagesEndRef} />
+                          </>
                         )}
                       </div>
 
