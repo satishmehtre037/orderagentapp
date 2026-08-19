@@ -114,22 +114,43 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
     }
   };
 
-  const handleUpdateStatus = async (docId: string, newStatus: CADocStatus) => {
+  const [rejectionModalDoc, setRejectionModalDoc] = useState<CADocumentTracker | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('Unclear scan or missing pages. Please re-upload a clear copy.');
+
+  const handleUpdateStatus = async (docId: string, newStatus: CADocStatus, reason?: string) => {
     try {
       const res = await fetch('/api/ca/documents/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ doc_id: docId, status: newStatus }),
+        body: JSON.stringify({
+          doc_id: docId,
+          status: newStatus,
+          reason,
+          firm_name: businessName,
+        }),
       });
 
       if (res.ok) {
-        setActionMessage(`✅ Document marked as ${newStatus}!`);
-        setTimeout(() => setActionMessage(null), 4000);
+        if (newStatus === 'Verified') {
+          setActionMessage(`✅ Document marked as Verified & WhatsApp confirmation sent to client!`);
+        } else if (newStatus === 'Rejected') {
+          setActionMessage(`⚠️ Document marked as Rejected & WhatsApp re-upload prompt dispatched!`);
+        } else {
+          setActionMessage(`✅ Document marked as ${newStatus}!`);
+        }
+        setTimeout(() => setActionMessage(null), 5000);
         fetchDocuments();
       }
     } catch (err) {
       console.error('Status update error:', err);
     }
+  };
+
+  const handleConfirmReject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectionModalDoc) return;
+    await handleUpdateStatus(rejectionModalDoc.id, 'Rejected', rejectionReason);
+    setRejectionModalDoc(null);
   };
 
   const getStatusBadge = (status: CADocStatus) => {
@@ -349,7 +370,10 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                               Verify
                             </button>
                             <button
-                              onClick={() => handleUpdateStatus(doc.id, 'Rejected')}
+                              onClick={() => {
+                                setRejectionModalDoc(doc);
+                                setRejectionReason('Unclear scan or missing pages. Please re-upload a clear copy.');
+                              }}
                               className="px-2.5 py-1 text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg transition"
                             >
                               Reject
@@ -504,6 +528,86 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                 >
                   <Send className="w-3.5 h-3.5" />
                   {submitting ? 'Dispatching...' : 'Dispatch Request'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Reason Modal */}
+      {rejectionModalDoc && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Reject & Request Re-upload</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {rejectionModalDoc.client_name} • {rejectionModalDoc.document_name}
+                </p>
+              </div>
+              <button
+                onClick={() => setRejectionModalDoc(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmReject} className="space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Select or Enter Rejection Reason:
+                </label>
+                <div className="space-y-2 mb-3">
+                  {[
+                    'Unclear scan or blurry photo. Please re-upload a clear copy.',
+                    'Missing pages / partial bank statement. Please upload complete statement.',
+                    'Wrong financial year / quarter document attached.',
+                    'Password-protected PDF without password provided.',
+                  ].map((presetReason, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setRejectionReason(presetReason)}
+                      className={`w-full text-left p-2.5 rounded-xl text-xs border transition ${
+                        rejectionReason === presetReason
+                          ? 'border-rose-300 bg-rose-50/60 text-rose-800 font-medium'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {presetReason}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  rows={2}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Custom rejection reason..."
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+
+              <div className="p-3 bg-rose-50 rounded-xl text-xs text-rose-800 border border-rose-100">
+                📲 <b>WhatsApp Alert:</b> Submitting will automatically send a prompt to the client explaining why the document was rejected and asking them to reply directly with a replacement file.
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRejectionModalDoc(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow transition flex items-center gap-1.5 text-xs"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Confirm Reject & Notify
                 </button>
               </div>
             </form>
