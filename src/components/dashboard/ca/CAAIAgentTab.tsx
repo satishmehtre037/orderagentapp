@@ -157,7 +157,7 @@ export default function CAAIAgentTab({
       const botMsg: ChatMessage = {
         id: String(Date.now() + 1),
         sender: 'ai',
-        senderName: 'AI Tax Assistant',
+        senderName: 'AI Practice Assistant',
         text: aiResponseText,
         meta: '🤖 AI Agent • Just now • Live Auto-reply',
       };
@@ -191,20 +191,20 @@ export default function CAAIAgentTab({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Interactive Chat Simulator (7 cols) */}
-        <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-5 flex flex-col h-[560px] shadow-sm">
+        <div className="lg:col-span-7 backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 flex flex-col h-[560px] shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           {/* Chat Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex items-center space-x-2.5">
               <span className="text-xl">💬</span>
               <div>
-                <h3 className="text-xs font-bold text-white">Live WhatsApp Chat Simulator</h3>
-                <p className="text-[11px] text-slate-400">Meta Cloud API v20.0 • 24/7 Active</p>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Live WhatsApp Chat Simulator</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Meta Cloud API v20.0 • 24/7 Active</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-[11px] text-emerald-400 font-bold">AI Active</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">AI Active</span>
               {clients.length > 0 && (
                 <select
                   value={selectedClientName}
@@ -214,7 +214,7 @@ export default function CAAIAgentTab({
                     const found = clients.find((c) => c.client_name === selName);
                     if (found) setSelectedClientPhone(found.phone);
                   }}
-                  className="text-xs bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-2.5 py-1 focus:outline-none max-w-[140px] truncate"
+                  className="text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl px-2.5 py-1 focus:outline-none max-w-[140px] truncate"
                 >
                   {clients.map((c) => (
                     <option key={c.id} value={c.client_name}>
@@ -227,7 +227,7 @@ export default function CAAIAgentTab({
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3.5 no-scrollbar text-xs">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3.5 no-scrollbar text-xs bg-slate-50/50 dark:bg-slate-950/40 rounded-2xl my-2">
             {messages.map((m) => (
               <div
                 key={m.id}
@@ -236,22 +236,22 @@ export default function CAAIAgentTab({
                 }`}
               >
                 <div
-                  className={`max-w-[85%] p-3 rounded-2xl leading-relaxed whitespace-pre-line shadow-xs ${
+                  className={`max-w-[85%] p-3.5 rounded-2xl leading-relaxed whitespace-pre-line shadow-xs ${
                     m.sender === 'client'
                       ? 'bg-teal-600 text-white rounded-br-xs'
                       : m.escalated
-                      ? 'bg-purple-950/70 border border-purple-800 text-purple-200 rounded-bl-xs'
-                      : 'bg-slate-800/90 text-slate-100 border border-slate-700/80 rounded-bl-xs'
+                      ? 'bg-purple-50 dark:bg-purple-950/70 border border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-200 rounded-bl-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 rounded-bl-xs'
                   }`}
                 >
                   {m.text}
                 </div>
-                <span className="text-[10px] text-slate-500 mt-1 px-1">{m.meta}</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">{m.meta}</span>
               </div>
             ))}
 
             {isTyping && (
-              <div className="flex items-center space-x-1.5 p-2 bg-slate-800/60 rounded-2xl w-16 border border-slate-700/60">
+              <div className="flex items-center space-x-1.5 p-2 bg-white dark:bg-slate-800 rounded-2xl w-16 border border-slate-200 dark:border-slate-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"></span>
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-100"></span>
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-200"></span>
@@ -261,7 +261,7 @@ export default function CAAIAgentTab({
           </div>
 
           {/* Chat Input */}
-          <div className="pt-3 border-t border-slate-800 flex gap-2">
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-2">
             <input
               type="text"
               placeholder={`Type a statutory query on behalf of "${selectedClientName}" (e.g. When is our GSTR-3B due?)...`}
@@ -270,11 +270,11 @@ export default function CAAIAgentTab({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSendMessage();
               }}
-              className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 text-white placeholder-slate-500 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <button
               onClick={() => handleSendMessage()}
-              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition shadow flex items-center justify-center"
+              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition shadow flex items-center justify-center"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
@@ -283,65 +283,65 @@ export default function CAAIAgentTab({
 
         {/* Right Column: AI Metrics & Top FAQs (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          {/* 4 Mini Stat Cards with Real Database Counts */}
+          {/* 4 Mini Stat Cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="p-2.5 bg-teal-500/10 text-teal-400 rounded-xl">
+            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="p-2.5 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl">
                 <Zap className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xl font-bold font-mono text-teal-400">94%</div>
-                <div className="text-[11px] text-slate-400">Auto-resolve rate</div>
+                <div className="text-xl font-bold font-mono text-teal-600 dark:text-teal-400">94%</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">Auto-resolve rate</div>
               </div>
             </div>
 
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
+            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xl font-bold font-mono text-emerald-400">&lt;2s</div>
-                <div className="text-[11px] text-slate-400">Avg response time</div>
+                <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">&lt;2s</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">Avg response time</div>
               </div>
             </div>
 
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl">
+            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl">
                 <UserCheck className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xl font-bold font-mono text-amber-400">{clients.length}</div>
-                <div className="text-[11px] text-slate-400">Registered Clients</div>
+                <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400">{clients.length}</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">Registered Clients</div>
               </div>
             </div>
 
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="p-2.5 bg-purple-500/10 text-purple-400 rounded-xl">
+            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="p-2.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl">
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xl font-bold font-mono text-purple-400">24/7</div>
-                <div className="text-[11px] text-slate-400">AI Bot Status</div>
+                <div className="text-xl font-bold font-mono text-purple-600 dark:text-purple-400">24/7</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">AI Bot Status</div>
               </div>
             </div>
           </div>
 
           {/* Top FAQs Card */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 shadow-sm">
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-2.5">
+          <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 space-y-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <span className="text-base">❓</span>
-              <h3 className="text-xs font-bold text-white">Top Frequently Asked Questions</h3>
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white">Top Frequently Asked Questions</h3>
             </div>
 
-            <div className="divide-y divide-slate-800/80 text-xs">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
               {FAQS.map((faq, idx) => (
                 <div
                   key={idx}
                   onClick={() => handleSendMessage(faq.q)}
-                  className="py-2.5 flex items-center justify-between gap-2 hover:bg-slate-800/40 p-2 rounded-xl cursor-pointer transition"
+                  className="py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 rounded-xl cursor-pointer transition"
                 >
-                  <div className="text-slate-300 font-medium">{faq.q}</div>
-                  <span className="text-[10px] text-teal-400 font-bold bg-teal-950/60 border border-teal-800/60 px-2 py-0.5 rounded-full shrink-0">
+                  <div className="text-slate-700 dark:text-slate-300 font-medium">{faq.q}</div>
+                  <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/60 px-2 py-0.5 rounded-full shrink-0">
                     {faq.asks}
                   </span>
                 </div>

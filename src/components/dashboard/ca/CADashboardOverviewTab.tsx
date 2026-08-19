@@ -51,7 +51,6 @@ export default function CADashboardOverviewTab({
       setLoading(true);
       const bizParam = businessId ? `?businessId=${encodeURIComponent(businessId)}` : '';
 
-      // Parallel fetch from all live database endpoints
       const [clientsRes, complianceRes, docsRes, leadsRes, invoicesRes] = await Promise.all([
         fetch(`/api/ca/clients${bizParam}`),
         fetch(`/api/ca/compliance${bizParam}`),
@@ -117,7 +116,6 @@ export default function CADashboardOverviewTab({
   });
 
   const activeLeadsCount = leads.filter((l) => l.status !== 'Converted' && l.status !== 'Lost').length;
-  const verifiedDocsCount = docs.filter((d) => d.status === 'Verified' || d.status === 'Received').length;
 
   return (
     <div className="space-y-6">
@@ -129,19 +127,19 @@ export default function CADashboardOverviewTab({
         </div>
       )}
 
-      {/* Top Stats Grid (4 Cards) with Real DB Data */}
+      {/* Top Stats Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Clients */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 relative overflow-hidden shadow-sm hover:border-slate-700 transition">
+        <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Clients</span>
-            <div className="p-2.5 bg-teal-500/10 text-teal-400 rounded-2xl">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Clients</span>
+            <div className="p-2.5 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-2xl">
               <Users className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-3xl font-black font-mono text-white tracking-tight">{clients.length}</div>
-            <div className="text-xs font-medium text-emerald-400 mt-1 flex items-center gap-1">
+            <div className="text-3xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{clients.length}</div>
+            <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>{clients.length > 0 ? `${clients.length} Active in Database` : 'Ready to add clients'}</span>
             </div>
@@ -149,16 +147,16 @@ export default function CADashboardOverviewTab({
         </div>
 
         {/* Card 2: Pending Deadlines */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 relative overflow-hidden shadow-sm hover:border-slate-700 transition">
+        <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pending Deadlines</span>
-            <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-2xl">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pending Deadlines</span>
+            <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
               <Clock className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-3xl font-black font-mono text-white tracking-tight">{pendingDeadlines.length}</div>
-            <div className="text-xs font-medium text-rose-400 mt-1 flex items-center gap-1">
+            <div className="text-3xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{pendingDeadlines.length}</div>
+            <div className="text-xs font-medium text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5" />
               <span>{urgentDeadlines.length} urgent (&lt;7 days)</span>
             </div>
@@ -166,18 +164,18 @@ export default function CADashboardOverviewTab({
         </div>
 
         {/* Card 3: Fees Collected */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 relative overflow-hidden shadow-sm hover:border-slate-700 transition">
+        <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fees Collected</span>
-            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Fees Collected</span>
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
               <IndianRupee className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-3xl font-black font-mono text-emerald-400 tracking-tight">
+            <div className="text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
               ₹{totalCollected.toLocaleString('en-IN')}
             </div>
-            <div className="text-xs font-medium text-emerald-400 mt-1 flex items-center gap-1">
+            <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>Verified Collections</span>
             </div>
@@ -185,18 +183,18 @@ export default function CADashboardOverviewTab({
         </div>
 
         {/* Card 4: Outstanding Fees */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 relative overflow-hidden shadow-sm hover:border-slate-700 transition">
+        <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pending Fees</span>
-            <div className="p-2.5 bg-rose-500/10 text-rose-400 rounded-2xl">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pending Fees</span>
+            <div className="p-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl">
               <AlertCircle className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-3xl font-black font-mono text-rose-400 tracking-tight">
+            <div className="text-3xl font-black font-mono text-rose-600 dark:text-rose-400 tracking-tight">
               ₹{totalOutstanding.toLocaleString('en-IN')}
             </div>
-            <div className="text-xs font-medium text-rose-400 mt-1 flex items-center gap-1">
+            <div className="text-xs font-medium text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1">
               <span>Outstanding balance</span>
             </div>
           </div>
@@ -206,32 +204,32 @@ export default function CADashboardOverviewTab({
       {/* Main 2-Column Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Upcoming Compliance Deadlines (7 cols) */}
-        <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="lg:col-span-7 backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-6 space-y-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex items-center space-x-2.5">
               <span className="text-lg">🔥</span>
               <div>
-                <h3 className="text-sm font-bold text-white">Upcoming Statutory Deadlines</h3>
-                <p className="text-xs text-slate-400">Live compliance filing ledger from database</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Upcoming Statutory Deadlines</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Live compliance filing ledger from database</p>
               </div>
             </div>
             <button
               onClick={() => onNavigateTab('ca_compliance')}
-              className="text-xs text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1 hover:underline"
+              className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-semibold flex items-center gap-1 hover:underline"
             >
               <span>View All</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="divide-y divide-slate-800/80">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {deadlines.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-500 space-y-2">
-                <Calendar className="w-8 h-8 mx-auto text-slate-600 opacity-60" />
+              <div className="py-8 text-center text-xs text-slate-400 dark:text-slate-500 space-y-2">
+                <Calendar className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
                 <p>No statutory compliance deadlines added yet.</p>
                 <button
                   onClick={() => onNavigateTab('ca_compliance')}
-                  className="text-xs text-teal-400 font-semibold underline hover:text-teal-300"
+                  className="text-xs text-teal-600 dark:text-teal-400 font-semibold underline hover:text-teal-700"
                 >
                   + Add First Compliance Deadline
                 </button>
@@ -256,10 +254,10 @@ export default function CADashboardOverviewTab({
                         }`}
                       ></div>
                       <div>
-                        <div className="text-xs font-bold text-white">
+                        <div className="text-xs font-bold text-slate-900 dark:text-white">
                           {d.compliance_type} • {d.client_name}
                         </div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
                           📱 {d.phone} • {d.status === 'Filed' ? 'Filed on Portal' : 'Pending Filing'}
                         </div>
                       </div>
@@ -268,10 +266,10 @@ export default function CADashboardOverviewTab({
                       <div
                         className={`text-xs font-bold font-mono ${
                           d.status === 'Filed'
-                            ? 'text-emerald-400'
+                            ? 'text-emerald-600 dark:text-emerald-400'
                             : isUrgent
-                            ? 'text-rose-400'
-                            : 'text-amber-400'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-amber-600 dark:text-amber-400'
                         }`}
                       >
                         {d.due_date}
@@ -279,10 +277,10 @@ export default function CADashboardOverviewTab({
                       <div
                         className={`text-[10px] font-semibold ${
                           d.status === 'Filed'
-                            ? 'text-emerald-400'
+                            ? 'text-emerald-600 dark:text-emerald-400'
                             : isUrgent
-                            ? 'text-rose-500'
-                            : 'text-slate-400'
+                            ? 'text-rose-600 dark:text-rose-500'
+                            : 'text-slate-500 dark:text-slate-400'
                         }`}
                       >
                         {d.status === 'Filed'
@@ -302,34 +300,34 @@ export default function CADashboardOverviewTab({
         {/* Right Column: AI Activity & Lead Pipeline (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Card 1: AI Agent Activity */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3.5 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 space-y-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">🤖</span>
-                <h3 className="text-sm font-bold text-white">AI Agent Practice Metrics</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">AI Agent Practice Metrics</h3>
               </div>
-              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 Active 24/7
               </span>
             </div>
 
             <div className="space-y-2.5 text-xs">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">Registered CA Clients</span>
-                <span className="font-bold text-teal-400 font-mono text-sm">{clients.length}</span>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60">
+                <span className="text-slate-600 dark:text-slate-400">Registered CA Clients</span>
+                <span className="font-bold text-teal-600 dark:text-teal-400 font-mono text-sm">{clients.length}</span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">Documents Tracked & Verified</span>
-                <span className="font-bold text-emerald-400 font-mono text-sm">{docs.length}</span>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60">
+                <span className="text-slate-600 dark:text-slate-400">Documents Tracked & Verified</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">{docs.length}</span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">Active Leads in Pipeline</span>
-                <span className="font-bold text-indigo-400 font-mono text-sm">{activeLeadsCount}</span>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60">
+                <span className="text-slate-600 dark:text-slate-400">Active Leads in Pipeline</span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono text-sm">{activeLeadsCount}</span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-950/30 border border-emerald-900/50">
-                <span className="text-emerald-300 font-medium">Fees Collected</span>
-                <span className="font-bold text-emerald-400 font-mono text-sm">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50">
+                <span className="text-emerald-800 dark:text-emerald-300 font-semibold">Fees Collected</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400 font-mono text-sm">
                   ₹{totalCollected.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -337,30 +335,30 @@ export default function CADashboardOverviewTab({
           </div>
 
           {/* Card 2: Lead Pipeline Mini Widget */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 shadow-sm">
+          <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 space-y-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">📊</span>
-                <h3 className="text-sm font-bold text-white">Lead Pipeline</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Lead Pipeline</h3>
               </div>
               <button
                 onClick={() => onNavigateTab('ca_leads')}
-                className="text-xs text-teal-400 hover:text-teal-300 font-semibold hover:underline"
+                className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-semibold"
               >
                 Open CRM →
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-center">
-                <div className="text-2xl font-bold font-mono text-teal-400">{activeLeadsCount}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Active Prospects</div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800 rounded-2xl text-center">
+                <div className="text-2xl font-bold font-mono text-teal-600 dark:text-teal-400">{activeLeadsCount}</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Active Prospects</div>
               </div>
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-center">
-                <div className="text-2xl font-bold font-mono text-emerald-400">
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800 rounded-2xl text-center">
+                <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
                   ₹{(activeLeadsCount * 15000).toLocaleString('en-IN')}
                 </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Estimated Pipeline</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Estimated Pipeline</div>
               </div>
             </div>
           </div>
@@ -368,13 +366,13 @@ export default function CADashboardOverviewTab({
       </div>
 
       {/* Bottom Card: Recent Client Activity Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-6 space-y-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center space-x-2.5">
             <span className="text-lg">👥</span>
             <div>
-              <h3 className="text-sm font-bold text-white">Live Client Directory & Activity</h3>
-              <p className="text-xs text-slate-400">Directly connected to your live Supabase ca_clients database</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Live Client Directory & Activity</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Directly connected to your live Supabase ca_clients database</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -387,7 +385,7 @@ export default function CADashboardOverviewTab({
             </button>
             <button
               onClick={() => onNavigateTab('ca_documents')}
-              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition border border-slate-200 dark:border-slate-700"
             >
               View Document Hub →
             </button>
@@ -396,9 +394,9 @@ export default function CADashboardOverviewTab({
 
         <div className="overflow-x-auto no-scrollbar">
           {clients.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-500 space-y-3">
-              <Users className="w-10 h-10 mx-auto text-slate-600 opacity-60" />
-              <p className="text-sm font-medium text-slate-400">No clients registered yet in your CA directory.</p>
+            <div className="py-12 text-center text-xs text-slate-400 dark:text-slate-500 space-y-3">
+              <Users className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No clients registered yet in your CA directory.</p>
               <button
                 onClick={onOpenNewClientModal}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition shadow"
@@ -408,7 +406,7 @@ export default function CADashboardOverviewTab({
             </div>
           ) : (
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800 uppercase tracking-wider text-[10px]">
+              <thead className="bg-slate-50 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-4 py-3">Client Name</th>
                   <th className="px-4 py-3">Entity Type</th>
@@ -418,25 +416,25 @@ export default function CADashboardOverviewTab({
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {clients.map((client) => {
                   const matchingDoc = docs.find((d) => d.client_id === client.id || d.phone === client.phone);
                   const isPendingDoc = matchingDoc && matchingDoc.status === 'Pending';
 
                   return (
-                    <tr key={client.id} className="hover:bg-slate-800/30 transition">
+                    <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3">
-                        <div className="font-bold text-white">{client.client_name}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">
+                        <div className="font-bold text-slate-900 dark:text-white">{client.client_name}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                           {client.pan_gstin || 'Registered Client'}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-slate-300">
-                        <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-semibold">
+                      <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                           {client.entity_type || 'Private Limited'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-300 font-mono">{client.phone}</td>
+                      <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-mono">{client.phone}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap">
                           {(client.notes || 'GST, ITR, ROC')
@@ -445,7 +443,7 @@ export default function CADashboardOverviewTab({
                             .map((svc, i) => (
                               <span
                                 key={i}
-                                className="px-2 py-0.5 bg-teal-500/10 text-teal-300 border border-teal-500/30 rounded-lg text-[10px] font-semibold"
+                                className="px-2 py-0.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 rounded-lg text-[10px] font-semibold"
                               >
                                 {svc.trim()}
                               </span>
@@ -453,7 +451,7 @@ export default function CADashboardOverviewTab({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded-full text-[10px] font-semibold">
                           ✓ {client.status || 'Active'}
                         </span>
                       </td>
@@ -470,7 +468,7 @@ export default function CADashboardOverviewTab({
                           ) : (
                             <button
                               onClick={() => onNavigateTab('ca_documents')}
-                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition border border-slate-700 inline-flex items-center gap-1"
+                              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg transition border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1"
                             >
                               <span>Docs Hub</span>
                             </button>

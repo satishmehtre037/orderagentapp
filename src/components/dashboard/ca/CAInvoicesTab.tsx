@@ -186,7 +186,7 @@ export default function CAInvoicesTab({
         <div className="flex items-center space-x-2.5">
           <button
             onClick={loadInvoices}
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700"
+            className="p-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition border border-slate-200 dark:border-slate-700 shadow-xs"
             title="Refresh Invoices"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -210,28 +210,28 @@ export default function CAInvoicesTab({
 
       {/* Top 3 Fee Summary Cards with Live Database Values */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 text-center shadow-sm">
-          <div className="text-2xl sm:text-3xl font-black font-mono text-white">
+        <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 dark:text-white">
             ₹{totalBilled.toLocaleString('en-IN')}
           </div>
-          <div className="text-xs font-semibold text-slate-400 mt-1">Total Invoiced (Database)</div>
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Total Invoiced (Database)</div>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 text-center shadow-sm">
-          <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+        <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
             ₹{totalCollected.toLocaleString('en-IN')}
           </div>
-          <div className="text-xs font-semibold text-emerald-400/80 mt-1 flex items-center justify-center gap-1">
+          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center justify-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Total Fees Collected</span>
           </div>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 text-center shadow-sm">
-          <div className="text-2xl sm:text-3xl font-black font-mono text-rose-400">
+        <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="text-2xl sm:text-3xl font-black font-mono text-rose-600 dark:text-rose-400">
             ₹{totalOutstanding.toLocaleString('en-IN')}
           </div>
-          <div className="text-xs font-semibold text-rose-400/80 mt-1 flex items-center justify-center gap-1">
+          <div className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1 flex items-center justify-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5" />
             <span>Outstanding Balance</span>
           </div>
@@ -239,22 +239,22 @@ export default function CAInvoicesTab({
       </div>
 
       {/* Outstanding Invoices Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-6 space-y-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center space-x-2.5">
             <span className="text-lg">💸</span>
             <div>
-              <h3 className="text-sm font-bold text-white">Fee Invoices Ledger</h3>
-              <p className="text-xs text-slate-400">Automated WhatsApp payment requests with UPI QR support</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Fee Invoices Ledger</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Automated WhatsApp payment requests with UPI QR support</p>
             </div>
           </div>
         </div>
 
         <div className="overflow-x-auto no-scrollbar">
           {invoices.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-500 space-y-3">
-              <Receipt className="w-10 h-10 mx-auto text-slate-600 opacity-60" />
-              <p className="text-sm font-medium text-slate-400">No fee invoices recorded in database yet.</p>
+            <div className="py-12 text-center text-xs text-slate-400 dark:text-slate-500 space-y-3">
+              <Receipt className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No fee invoices recorded in database yet.</p>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition shadow"
@@ -264,7 +264,7 @@ export default function CAInvoicesTab({
             </div>
           ) : (
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800 uppercase tracking-wider text-[10px]">
+              <thead className="bg-slate-50 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-4 py-3">Client</th>
                   <th className="px-4 py-3">Invoice #</th>
@@ -276,48 +276,48 @@ export default function CAInvoicesTab({
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-800/30 transition">
+                  <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3">
-                      <div className="font-bold text-white">{inv.clientName}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">📱 {inv.phone}</div>
+                      <div className="font-bold text-slate-900 dark:text-white">{inv.clientName}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">📱 {inv.phone}</div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-slate-400">{inv.invoiceNo}</td>
+                    <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-400">{inv.invoiceNo}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 bg-teal-500/10 text-teal-300 border border-teal-500/30 rounded-lg text-[10px] font-semibold">
+                      <span className="px-2 py-0.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 rounded-lg text-[10px] font-semibold">
                         {inv.service}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono font-bold text-white">
+                    <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white">
                       ₹{inv.amount.toLocaleString('en-IN')}
                     </td>
-                    <td className="px-4 py-3 text-slate-400">{inv.dueDate}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{inv.dueDate}</td>
                     <td className="px-4 py-3">
                       {inv.overdueDays > 0 && inv.status !== 'Paid' ? (
-                        <span className="font-bold text-rose-400 font-mono">{inv.overdueDays} days</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">{inv.overdueDays} days</span>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {inv.status === 'Overdue' && (
-                        <span className="px-2 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-full text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 rounded-full text-[10px] font-semibold">
                           🚨 Overdue
                         </span>
                       )}
                       {inv.status === 'Due Soon' && (
-                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 rounded-full text-[10px] font-semibold">
                           ⚠️ Due Soon
                         </span>
                       )}
                       {inv.status === 'Reminder Sent' && (
-                        <span className="px-2 py-0.5 bg-teal-500/10 text-teal-400 border border-teal-500/30 rounded-full text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30 rounded-full text-[10px] font-semibold">
                           📨 WA Sent
                         </span>
                       )}
                       {inv.status === 'Paid' && (
-                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded-full text-[10px] font-semibold">
                           ✓ Paid
                         </span>
                       )}
@@ -336,20 +336,20 @@ export default function CAInvoicesTab({
                             <a
                               href={`tel:${inv.phone}`}
                               title="Call Client"
-                              className="p-1 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg transition border border-slate-700"
+                              className="p-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 rounded-lg transition border border-slate-200 dark:border-slate-700"
                             >
                               <Phone className="w-3.5 h-3.5" />
                             </a>
                             <button
                               onClick={() => handleMarkPaid(inv)}
                               title="Mark as Paid"
-                              className="p-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg transition border border-slate-700"
+                              className="p-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-emerald-600 dark:text-emerald-400 rounded-lg transition border border-slate-200 dark:border-slate-700"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                           </>
                         ) : (
-                          <span className="text-emerald-400 font-semibold text-[11px]">Completed ✓</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">Completed ✓</span>
                         )}
                       </div>
                     </td>
@@ -362,26 +362,26 @@ export default function CAInvoicesTab({
       </div>
 
       {/* AI Auto-Reminder Schedule Card */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-3.5 shadow-sm">
+      <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-6 space-y-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="flex items-center space-x-2">
           <span className="text-lg">🤖</span>
-          <h3 className="text-sm font-bold text-white">AI Fee Recovery Automation Schedule</h3>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">AI Fee Recovery Automation Schedule</h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div className="border border-slate-800 rounded-2xl p-3.5 text-center bg-slate-950/60">
+          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 text-center bg-slate-50/50 dark:bg-slate-950/60">
             <div className="text-xl mb-1">7️⃣</div>
-            <div className="font-bold text-white">7 Days Before Due Date</div>
-            <div className="text-[11px] text-slate-400 mt-1">Polite WhatsApp invoice summary with UPI QR</div>
+            <div className="font-bold text-slate-900 dark:text-white">7 Days Before Due Date</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Polite WhatsApp invoice summary with UPI QR</div>
           </div>
-          <div className="border border-slate-800 rounded-2xl p-3.5 text-center bg-slate-950/60">
+          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 text-center bg-slate-50/50 dark:bg-slate-950/60">
             <div className="text-xl mb-1">3️⃣</div>
-            <div className="font-bold text-white">3 Days Before Due Date</div>
-            <div className="text-[11px] text-slate-400 mt-1">Priority WhatsApp reminder & payment confirmation link</div>
+            <div className="font-bold text-slate-900 dark:text-white">3 Days Before Due Date</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Priority WhatsApp reminder & payment confirmation link</div>
           </div>
-          <div className="border border-rose-900/50 rounded-2xl p-3.5 text-center bg-rose-950/20">
+          <div className="border border-rose-200 dark:border-rose-900/50 rounded-2xl p-3.5 text-center bg-rose-50/50 dark:bg-rose-950/20">
             <div className="text-xl mb-1">🚨</div>
-            <div className="font-bold text-rose-300">Overdue (&gt;15 Days)</div>
-            <div className="text-[11px] text-rose-400/80 mt-1">Direct escalation alert to Senior CA Partner</div>
+            <div className="font-bold text-rose-800 dark:text-rose-300">Overdue (&gt;15 Days)</div>
+            <div className="text-[11px] text-rose-600 dark:text-rose-400/80 mt-1">Direct escalation alert to Senior CA Partner</div>
           </div>
         </div>
       </div>
@@ -394,7 +394,7 @@ export default function CAInvoicesTab({
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">+ Create Fee Invoice</h3>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-200 font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold"
               >
                 ✕
               </button>
@@ -487,11 +487,11 @@ export default function CAInvoicesTab({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold transition"
                 >
                   Cancel
                 </button>
