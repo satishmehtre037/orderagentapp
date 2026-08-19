@@ -702,6 +702,26 @@ export default function LeadHunterPage() {
   const sentCount = leads.filter((l) => l.status === 'sent').length;
   const pendingCount = leads.filter((l) => l.status === 'pending').length;
 
+  const getThreadDisplayName = (thread: any) => {
+    if (!thread) return 'Prospect';
+    const clean = (thread.phone || '').replace(/\D/g, '');
+    if (clean === '918779841346' || clean === '8779841346') {
+      return 'Satish Mehtre (WebCore Demo Lead)';
+    }
+    const matchedLead = leads.find((l) => (l.phone_number || '').replace(/\D/g, '') === clean);
+    if (matchedLead && matchedLead.business_name && !matchedLead.business_name.startsWith('External Contact')) {
+      return matchedLead.business_name;
+    }
+    if (thread.business_name && !thread.business_name.startsWith('Lead (')) {
+      return thread.business_name;
+    }
+    for (const m of (thread.messages || [])) {
+      const pitchMatch = (m.text || '').match(/Namaste (?:Dr\.\s*\/\s*Team|Dr\.|Team)?\s*\*([^*]+)\*/i);
+      if (pitchMatch && pitchMatch[1]) return pitchMatch[1].trim();
+    }
+    return thread.business_name || `Lead (+${clean})`;
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Header */}
@@ -816,7 +836,7 @@ export default function LeadHunterPage() {
               <div className="flex-1 overflow-y-auto divide-y divide-slate-800/50">
                 {chatThreads.filter(
                   (t) =>
-                    t.business_name.toLowerCase().includes(chatSearchFilter.toLowerCase()) ||
+                    getThreadDisplayName(t).toLowerCase().includes(chatSearchFilter.toLowerCase()) ||
                     t.phone.includes(chatSearchFilter)
                 ).length === 0 ? (
                   <div className="p-8 text-center text-slate-500 text-xs">
@@ -826,11 +846,12 @@ export default function LeadHunterPage() {
                   chatThreads
                     .filter(
                       (t) =>
-                        t.business_name.toLowerCase().includes(chatSearchFilter.toLowerCase()) ||
+                        getThreadDisplayName(t).toLowerCase().includes(chatSearchFilter.toLowerCase()) ||
                         t.phone.includes(chatSearchFilter)
                     )
                     .map((thread) => {
                       const isSelected = selectedThreadPhone === thread.phone;
+                      const name = getThreadDisplayName(thread);
                       return (
                         <button
                           key={thread.phone}
@@ -841,11 +862,11 @@ export default function LeadHunterPage() {
                           }`}
                         >
                           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-700 to-purple-700 flex items-center justify-center text-white font-black text-xs shrink-0 shadow-md">
-                            {thread.business_name.charAt(0).toUpperCase()}
+                            {name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <h4 className="text-xs font-bold text-white truncate">{thread.business_name}</h4>
+                              <h4 className="text-xs font-bold text-white truncate">{name}</h4>
                               <span className="text-[10px] text-slate-500 font-mono">
                                 {new Date(thread.last_timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                               </span>
@@ -874,17 +895,18 @@ export default function LeadHunterPage() {
                   const currentThread = chatThreads.find(
                     (t) => t.phone.replace(/\D/g, '') === (selectedThreadPhone || '').replace(/\D/g, '')
                   )!;
+                  const currentDisplayName = getThreadDisplayName(currentThread);
                   return (
                     <>
                       {/* Chat Header */}
                       <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/40 flex-wrap gap-2">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow">
-                            {currentThread.business_name.charAt(0).toUpperCase()}
+                            {currentDisplayName.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <h3 className="font-bold text-sm text-white flex items-center space-x-2">
-                              <span>{currentThread.business_name}</span>
+                              <span>{currentDisplayName}</span>
                               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-bold">
                                 WhatsApp Live
                               </span>
@@ -919,7 +941,7 @@ export default function LeadHunterPage() {
                             <span>Clear Cache</span>
                           </button>
                           <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentThread.business_name)}`}
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentDisplayName)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center space-x-1 transition"
@@ -947,7 +969,7 @@ export default function LeadHunterPage() {
                               <Bot className="w-7 h-7" />
                             </div>
                             <div>
-                              <h4 className="font-bold text-sm text-white">No Messages with {currentThread.business_name} Yet</h4>
+                              <h4 className="font-bold text-sm text-white">No Messages with {currentDisplayName} Yet</h4>
                               <p className="text-xs text-slate-400 max-w-sm mt-1">
                                 Send a personalized AI pitch or type a custom WhatsApp message in the input bar below.
                               </p>
@@ -957,7 +979,7 @@ export default function LeadHunterPage() {
                               onClick={() => {
                                 const leadObj: ScrapedLead = leads.find((l) => l.phone_number === currentThread.phone) || {
                                   id: `lead_${Date.now()}`,
-                                  business_name: currentThread.business_name,
+                                  business_name: currentDisplayName,
                                   category: currentThread.category || 'clinic',
                                   city: city || 'Thane',
                                   phone_number: currentThread.phone,
@@ -965,7 +987,7 @@ export default function LeadHunterPage() {
                                   reviews_count: 50,
                                   address: `${city || 'Thane'}`,
                                   has_website: false,
-                                  maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentThread.business_name)}`,
+                                  maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentDisplayName)}`,
                                   status: 'pending',
                                 };
                                 sendSinglePitch(leadObj);
@@ -986,7 +1008,7 @@ export default function LeadHunterPage() {
                                   className={`flex flex-col ${isClient ? 'items-start' : 'items-end'}`}
                                 >
                                   <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-1 px-1 font-mono">
-                                    <span>{isClient ? currentThread.business_name : 'Satish (WebCore)'}</span>
+                                    <span>{isClient ? currentDisplayName : 'Satish (WebCore)'}</span>
                                     <span>•</span>
                                     <span>
                                       {new Date(msg.timestamp).toLocaleTimeString('en-IN', {
@@ -1019,7 +1041,7 @@ export default function LeadHunterPage() {
                       >
                         <input
                           type="text"
-                          placeholder={`Type a WhatsApp reply to ${currentThread.business_name}...`}
+                          placeholder={`Type a WhatsApp reply to ${currentDisplayName}...`}
                           value={chatReplyText}
                           onChange={(e) => setChatReplyText(e.target.value)}
                           className="flex-1 px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"

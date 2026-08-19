@@ -68,12 +68,23 @@ export async function GET(req: Request) {
         threadMap[cleanKey].business_name = extractedName;
       }
 
-      threadMap[cleanKey].messages.push({
-        id: msg.id || `msg_${Date.now()}_${Math.random()}`,
-        text: text,
-        sender: isClient ? 'client' : 'bot',
-        timestamp: msg.created_at || new Date().toISOString(),
-      });
+      // Avoid pushing immediate duplicate retries
+      const existingMsgs = threadMap[cleanKey].messages;
+      const lastSaved = existingMsgs[existingMsgs.length - 1];
+      const isDuplicateRetry =
+        lastSaved &&
+        lastSaved.sender === (isClient ? 'client' : 'bot') &&
+        lastSaved.text.trim() === text.trim() &&
+        Math.abs(new Date(msg.created_at || 0).getTime() - new Date(lastSaved.timestamp || 0).getTime()) < 10000;
+
+      if (!isDuplicateRetry) {
+        threadMap[cleanKey].messages.push({
+          id: msg.id || `msg_${Date.now()}_${Math.random()}`,
+          text: text,
+          sender: isClient ? 'client' : 'bot',
+          timestamp: msg.created_at || new Date().toISOString(),
+        });
+      }
 
       threadMap[cleanKey].last_message = text;
       threadMap[cleanKey].last_sender = isClient ? 'client' : 'bot';
@@ -122,7 +133,7 @@ export async function POST(req: Request) {
 
     // 2. Record in conversations table in Supabase
     try {
-      let bizId: string | null = null;
+      let bizId: string | null = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
       const { data: bizList } = await supabaseAdmin.from('businesses').select('id').limit(1);
       if (bizList && bizList.length > 0) {
         bizId = bizList[0].id;
