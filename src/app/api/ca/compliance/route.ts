@@ -1,18 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/config/supabase';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const adminSupabase = createClient(supabaseUrl, serviceKey);
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
 
-    let query = adminSupabase
+    let query = supabase
       .from('ca_compliance_calendar')
       .select('*')
       .order('due_date', { ascending: true });
@@ -26,7 +22,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await query;
     if (error) {
-      console.warn('[CA Compliance API] Fetch notice (check table):', error.message);
+      console.warn('[CA Compliance API] Fetch notice:', error.message);
       return NextResponse.json({ compliances: [] });
     }
 
@@ -42,11 +38,16 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { id, status, acknowledgement_number, business_id, client_name, phone, email, compliance_type, due_date } = body;
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validBusinessId = business_id && uuidRegex.test(business_id) && business_id !== 'demo-business-id'
+      ? business_id
+      : null;
+
     if (id) {
       const updates: any = { status };
       if (acknowledgement_number) updates.acknowledgement_number = acknowledgement_number;
 
-      const { data, error } = await adminSupabase
+      const { data, error } = await supabase
         .from('ca_compliance_calendar')
         .update(updates)
         .eq('id', id)
@@ -56,10 +57,10 @@ export async function POST(req: Request) {
       if (error) throw error;
       return NextResponse.json({ success: true, compliance: data });
     } else {
-      const { data, error } = await adminSupabase
+      const { data, error } = await supabase
         .from('ca_compliance_calendar')
         .insert({
-          business_id: business_id || null,
+          business_id: validBusinessId,
           client_name,
           phone,
           email: email || null,

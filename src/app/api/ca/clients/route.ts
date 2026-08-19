@@ -1,18 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/config/supabase';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const adminSupabase = createClient(supabaseUrl, serviceKey);
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
 
-    let query = adminSupabase
+    let query = supabase
       .from('ca_clients')
       .select('*')
       .order('client_name', { ascending: true });
@@ -26,7 +22,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await query;
     if (error) {
-      console.warn('[CA Clients API] Fetch notice (check table):', error.message);
+      console.warn('[CA Clients API] Fetch notice:', error.message);
       return NextResponse.json({ clients: [] });
     }
 
@@ -42,10 +38,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { business_id, client_name, phone, email, entity_type, gstin, pan, partner_assigned } = body;
 
-    const { data, error } = await adminSupabase
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validBusinessId = business_id && uuidRegex.test(business_id) && business_id !== 'demo-business-id'
+      ? business_id
+      : null;
+
+    const { data, error } = await supabase
       .from('ca_clients')
       .insert({
-        business_id: business_id || null,
+        business_id: validBusinessId,
         client_name,
         phone,
         email: email || null,

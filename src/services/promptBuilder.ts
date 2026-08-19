@@ -666,11 +666,16 @@ Assistant Reply: ${assistantReply}`;
 }
 
 export function buildCADocumentRequestPrompt(firmName: string, clientName: string, complianceType: string, docList: string): string {
-  return `Write a short, polite, professional document checklist request message (WhatsApp/Email friendly, 3-5 lines) on behalf of ${firmName} to client "${clientName}" for their upcoming "${complianceType}" work.
-Include this exact document checklist:
+  return `You are writing a direct, friendly WhatsApp document checklist request to client "${clientName}" on behalf of "${firmName}" for their upcoming "${complianceType}" filing.
+
+Exact document checklist to request:
 ${docList}
 
-Ask them to share these documents at the earliest to ensure timely filing. Sign off as "Team ${firmName}".`;
+STRICT INSTRUCTIONS:
+- Output ONLY the ready-to-send WhatsApp message.
+- NEVER include thinking, reasoning, analysis, headings like "Final Message", or meta-notes.
+- Keep it 3-5 lines, warm, and professional.
+- Sign off as "Team ${firmName}".`;
 }
 
 export function buildCAComplianceReminderPrompt(

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/config/supabase';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const adminSupabase = createClient(supabaseUrl, serviceKey);
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'doc_id and status required' }, { status: 400 });
     }
 
-    const { data, error } = await adminSupabase
+    const { data, error } = await supabase
       .from('ca_documents_tracker')
       .update({ status })
       .eq('id', doc_id)
