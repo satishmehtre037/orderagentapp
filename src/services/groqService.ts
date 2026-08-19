@@ -42,9 +42,9 @@ export async function getResponse(
   if (groqClient) {
     const groqModels = [
       process.env.GROQ_MODEL,
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
-      'gemma2-9b-it',
+      'openai/gpt-oss-120b',
+      'openai/gpt-oss-20b',
+      'qwen/qwen3.6-27b',
     ].filter(Boolean) as string[];
 
     for (const model of groqModels) {
@@ -55,7 +55,7 @@ export async function getResponse(
           messages: [
             {
               role: 'system',
-              content: `${systemPrompt}\n\n### MANDATORY RULES:\n1. ACCEPT ALL LIVE MENU & SERVICE ITEMS: If the customer asks to book an appointment, checkup, or service, confirm the slot, date, time, and details immediately.\n2. When user provides date/time (e.g. "20 august 2 pm"), CONFIRM the appointment warmly and append the JSON capture block.\n3. STRICT DOMAIN GUARDRAIL: Never write code (Python, JS, etc.), do homework, or answer unrelated general queries. Politely refuse and state that you are exclusively the virtual assistant for this business.`,
+              content: `${systemPrompt}\n\n### MANDATORY RULES:\n1. ACCEPT ALL LIVE MENU & SERVICE ITEMS: If the customer asks to book an appointment, checkup, or service, confirm the slot, date, time, and details immediately.\n2. When user provides date/time (e.g. "20 august 2 pm"), CONFIRM the appointment warmly and append the JSON capture block.\n3. EMERGENCY RESPONSE: If the patient/customer mentions an emergency or urgent medical care, immediately provide the 24/7 Hospital Emergency Hotline number and ask them to visit the Emergency Care Wing immediately.\n4. STRICT DOMAIN GUARDRAIL: Never write code (Python, JS, etc.), do homework, or answer unrelated general queries. Politely refuse and state that you are exclusively the virtual assistant for this business.`,
             },
             ...formattedHistory.map((m) => ({
               role: m.role as 'user' | 'assistant',
@@ -66,7 +66,10 @@ export async function getResponse(
           max_tokens: 1024,
         });
 
-        const reply = completion.choices[0]?.message?.content || '';
+        let reply = completion.choices[0]?.message?.content || '';
+        // Strip any thinking tags from reasoning models
+        reply = reply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
         if (reply) {
           console.log(`[Groq AI Service] ✅ Generated response (${model}): ${reply.length} chars`);
           return reply;
@@ -88,6 +91,11 @@ export async function getResponse(
 
     const category = business.category || 'store';
     const lowerMsg = newMessage.toLowerCase();
+
+    // Check emergency first
+    if (lowerMsg.includes('emergency') || lowerMsg.includes('urgent') || lowerMsg.includes('ambulance')) {
+      return `🚨 *EMERGENCY RESPONSE — ${business.name}* 🚨\n\nIf this is a medical emergency, please call our 24/7 Emergency Line immediately:\n📞 *Emergency Hotline:* +91 98765 43210 / 108\n📍 *Emergency Wing:* Ground Floor, Casualty & Trauma Center\n\nOur trauma & critical care team is on standby 24/7.`;
+    }
 
     // Check if the user is answering date/time or requesting an appointment
     const isDateTimeOrBooking =
@@ -179,9 +187,8 @@ Conversation:
 ${recentMessages}`;
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
       temperature: 0.1,
     });
 
