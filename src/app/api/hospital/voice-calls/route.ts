@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendWhatsAppTextMessage } from '@/lib/whatsapp';
+import { triggerVapiCall } from '@/services/vapiService';
 import { triggerBlandCall } from '@/services/blandService';
 
 export async function GET(req: Request) {
@@ -58,8 +59,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Dispatch Bland AI phone call
-    const blandResult = await triggerBlandCall({
+    const callParams = {
       phoneNumber: patient_phone,
       patientName: patient_name,
       doctorName: doctor_name,
@@ -67,12 +67,26 @@ export async function POST(req: Request) {
       hospitalName: hospital_name,
       callType: call_type,
       promptTask: reason,
-    });
+    };
 
-    const isLive = blandResult.mode === 'live';
+    // 1. Dispatch Vapi AI phone call (or fallback to Bland / Simulation)
+    let callResult = await triggerVapiCall(callParams);
+
+    if (callResult.mode === 'simulation' && (process.env.BLAND_API_KEY || process.env.BLAND_AI_API_KEY)) {
+      const blandRes = await triggerBlandCall(callParams);
+      if (blandRes.mode === 'live') {
+        callResult = {
+          success: true,
+          callId: blandRes.callId,
+          mode: 'live',
+        };
+      }
+    }
+
+    const isLive = callResult.mode === 'live';
     const durationSeconds = isLive ? 45 : Math.floor(Math.random() * 40) + 35;
     const summary = isLive
-      ? `Live AI phone call dispatched to ${patient_name} (${patient_phone}). Call ID: ${blandResult.callId || 'N/A'}`
+      ? `Live AI phone call dispatched to ${patient_name} (${patient_phone}). Call ID: ${callResult.callId || 'N/A'}`
       : `AI Voice Assistant called ${patient_name} regarding ${call_type.replace('_', ' ')}. Patient confirmed presence.`;
 
     const { data: callRecord, error } = await supabaseAdmin
@@ -103,8 +117,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       call: callRecord,
-      mode: blandResult.mode,
-      callId: blandResult.callId,
+      mode: callResult.mode,
+      callId: callResult.callId,
     });
   } catch (error: any) {
     console.error('Error triggering voice call:', error);
