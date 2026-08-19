@@ -18,17 +18,83 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
   const [submitting, setSubmitting] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
+  // Statutory Compliance Document Presets Dictionary
+  const COMPLIANCE_DOC_PRESETS: Record<string, string[]> = {
+    'ROC-Filing': [
+      'Audited Financial Statements (Balance Sheet & P&L)',
+      'Directors’ Report & Board Resolutions for AGM',
+      'Shareholding Pattern & List of Transfers (Form MGT-7)',
+      'Auditor’s Report with Notes to Accounts (Form AOC-4)',
+      'Active DSC (Digital Signature Certificate) of Directors',
+    ],
+    'GST-3B': [
+      'Sales Register / Outward Tax Invoices',
+      'Purchase Register & Input Tax Credit (ITC) Bills',
+      'Bank Statements for the Tax Period',
+      'Tax Payment Challans / Cash Ledger Summary',
+    ],
+    'GSTR-1': [
+      'B2B Sales Invoices with GSTIN & HSN',
+      'B2C Summary Invoices (State-wise)',
+      'Credit & Debit Notes Issued',
+      'Export Invoices / SEZ Supply Documents',
+    ],
+    'ITR-1': [
+      'Form 16 (Part A & Part B) from Employer',
+      'Form 26AS & Annual Information Statement (AIS/TIS)',
+      'Bank Statements (All Savings / Current accounts for FY)',
+      'Chapter VI-A Deductions (80C, 80D Mediclaim, Home Loan)',
+    ],
+    'ITR-4': [
+      'Bank Statements (Last 12 Months for FY)',
+      'Gross Receipts / Turnover Summary (Sec 44AD/ADA)',
+      'Form 26AS & AIS / TIS Summary',
+      'Advance Tax & Self-Assessment Tax Challans',
+    ],
+    'ITR-6': [
+      'Audited Balance Sheet & Profit & Loss Statement',
+      'Tax Audit Report (Form 3CA/3CB-3CD)',
+      'Corporate Form 26AS & AIS Reconciliation',
+      'Advance Tax Payment Receipts / Challans',
+      'Depreciation Schedule & Fixed Asset Additions',
+    ],
+    'Tax-Audit': [
+      'Final Trial Balance & General Ledgers',
+      'Closing Stock Valuation & Inventory Summary',
+      'Depreciation Schedule & Asset Purchase Invoices',
+      'Form 26AS & TDS 26Q Reconciliation',
+      'List of Loans/Deposits > ₹20,000 (Sec 269SS/T)',
+    ],
+    'GST-Registration': [
+      'PAN & Aadhaar of Promoters / Partners / Directors',
+      'Electricity Bill / Property Tax Receipt of Business Premise',
+      'Rent Agreement & NOC from Property Owner',
+      'Bank Account Proof (Cancelled Cheque / Statement)',
+      'Certificate of Incorporation / Partnership Deed',
+    ],
+    'Company-Incorporation': [
+      'PAN & Aadhaar of all Directors & Subscribers',
+      'Identity Proof (Passport / Voter ID / Driving License)',
+      'Address Proof (Bank Statement / Electricity Bill < 2 Months old)',
+      'Registered Office Proof (Utility Bill + NOC + Rent Deed)',
+      'Proposed Company Name & Main Business Objects',
+    ],
+  };
+
   // Form State for Requesting Documents
   const [formClientId, setFormClientId] = useState('');
   const [manualClientName, setManualClientName] = useState('');
   const [manualPhone, setManualPhone] = useState('');
   const [formComplianceType, setFormComplianceType] = useState('GST-3B');
-  const [docListInputs, setDocListInputs] = useState<string[]>([
-    'Bank Statement (Last 6 Months)',
-    'Purchase Invoices & Bills',
-    'Form 26AS / AIS',
-  ]);
+  const [docListInputs, setDocListInputs] = useState<string[]>(COMPLIANCE_DOC_PRESETS['GST-3B']);
   const [clients, setClients] = useState<Array<{ id: string; client_name: string; phone: string }>>([]);
+
+  const handleComplianceTypeChange = (newType: string) => {
+    setFormComplianceType(newType);
+    if (COMPLIANCE_DOC_PRESETS[newType]) {
+      setDocListInputs([...COMPLIANCE_DOC_PRESETS[newType]]);
+    }
+  };
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -495,19 +561,21 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Compliance Area *</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                  Compliance Area * <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-normal">(Auto-loads official document checklist)</span>
+                </label>
                 <select
                   value={formComplianceType}
-                  onChange={(e) => setFormComplianceType(e.target.value)}
+                  onChange={(e) => handleComplianceTypeChange(e.target.value)}
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="GST-3B">GST-3B Filing</option>
                   <option value="GSTR-1">GSTR-1 Outward Supply</option>
-                  <option value="ITR-1">ITR-1 (Salaried)</option>
-                  <option value="ITR-4">ITR-4 (Presumptive)</option>
-                  <option value="ITR-6">ITR-6 (Corporate)</option>
+                  <option value="ITR-1">ITR-1 (Salaried Individual)</option>
+                  <option value="ITR-4">ITR-4 (Presumptive / Business)</option>
+                  <option value="ITR-6">ITR-6 (Corporate / Companies)</option>
                   <option value="Tax-Audit">Tax Audit (Sec 44AB)</option>
-                  <option value="ROC-Filing">ROC Annual Filing</option>
+                  <option value="ROC-Filing">ROC Annual Filing (AOC-4 / MGT-7)</option>
                   <option value="GST-Registration">GST Registration</option>
                   <option value="Company-Incorporation">Company Incorporation</option>
                 </select>
