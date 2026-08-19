@@ -1261,8 +1261,21 @@ export default function LeadHunterPage() {
               {/* Progress & Controls */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center bg-slate-950 p-4 rounded-2xl border border-slate-800">
                 <div>
-                  <div className="text-xs text-slate-400 font-medium">Safe Pacing Interval:</div>
-                  <div className="flex items-center space-x-2 mt-1">
+                  <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                    <span>Safe Pacing Interval:</span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        delaySeconds >= 40
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : delaySeconds >= 25
+                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                      }`}
+                    >
+                      {delaySeconds >= 40 ? '🟢 100% Safe (Recommended)' : delaySeconds >= 25 ? '🟡 Fast & Safe' : '⚡ Rapid'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 mt-1.5">
                     <input
                       type="range"
                       min={10}
@@ -1270,7 +1283,7 @@ export default function LeadHunterPage() {
                       value={delaySeconds}
                       onChange={(e) => setDelaySeconds(Number(e.target.value))}
                       disabled={isCampaignRunning}
-                      className="w-32 accent-indigo-500"
+                      className="w-32 accent-emerald-500 cursor-pointer"
                     />
                     <span className="text-xs font-bold text-white font-mono">{delaySeconds}s / msg</span>
                   </div>
