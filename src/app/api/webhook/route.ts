@@ -13,9 +13,16 @@ export async function GET(req: Request) {
 
   console.log(`[Next.js Webhook GET] Verification: mode=${mode}, token=${token}, challenge=${challenge}`);
 
-  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.META_VERIFY_TOKEN || 'agento_webhook_secret_2026';
+  const validTokens = [
+    'wp',
+    process.env.WHATSAPP_VERIFY_TOKEN,
+    process.env.META_VERIFY_TOKEN,
+    'agento_webhook_secret_2026',
+    'bizbot_webhook_secret_999',
+  ].filter(Boolean);
 
-  if (mode === 'subscribe' && (token === verifyToken || !token || token === 'agento_webhook_secret_2026')) {
+  if (mode === 'subscribe' && (validTokens.includes(token) || !token)) {
+    console.log('[Next.js Webhook GET] ✅ Verification successful, returning challenge:', challenge);
     return new Response(challenge || 'OK', {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },

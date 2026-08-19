@@ -238,29 +238,34 @@ export default function LeadHunterPage() {
       const data = await res.json();
       const serverThreads: any[] = data.success && data.threads ? data.threads : [];
 
-      // Merge server threads and local threads by phone
+      // Merge server threads and local threads by clean phone
       const map: Record<string, any> = {};
-      [...localSaved, ...serverThreads].forEach((t) => {
-        const clean = t.phone.replace(/\D/g, '');
+      [...serverThreads, ...localSaved].forEach((t) => {
+        const clean = (t.phone || '').replace(/\D/g, '');
+        if (!clean) return;
         if (!map[clean]) {
-          map[clean] = t;
+          map[clean] = { ...t, messages: [...(t.messages || [])] };
         } else {
-          // Merge messages and pick latest
           const existing = map[clean];
           const allMsgs = [...(existing.messages || []), ...(t.messages || [])];
-          const seenMsgIds = new Set<string>();
-          const dedupedMsgs = allMsgs.filter((m) => {
-            const id = m.id || m.text;
-            if (seenMsgIds.has(id)) return false;
-            seenMsgIds.add(id);
-            return true;
-          });
+          const seen = new Set<string>();
+          const deduped = allMsgs
+            .filter((m) => {
+              const key = `${m.sender}_${(m.text || '').trim()}`;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+          const lastM = deduped[deduped.length - 1];
           map[clean] = {
             ...existing,
             ...t,
-            messages: dedupedMsgs,
-            last_message: t.last_message || existing.last_message,
-            last_timestamp: t.last_timestamp || existing.last_timestamp,
+            messages: deduped,
+            last_message: lastM ? lastM.text : (t.last_message || existing.last_message),
+            last_sender: lastM ? lastM.sender : (t.last_sender || existing.last_sender),
+            last_timestamp: lastM ? lastM.timestamp : (t.last_timestamp || existing.last_timestamp),
           };
         }
       });
