@@ -274,6 +274,8 @@ export default function OnboardingPage() {
                         ? 'Set up your Salon Services & Pricing'
                         : selectedCategory === 'clinic'
                         ? 'Set up Doctor Consultations & OPD Tariffs'
+                        : selectedCategory === 'hospital'
+                        ? 'Set up Hospital Departments, Doctors & OPD Tariffs'
                         : selectedCategory === 'gym'
                         ? 'Set up your Gym Memberships & Passes'
                         : selectedCategory === 'tuition'
@@ -295,6 +297,7 @@ export default function OnboardingPage() {
                   {selectedCategory === 'cafe' && <CafeForm />}
                   {selectedCategory === 'salon' && <SalonForm />}
                   {selectedCategory === 'clinic' && <ClinicForm />}
+                  {selectedCategory === 'hospital' && <ClinicForm />}
                   {selectedCategory === 'gym' && <GymForm />}
                   {selectedCategory === 'tuition' && <TuitionForm />}
                   {selectedCategory === 'retail' && <RetailForm />}
