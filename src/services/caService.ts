@@ -329,31 +329,90 @@ export async function handleCALeadInquiry(
  */
 export async function requestClientDocuments(params: {
   businessId?: string;
-  clientId: string;
+  clientId?: string;
+  clientName?: string;
+  phone?: string;
+  email?: string;
   complianceType: string;
   documents: string[];
   firmName?: string;
 }): Promise<{ success: boolean; message: string; createdCount: number }> {
   const firmName = params.firmName || 'Webcore CA & Advisory';
 
-  // 1. Fetch Client
-  const { data: client, error: clientErr } = await supabase
-    .from('ca_clients')
-    .select('*')
-    .eq('id', params.clientId)
-    .single();
+  // Sanitize businessId
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const validBusinessId = params.businessId && uuidRegex.test(params.businessId) && params.businessId !== 'demo-business-id'
+    ? params.businessId
+    : null;
 
-  if (clientErr || !client) {
-    throw new Error('Client not found');
+  let client: any = null;
+
+  // 1. Try to find client by ID if valid UUID
+  if (params.clientId && uuidRegex.test(params.clientId)) {
+    const { data: foundClient } = await supabase
+      .from('ca_clients')
+      .select('*')
+      .eq('id', params.clientId)
+      .maybeSingle();
+
+    if (foundClient) {
+      client = foundClient;
+    }
   }
 
-  // 2. Insert Pending Rows into Documents Tracker
+  // 2. If not found by ID, search by phone or client name
+  if (!client && params.phone) {
+    const cleanPhone = normalizePhoneNumber(params.phone);
+    const { data: foundByPhone } = await supabase
+      .from('ca_clients')
+      .select('*')
+      .or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${cleanPhone.slice(-10)}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (foundByPhone) {
+      client = foundByPhone;
+    }
+  }
+
+  // 3. If still no client record, auto-create client in directory
+  if (!client) {
+    const clientName = params.clientName || (params.clientId && !uuidRegex.test(params.clientId) ? params.clientId : 'Valued Client');
+    const clientPhone = params.phone || (params.clientId && /^\d+$/.test(params.clientId) ? params.clientId : '919876543210');
+
+    try {
+      const { data: newClient, error: createErr } = await supabase
+        .from('ca_clients')
+        .insert({
+          business_id: validBusinessId,
+          client_name: clientName,
+          phone: clientPhone,
+          email: params.email || null,
+          entity_type: 'Proprietorship',
+        })
+        .select()
+        .single();
+
+      if (!createErr && newClient) {
+        client = newClient;
+      }
+    } catch (err: any) {
+      console.warn('[CAService] Auto-create client note:', err.message);
+    }
+  }
+
+  const finalClientName = client?.client_name || params.clientName || 'Valued Client';
+  const finalPhone = client?.phone || params.phone || '';
+  const finalEmail = client?.email || params.email || null;
+  const finalClientId = client?.id && uuidRegex.test(client.id) ? client.id : null;
+
+  // 4. Insert Pending Rows into Documents Tracker
   const docRows = params.documents.map((docName) => ({
-    business_id: params.businessId || client.business_id,
-    client_id: client.id,
-    client_name: client.client_name,
-    phone: client.phone,
-    email: client.email,
+    business_id: validBusinessId,
+    client_id: finalClientId,
+    client_name: finalClientName,
+    phone: finalPhone,
+    email: finalEmail,
     compliance_type: params.complianceType,
     document_name: docName.trim(),
     status: 'Pending',
@@ -361,23 +420,37 @@ export async function requestClientDocuments(params: {
     followup_count: 0,
   }));
 
-  const { error: insertErr } = await supabase.from('ca_documents_tracker').insert(docRows);
-  if (insertErr) {
-    console.error('[CAService] Document rows insert error:', insertErr.message);
+  try {
+    const { error: insertErr } = await supabase.from('ca_documents_tracker').insert(docRows);
+    if (insertErr) {
+      console.error('[CAService] Document rows insert error:', insertErr.message);
+    }
+  } catch (err: any) {
+    console.error('[CAService] Document tracker insert exception:', err.message);
   }
 
-  // 3. Draft AI checklist message
+  // 5. Draft AI checklist message
   const docListFormatted = params.documents.map((d, i) => `${i + 1}. ${d}`).join('\n');
-  const prompt = buildCADocumentRequestPrompt(firmName, client.client_name, params.complianceType, docListFormatted);
+  const prompt = buildCADocumentRequestPrompt(firmName, finalClientName, params.complianceType, docListFormatted);
 
-  const requestMessage = await getGroqChatCompletion(
-    [{ role: 'user', content: prompt }],
-    { temperature: 0.2 }
-  );
+  let requestMessage = '';
+  try {
+    requestMessage = await getGroqChatCompletion(
+      [{ role: 'user', content: prompt }],
+      { temperature: 0.2 }
+    );
+  } catch (aiErr: any) {
+    console.warn('[CAService] Groq drafting fallback:', aiErr.message);
+    requestMessage = `Hello ${finalClientName},\n\nThis is a request from *${firmName}* for your upcoming *${params.complianceType}* filing.\n\nPlease share the following documents at your earliest convenience:\n${docListFormatted}\n\nThank you!`;
+  }
 
-  // 4. Send via WhatsApp
-  if (client.phone) {
-    await sendWhatsAppMessage(client.phone, requestMessage);
+  // 6. Send via WhatsApp
+  if (finalPhone) {
+    try {
+      await sendWhatsAppMessage(finalPhone, requestMessage);
+    } catch (waErr: any) {
+      console.warn('[CAService] WhatsApp dispatch note:', waErr.message);
+    }
   }
 
   return {

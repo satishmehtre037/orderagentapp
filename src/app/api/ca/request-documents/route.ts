@@ -3,15 +3,18 @@ import { requestClientDocuments } from '@/services/caService';
 
 export async function POST(req: Request) {
   try {
-    const { business_id, client_id, compliance_type, documents, firm_name } = await req.json();
+    const { business_id, client_id, client_name, phone, email, compliance_type, documents, firm_name } = await req.json();
 
-    if (!client_id || !documents || !Array.isArray(documents)) {
-      return NextResponse.json({ error: 'Missing client_id or documents array' }, { status: 400 });
+    if ((!client_id && !client_name && !phone) || !documents || !Array.isArray(documents)) {
+      return NextResponse.json({ error: 'Missing client info or documents array' }, { status: 400 });
     }
 
     const result = await requestClientDocuments({
-      businessId: business_id || '00000000-0000-0000-0000-000000000000',
+      businessId: business_id,
       clientId: client_id,
+      clientName: client_name,
+      phone: phone,
+      email: email,
       complianceType: compliance_type || 'GST-3B',
       documents,
       firmName: firm_name || 'Our CA Firm',

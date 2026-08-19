@@ -20,6 +20,8 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
   // Form State for Requesting Documents
   const [formClientId, setFormClientId] = useState('');
+  const [manualClientName, setManualClientName] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
   const [formComplianceType, setFormComplianceType] = useState('GST-3B');
   const [docListInputs, setDocListInputs] = useState<string[]>([
     'Bank Statement (Last 6 Months)',
@@ -80,7 +82,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
   const handleSendDocRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     const validDocs = docListInputs.filter((d) => d.trim().length > 0);
-    if (!formClientId || validDocs.length === 0) return;
+    if ((!formClientId && !manualClientName && !manualPhone) || validDocs.length === 0) return;
 
     setSubmitting(true);
     try {
@@ -90,6 +92,8 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
         body: JSON.stringify({
           business_id: businessId,
           client_id: formClientId,
+          client_name: manualClientName,
+          phone: manualPhone,
           compliance_type: formComplianceType,
           documents: validDocs,
           firm_name: businessName,
@@ -101,6 +105,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
         setActionMessage(`🚀 Document checklist dispatched via WhatsApp for ${validDocs.length} items!`);
         setTimeout(() => setActionMessage(null), 5000);
         fetchDocuments();
+        fetchClients();
       }
     } catch (err) {
       console.error('Error sending doc request:', err);
@@ -382,31 +387,50 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
             </div>
 
             <form onSubmit={handleSendDocRequest} className="space-y-4 text-sm">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Select Client *</label>
-                {clients.length > 0 ? (
+              {clients.length > 0 ? (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Select Registered Client</label>
                   <select
                     value={formClientId}
                     onChange={(e) => setFormClientId(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white mb-2"
                   >
+                    <option value="">-- Or enter new client below --</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.client_name} ({c.phone})
                       </option>
                     ))}
                   </select>
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter Client ID or Phone"
-                    value={formClientId}
-                    onChange={(e) => setFormClientId(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                )}
-              </div>
+                </div>
+              ) : null}
+
+              {!formClientId && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Client Name *</label>
+                    <input
+                      type="text"
+                      required={!formClientId}
+                      placeholder="e.g. Apex Enterprises"
+                      value={manualClientName}
+                      onChange={(e) => setManualClientName(e.target.value)}
+                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">WhatsApp Phone *</label>
+                    <input
+                      type="text"
+                      required={!formClientId}
+                      placeholder="919876543210"
+                      value={manualPhone}
+                      onChange={(e) => setManualPhone(e.target.value)}
+                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Compliance Area *</label>
