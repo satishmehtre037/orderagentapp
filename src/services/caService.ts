@@ -147,20 +147,30 @@ export async function handleCAClientQuery(
  * Processes incoming client media (PDFs, images, bank statements) uploaded via WhatsApp or Web
  */
 export async function processIncomingDocument(
-  client: CAClient,
+  client: Partial<CAClient> & { phone: string; client_name: string },
   media: { url?: string; mediaId?: string; mimeType?: string; filename?: string },
   firmName = 'Webcore CA & Advisory'
 ): Promise<{ text: string; matchedDoc?: CADocumentTracker }> {
   try {
-    // 1. Find the oldest pending document requested for this client
-    const { data: pendingDocs } = await supabase
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validBusinessId = client.business_id && uuidRegex.test(client.business_id) ? client.business_id : null;
+    const validClientId = client.id && uuidRegex.test(client.id) ? client.id : null;
+    const cleanPhone = normalizePhoneNumber(client.phone);
+
+    // 1. Find the oldest pending document requested for this client (by client_id or phone)
+    let query = supabase
       .from('ca_documents_tracker')
       .select('*')
-      .eq('client_id', client.id)
       .eq('status', 'Pending')
-      .order('requested_date', { ascending: true })
-      .limit(1);
+      .order('requested_date', { ascending: true });
 
+    if (validClientId) {
+      query = query.eq('client_id', validClientId);
+    } else if (cleanPhone) {
+      query = query.or(`phone.ilike.%${cleanPhone}%,phone.ilike.%${cleanPhone.slice(-10)}%`);
+    }
+
+    const { data: pendingDocs } = await query.limit(1);
     const matchedDoc = (pendingDocs && pendingDocs.length > 0) ? (pendingDocs[0] as CADocumentTracker) : undefined;
 
     const storageUrl = media.url || `https://wa-media-placeholder/${media.mediaId || Date.now()}`;
@@ -183,20 +193,22 @@ export async function processIncomingDocument(
       // Create a generic received document entry
       await supabase.from('ca_documents_tracker').insert([
         {
-          business_id: client.business_id,
-          client_id: client.id,
+          business_id: validBusinessId,
+          client_id: validClientId,
           client_name: client.client_name,
           phone: client.phone,
-          email: client.email,
+          email: client.email || null,
           compliance_type: 'General',
           document_name: media.filename || 'Submitted Document / Statement',
           status: 'Received',
           storage_url: storageUrl,
           received_date: new Date().toISOString(),
+          requested_date: new Date().toISOString(),
+          followup_count: 0,
         },
       ]);
 
-      const replyText = `Thank you ${client.client_name}, we have received your document! Our team will review it and get back to you if anything else is needed.`;
+      const replyText = `Thank you ${client.client_name}, we have received your document (*${media.filename || 'Attachment'}*)! Our team will review it and get back to you if anything else is needed.`;
       return { text: replyText };
     }
   } catch (err: any) {

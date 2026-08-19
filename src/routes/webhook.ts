@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ENV } from '../config/env';
+import { supabase } from '../config/supabase';
 import {
   getBusinessByWhatsappNumber,
   getBusinessConfigs,
@@ -179,22 +180,52 @@ router.post('/webhook', async (req: Request, res: Response) => {
       await saveConversationMessage(business.id, customerNumber, 'inbound', messageToSave);
 
       // Check if sender is a registered CA Client
-      const caClient = await findCAClient({ phone: customerNumber, businessId: business.id });
+      let caClient = await findCAClient({ phone: customerNumber, businessId: business.id });
+
+      if (isMediaDocument) {
+        if (!caClient) {
+          // Auto create client record for incoming document upload
+          const senderName = contactProfile?.profile?.name || `Client (${customerNumber.slice(-4)})`;
+          try {
+            const { data: newClient } = await supabase
+              .from('ca_clients')
+              .insert({
+                business_id: business.id,
+                client_name: senderName,
+                phone: customerNumber,
+                entity_type: 'Proprietorship',
+              })
+              .select()
+              .single();
+
+            caClient = newClient || ({
+              business_id: business.id,
+              client_name: senderName,
+              phone: customerNumber,
+              entity_type: 'Proprietorship',
+            } as any);
+          } catch (err: any) {
+            caClient = {
+              business_id: business.id,
+              client_name: senderName,
+              phone: customerNumber,
+              entity_type: 'Proprietorship',
+            } as any;
+          }
+        }
+
+        const docRes = await processIncomingDocument(caClient!, mediaPayload, business.name);
+        await sendMessage(customerNumber, business.whatsapp_number, docRes.text);
+        await saveConversationMessage(business.id, customerNumber, 'outbound', docRes.text);
+        return;
+      }
 
       if (caClient) {
-        if (isMediaDocument) {
-          // Known client + media -> Process document upload and acknowledge
-          const docRes = await processIncomingDocument(caClient, mediaPayload, business.name);
-          await sendMessage(customerNumber, business.whatsapp_number, docRes.text);
-          await saveConversationMessage(business.id, customerNumber, 'outbound', docRes.text);
-          return;
-        } else {
-          // Known client + text -> AI Support Agent with live compliance calendar & document context
-          const supportReply = await handleCAClientQuery(caClient, messageText, 'whatsapp', business.name);
-          await sendMessage(customerNumber, business.whatsapp_number, supportReply);
-          await saveConversationMessage(business.id, customerNumber, 'outbound', supportReply);
-          return;
-        }
+        // Known client + text -> AI Support Agent with live compliance calendar & document context
+        const supportReply = await handleCAClientQuery(caClient, messageText, 'whatsapp', business.name);
+        await sendMessage(customerNumber, business.whatsapp_number, supportReply);
+        await saveConversationMessage(business.id, customerNumber, 'outbound', supportReply);
+        return;
       } else {
         // Unknown sender -> Lead Qualification Agent & Classification
         const leadRes = await handleCALeadInquiry(
