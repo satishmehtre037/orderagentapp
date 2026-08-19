@@ -51,9 +51,6 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
       const data = await res.json();
       if (data.clients) {
         setClients(data.clients);
-        if (data.clients.length > 0 && !formClientId) {
-          setFormClientId(data.clients[0].id);
-        }
       }
     } catch (err) {
       console.error('Failed to fetch clients:', err);
@@ -81,8 +78,12 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
   const handleSendDocRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    const finalName = manualClientName.trim();
+    const finalPhone = manualPhone.trim();
+
+    if (!finalName || !finalPhone) return;
     const validDocs = docListInputs.filter((d) => d.trim().length > 0);
-    if ((!formClientId && !manualClientName && !manualPhone) || validDocs.length === 0) return;
+    if (validDocs.length === 0) return;
 
     setSubmitting(true);
     try {
@@ -91,19 +92,21 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           business_id: businessId,
-          client_id: formClientId,
-          client_name: manualClientName,
-          phone: manualPhone,
-          compliance_type: formComplianceType,
-          documents: validDocs,
-          firm_name: businessName,
+          clientId: formClientId || undefined,
+          clientName: finalName,
+          phone: finalPhone,
+          complianceType: formComplianceType,
+          documentsList: validDocs,
         }),
       });
 
       if (res.ok) {
-        setIsRequestModalOpen(false);
-        setActionMessage(`🚀 Document checklist dispatched via WhatsApp for ${validDocs.length} items!`);
+        setActionMessage(`🚀 WhatsApp document checklist sent to ${finalName}!`);
         setTimeout(() => setActionMessage(null), 5000);
+        setIsRequestModalOpen(false);
+        setManualClientName('');
+        setManualPhone('');
+        setFormClientId('');
         fetchDocuments();
         fetchClients();
       }
@@ -170,25 +173,25 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
   const getStatusBadge = (status: CADocStatus) => {
     if (status === 'Verified') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
           <CheckCircle2 className="w-3 h-3" /> Verified
         </span>
       );
     } else if (status === 'Received') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 animate-pulse">
-          <FileText className="w-3 h-3" /> Received (Pending Review)
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60 animate-pulse">
+          <FileText className="w-3 h-3" /> Received (Need Review)
         </span>
       );
     } else if (status === 'Rejected') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60">
           <XCircle className="w-3 h-3" /> Rejected
         </span>
       );
     } else {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
           <Clock className="w-3 h-3" /> Requested (Pending)
         </span>
       );
@@ -199,7 +202,8 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
     const matchesSearch =
       doc.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.document_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.compliance_type.toLowerCase().includes(searchQuery.toLowerCase());
+      doc.compliance_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.phone.includes(searchQuery);
 
     const matchesStatus = statusFilter === 'All' || doc.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -212,14 +216,14 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 dark:from-slate-950 dark:via-indigo-950/80 dark:to-slate-950 text-white p-6 rounded-2xl shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-1">
-            <FileText className="w-4 h-4" /> Document Tracker & Media Inbox
+            <FileText className="w-4 h-4" /> Client Document Automation & Review
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Client Document Inbox</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Document Chasing Tracker</h2>
           <p className="text-slate-300 text-sm mt-0.5">
-            Auto-matches inbound WhatsApp PDF uploads, statement receipts, and 3-day chasing reminders.
+            Auto-dispatches tailored WhatsApp checklists and matches incoming client attachments.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -230,8 +234,11 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
           <button
-            onClick={() => setIsRequestModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl shadow transition"
+            onClick={() => {
+              fetchClients();
+              setIsRequestModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-600/30 transition"
           >
             <Plus className="w-4 h-4" /> Request Documents
           </button>
@@ -239,83 +246,83 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
       </div>
 
       {actionMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium rounded-xl flex items-center justify-between shadow-sm">
+        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm font-medium rounded-xl flex items-center justify-between shadow-sm">
           <span>{actionMessage}</span>
-          <button onClick={() => setActionMessage(null)} className="text-emerald-600 hover:text-emerald-900 text-xs font-bold">Dismiss</button>
+          <button onClick={() => setActionMessage(null)} className="text-emerald-600 dark:text-emerald-400 hover:underline text-xs font-bold">Dismiss</button>
         </div>
       )}
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Awaiting Client Upload</p>
-            <h3 className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</h3>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Awaiting Client Upload</p>
+            <h3 className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{pendingCount}</h3>
           </div>
-          <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 border border-amber-100">
+          <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/40 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800/60">
             <Clock className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Received (Need Review)</p>
-            <h3 className="text-2xl font-bold text-blue-600 mt-1">{receivedCount}</h3>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Received (Need Review)</p>
+            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{receivedCount}</h3>
           </div>
-          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 border border-blue-100">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/60">
             <FileText className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Verified Documents</p>
-            <h3 className="text-2xl font-bold text-emerald-600 mt-1">{verifiedCount}</h3>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Verified Documents</p>
+            <h3 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{verifiedCount}</h3>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 border border-emerald-100">
+          <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/60">
             <CheckCircle2 className="w-6 h-6" />
           </div>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 transition-colors">
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search client, document, or type..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none"
+          className="px-3 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none"
         >
           <option value="All">All Statuses</option>
           <option value="Pending">Pending (Requested)</option>
-          <option value="Received">Received</option>
+          <option value="Received">Received (Need Review)</option>
           <option value="Verified">Verified</option>
           <option value="Rejected">Rejected</option>
         </select>
       </div>
 
       {/* Document List Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         {loading ? (
-          <div className="p-12 text-center text-slate-400">
+          <div className="p-12 text-center text-slate-400 dark:text-slate-500">
             <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-indigo-500" />
             <p className="text-sm">Loading document tracker...</p>
           </div>
         ) : filteredDocs.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">
-            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h4 className="text-base font-semibold text-slate-700">No document records found</h4>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+          <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+            <FileText className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+            <h4 className="text-base font-semibold text-slate-700 dark:text-slate-200">No document records found</h4>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
               Request documents from clients to track pending uploads and auto-chasing reminders.
             </p>
           </div>
@@ -323,7 +330,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-950/60 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Client Name</th>
                   <th className="py-3.5 px-4">Document Requested</th>
                   <th className="py-3.5 px-4">Compliance Area</th>
@@ -332,43 +339,43 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-sm text-slate-700 dark:text-slate-200">
                 {filteredDocs.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-slate-50/50 transition">
-                    <td className="py-3.5 px-4 font-medium text-slate-900">
+                  <tr key={doc.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-slate-100">
                       <div>{doc.client_name}</div>
-                      <div className="text-xs text-slate-400 font-normal">{doc.phone}</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 font-normal">{doc.phone}</div>
                     </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-800">
+                    <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">
                       <div className="flex items-center gap-1.5">
-                        <FileText className="w-4 h-4 text-slate-400" />
+                        <FileText className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                         {doc.document_name}
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/60">
                         {doc.compliance_type}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
                       {getStatusBadge(doc.status)}
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-slate-500">
+                    <td className="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">
                       <div>Req: {new Date(doc.requested_date).toLocaleDateString('en-IN')}</div>
                       {doc.received_date && (
-                        <div className="text-emerald-600 font-semibold text-[11px]">
+                        <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">
                           Rec: {new Date(doc.received_date).toLocaleDateString('en-IN')}
                         </div>
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         {doc.storage_url && (
                           <a
                             href={doc.storage_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition"
+                            className="p-1 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition"
                             title="View / Download Document"
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -379,7 +386,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                           <>
                             <button
                               onClick={() => handleUpdateStatus(doc.id, 'Verified')}
-                              className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
+                              className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 rounded-lg transition"
                             >
                               Verify
                             </button>
@@ -388,7 +395,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                                 setRejectionModalDoc(doc);
                                 setRejectionReason('Unclear scan or missing pages. Please re-upload a clear copy.');
                               }}
-                              className="px-2.5 py-1 text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg transition"
+                              className="px-2.5 py-1 text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 rounded-lg transition"
                             >
                               Reject
                             </button>
@@ -396,15 +403,15 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                         )}
 
                         {doc.status === 'Pending' && (
-                          <span className="text-xs text-slate-400 font-mono">
-                            {doc.followup_count || 0} nudges sent
+                          <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                            {doc.followup_count || 0} nudges
                           </span>
                         )}
 
                         <button
                           onClick={() => handleDeleteDocument(doc.id)}
                           title="Delete this document record"
-                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -420,13 +427,13 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
       {/* Request Documents Modal */}
       {isRequestModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900">Request Client Documents</h3>
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-lg shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto text-slate-900 dark:text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Request Client Documents</h3>
               <button
                 onClick={() => setIsRequestModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold"
               >
                 ✕
               </button>
@@ -434,7 +441,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
             <form onSubmit={handleSendDocRequest} className="space-y-4 text-sm">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
                   Select Client {clients.length > 0 ? `(${clients.length} available)` : ''}
                 </label>
                 <select
@@ -451,7 +458,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                       setManualPhone('');
                     }
                   }}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white mb-2 text-sm"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2 text-sm"
                 >
                   <option value="">-- Choose from Registered Clients & Leads --</option>
                   {clients.map((c) => (
@@ -464,53 +471,57 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Client Name *</label>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Client Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Apex Enterprises"
                     value={manualClientName}
                     onChange={(e) => setManualClientName(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">WhatsApp Phone *</label>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">WhatsApp Phone *</label>
                   <input
                     type="text"
                     required
                     placeholder="919876543210"
                     value={manualPhone}
                     onChange={(e) => setManualPhone(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Compliance Area *</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Compliance Area *</label>
                 <select
                   value={formComplianceType}
                   onChange={(e) => setFormComplianceType(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="GST-3B">GST-3B Filing</option>
-                  <option value="GST-GSTR1">GST-GSTR1 Filing</option>
-                  <option value="ITR-Individual">Income Tax Return (ITR)</option>
-                  <option value="ITR-Corporate">Corporate Tax Audit</option>
-                  <option value="TDS-Return">TDS Return</option>
-                  <option value="ROC-Annual">ROC Annual Compliance</option>
-                  <option value="General">General Documentation</option>
+                  <option value="GSTR-1">GSTR-1 Outward Supply</option>
+                  <option value="ITR-1">ITR-1 (Salaried)</option>
+                  <option value="ITR-4">ITR-4 (Presumptive)</option>
+                  <option value="ITR-6">ITR-6 (Corporate)</option>
+                  <option value="Tax-Audit">Tax Audit (Sec 44AB)</option>
+                  <option value="ROC-Filing">ROC Annual Filing</option>
+                  <option value="GST-Registration">GST Registration</option>
+                  <option value="Company-Incorporation">Company Incorporation</option>
                 </select>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-600">Document Checklist Items *</label>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Document Checklist Items *
+                  </label>
                   <button
                     type="button"
                     onClick={handleAddDocInput}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
                   >
                     + Add Item
                   </button>
@@ -521,16 +532,16 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                       <input
                         type="text"
                         required
-                        placeholder={`e.g. Bank Statement #${idx + 1}`}
                         value={doc}
                         onChange={(e) => handleDocInputChange(idx, e.target.value)}
-                        className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="e.g. Bank Statement (6 Months)"
+                        className="flex-1 px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
                       />
                       {docListInputs.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveDocInput(idx)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                          className="p-2 text-slate-400 hover:text-rose-500 transition"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -540,7 +551,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                 </div>
               </div>
 
-              <div className="p-3 bg-indigo-50 rounded-xl text-xs text-indigo-800 border border-indigo-100">
+              <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl text-xs text-indigo-800 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800/60">
                 💡 <b>AI Automation:</b> Submitting this will automatically draft a polite WhatsApp checklist message and send it directly to the client&apos;s phone.
               </div>
 
@@ -548,14 +559,14 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                 <button
                   type="button"
                   onClick={() => setIsRequestModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition"
+                  className="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition disabled:opacity-50 flex items-center gap-1.5"
                 >
                   <Send className="w-3.5 h-3.5" />
                   {submitting ? 'Dispatching...' : 'Dispatch Request'}
@@ -568,18 +579,18 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
       {/* Rejection Reason Modal */}
       {rejectionModalDoc && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 text-slate-900 dark:text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Reject & Request Re-upload</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Reject & Request Re-upload</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {rejectionModalDoc.client_name} • {rejectionModalDoc.document_name}
                 </p>
               </div>
               <button
                 onClick={() => setRejectionModalDoc(null)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold"
               >
                 ✕
               </button>
@@ -587,7 +598,7 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
 
             <form onSubmit={handleConfirmReject} className="space-y-4 text-sm">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
                   Select or Enter Rejection Reason:
                 </label>
                 <div className="space-y-2 mb-3">
@@ -603,8 +614,8 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                       onClick={() => setRejectionReason(presetReason)}
                       className={`w-full text-left p-2.5 rounded-xl text-xs border transition ${
                         rejectionReason === presetReason
-                          ? 'border-rose-300 bg-rose-50/60 text-rose-800 font-medium'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                          ? 'border-rose-300 dark:border-rose-700 bg-rose-50/60 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 font-medium'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40'
                       }`}
                     >
                       {presetReason}
@@ -617,11 +628,11 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="Custom rejection reason..."
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
 
-              <div className="p-3 bg-rose-50 rounded-xl text-xs text-rose-800 border border-rose-100">
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl text-xs text-rose-800 dark:text-rose-300 border border-rose-100 dark:border-rose-800/60">
                 📲 <b>WhatsApp Alert:</b> Submitting will automatically send a prompt to the client explaining why the document was rejected and asking them to reply directly with a replacement file.
               </div>
 
@@ -629,13 +640,13 @@ export default function CADocumentsTab({ businessId, businessName }: CADocuments
                 <button
                   type="button"
                   onClick={() => setRejectionModalDoc(null)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition text-xs"
+                  className="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow transition flex items-center gap-1.5 text-xs"
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-rose-600/30 transition flex items-center gap-1.5 text-xs"
                 >
                   <Send className="w-3.5 h-3.5" />
                   Confirm Reject & Notify

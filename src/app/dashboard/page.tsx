@@ -625,48 +625,72 @@ export default function DashboardPage() {
               onClick={() => setActiveTab('ca_compliance')}
               className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
                 activeTab === 'ca_compliance'
-                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Calendar className="w-5 h-5 mb-0.5" />
-              <span className="text-[10px] tracking-tight font-medium">Calendar</span>
+              <Calendar className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Tax</span>
             </button>
 
             <button
               onClick={() => setActiveTab('ca_documents')}
               className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
                 activeTab === 'ca_documents'
-                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <FileText className="w-5 h-5 mb-0.5" />
-              <span className="text-[10px] tracking-tight font-medium">Docs</span>
+              <FileText className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Docs</span>
             </button>
 
             <button
               onClick={() => setActiveTab('ca_leads')}
               className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
                 activeTab === 'ca_leads'
-                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  ? 'text-rose-600 dark:text-rose-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Users className="w-5 h-5 mb-0.5" />
-              <span className="text-[10px] tracking-tight font-medium">Leads</span>
+              <Users className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Leads</span>
             </button>
 
             <button
               onClick={() => setActiveTab('ca_automation')}
               className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
                 activeTab === 'ca_automation'
+                  ? 'text-emerald-600 dark:text-emerald-400 font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Bot className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Cron</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('conversations')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'conversations'
                   ? 'text-slate-950 dark:text-white font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Bot className="w-5 h-5 mb-0.5" />
-              <span className="text-[10px] tracking-tight font-medium">Cron</span>
+              <MessageSquare className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Chats</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+                activeTab === 'billing'
+                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <CreditCard className="w-4 h-4 mb-0.5" />
+              <span className="text-[9px] tracking-tight font-medium">Billing</span>
             </button>
           </>
         ) : (
