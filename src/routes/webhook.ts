@@ -249,6 +249,54 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const messageToSave = isVoiceNote ? `🎙️ [Voice Note]: ${messageText}` : messageText;
     await saveConversationMessage(business.id, customerNumber, 'inbound', messageToSave);
 
+    // 3b. Automatic Patient Feedback Rating Handler (Hospital & Clinic)
+    const isHospitalOrClinic = effectiveCategory === 'hospital' || effectiveCategory === 'clinic';
+    const ratingMatch = messageText.trim().match(/^([1-5])(\s*(star|stars|\/5|\.0)?)?$/i);
+
+    if (isHospitalOrClinic && ratingMatch) {
+      const numericRating = parseInt(ratingMatch[1], 10);
+      console.log(`[Webhook Pipeline] ⭐ Patient feedback rating detected (${numericRating}/5) for business ${business.id}`);
+
+      // Fetch patient name and recent doctor if available
+      const { data: recentAppt } = await supabase
+        .from('hospital_appointments')
+        .select('id, patient_name, doctor_name, patient_phone')
+        .eq('business_id', business.id)
+        .eq('patient_phone', customerNumber)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const patientName = recentAppt?.patient_name || contactProfile?.profile?.name || 'Patient';
+      const doctorName = recentAppt?.doctor_name || 'Attending Physician';
+      const isUnhappy = numericRating <= 3;
+
+      // Insert into hospital_feedback table
+      await supabase.from('hospital_feedback').insert([{
+        business_id: business.id,
+        appointment_id: recentAppt?.id || null,
+        patient_name: patientName,
+        patient_phone: customerNumber,
+        doctor_name: doctorName,
+        rating: numericRating,
+        status: isUnhappy ? 'escalated' : 'responded',
+        google_review_requested: !isUnhappy,
+        apology_sent: isUnhappy,
+        responded_at: new Date().toISOString(),
+      }]);
+
+      let feedbackReply = '';
+      if (isUnhappy) {
+        feedbackReply = `🙏 *We Sincerely Apologize*\n\nNamaste ${patientName} ji,\n\nWe are sorry to hear that your experience did not meet expectations (${numericRating}/5 ⭐).\n\nOur patient care supervisor has been notified and will reach out to resolve your concern. You may also reply directly with any details.`;
+      } else {
+        feedbackReply = `⭐ *Thank You For Your ${numericRating}-Star Rating!*\n\nNamaste ${patientName} ji,\n\nWe are delighted to know you had a positive consultation with *Dr. ${doctorName}* (${numericRating}/5 ⭐)!\n\nYour feedback helps us continuously deliver 5-star medical care. Stay healthy and take care!`;
+      }
+
+      await sendMessage(customerNumber, business.whatsapp_number, feedbackReply);
+      await saveConversationMessage(business.id, customerNumber, 'outbound', feedbackReply);
+      return;
+    }
+
     // 4. Fetch past conversation history (last 4 messages to avoid stale context loops)
     const history = await getRecentConversations(business.id, customerNumber, 4);
 
