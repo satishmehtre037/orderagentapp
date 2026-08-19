@@ -769,9 +769,11 @@ export default function LeadHunterPage() {
 
             {/* Right Main Chat Window */}
             <div className="flex-1 flex flex-col bg-slate-950">
-              {chatThreads.find((t) => t.phone === selectedThreadPhone) ? (
+              {chatThreads.find((t) => t.phone.replace(/\D/g, '') === (selectedThreadPhone || '').replace(/\D/g, '')) ? (
                 (() => {
-                  const currentThread = chatThreads.find((t) => t.phone === selectedThreadPhone)!;
+                  const currentThread = chatThreads.find(
+                    (t) => t.phone.replace(/\D/g, '') === (selectedThreadPhone || '').replace(/\D/g, '')
+                  )!;
                   return (
                     <>
                       {/* Chat Header */}

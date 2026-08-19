@@ -80,9 +80,16 @@ router.post('/webhook', async (req: Request, res: Response) => {
     let isMediaDocument = false;
     let mediaPayload: { mediaId?: string; mimeType?: string; filename?: string } = {};
 
-    // Handle Text Messages vs WhatsApp Voice Notes vs Documents/Images
+    // Handle Text Messages vs Interactive Button Clicks vs WhatsApp Voice Notes vs Documents/Images
     if (message.type === 'text') {
       messageText = message.text?.body || '';
+    } else if (message.type === 'interactive') {
+      const buttonReply = message.interactive?.button_reply;
+      const listReply = message.interactive?.list_reply;
+      messageText = buttonReply?.title || buttonReply?.id || listReply?.title || listReply?.id || '[Interactive Click]';
+      console.log(`[Webhook] 🔘 Interactive Button Click: "${messageText}" (ID: ${buttonReply?.id || listReply?.id})`);
+    } else if (message.type === 'button') {
+      messageText = message.button?.text || message.button?.payload || '[Button Click]';
     } else if (message.type === 'audio' || message.type === 'voice') {
       const audioObj = message.audio || message.voice;
       const mediaId = audioObj?.id;
@@ -124,25 +131,44 @@ router.post('/webhook', async (req: Request, res: Response) => {
     }
 
     console.log(`\n======================================================`);
-    console.log(`[Webhook] 📥 INCOMING MESSAGE RECEIVED ${isVoiceNote ? '(🎙️ Voice Note)' : isMediaDocument ? '(📄 Document/Image)' : '(💬 Text)'}`);
+    console.log(`[Webhook] 📥 INCOMING MESSAGE RECEIVED ${isVoiceNote ? '(🎙️ Voice Note)' : isMediaDocument ? '(📄 Document/Image)' : '(💬 Text / Button)'}`);
     console.log(`[Webhook] Business Number: ${businessNumber}`);
     console.log(`[Webhook] Customer Number: ${customerNumber}`);
     console.log(`[Webhook] Message Content: "${messageText}"`);
     console.log(`======================================================`);
 
     // --------------------------------------------------------------------------
-    // 0. LEAD HUNTER & GENERAL INBOUND NOTIFIER (Alert Satish on WhatsApp for ANY message)
+    // 0. LEAD HUNTER & GENERAL INBOUND NOTIFIER (Save to Ledger & Alert Satish)
     // --------------------------------------------------------------------------
     const cleanSender = customerNumber.replace(/\D/g, '');
     const isSatishSelf = cleanSender === '918779841346' || cleanSender === '8779841346';
 
+    // Always save every inbound message into the conversations table for the live chat inbox
+    try {
+      let bizId: string | null = null;
+      const { data: bList } = await supabase.from('businesses').select('id').limit(1);
+      if (bList && bList.length > 0) bizId = bList[0].id;
+      if (bizId) {
+        await supabase.from('conversations').insert({
+          business_id: bizId,
+          customer_number: customerNumber,
+          message_text: messageText,
+          message_direction: 'inbound',
+        });
+      }
+    } catch (saveErr) {
+      console.warn('[Webhook Convo Save Error]:', saveErr);
+    }
+
     if (!isSatishSelf) {
       console.log(`[Webhook 📥 INBOUND ALERT] Received message from ${customerNumber}: "${messageText}". Dispatching real-time notification to Satish (+918779841346)...`);
       
-      const isPositive = /(yes|interested|demo|call me|tell me|cost|price|pricing|batao|haan|ready|need website|need app|sure|connect|schedule|karna hai)/i.test(messageText);
-      const alertHeader = isPositive ? `🔥 *HOT CLIENT LEAD ALERT! (WebCore Studios)* 🔥` : `💬 *NEW INBOUND CLIENT REPLY! (WebCore Studios)* 💬`;
+      const isPositive = /(yes|interested|demo|show demo|call me|tell me|cost|price|pricing|batao|haan|ready|need website|need app|sure|connect|schedule|karna hai|btn_show_demo|btn_pricing)/i.test(messageText);
+      const isNegative = /(not now|not interested|no|stop|nahi|btn_not_now)/i.test(messageText);
       
-      const adminAlertText = `${alertHeader}\n\n👤 *From*: ${contactProfile?.name || 'Prospect / Client'}\n📱 *Phone*: ${customerNumber}\n💬 *Message*: "${messageText}"\n⏰ *Time*: ${new Date().toLocaleTimeString('en-IN')}\n\n👉 *Click to Reply Instantly*:\nhttps://wa.me/${cleanSender}`;
+      const alertHeader = isPositive ? `🔥 *HOT CLIENT LEAD ALERT! (WebCore Studios)* 🔥` : isNegative ? `ℹ️ *Prospect Tapped "Not Now"*` : `💬 *NEW INBOUND CLIENT REPLY! (WebCore Studios)* 💬`;
+      
+      const adminAlertText = `${alertHeader}\n\n👤 *From*: ${contactProfile?.name || 'Prospect / Client'}\n📱 *Phone*: ${customerNumber}\n💬 *Message*: "${messageText}"\n⏰ *Time*: ${new Date().toLocaleTimeString('en-IN')}\n\n👉 *Click to Reply / Call Instantly*:\nhttps://wa.me/${cleanSender}`;
       
       // Dispatch alert directly to Satish's WhatsApp
       try {
@@ -151,13 +177,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
         console.error('[Webhook Admin Notification Error]:', alertErr);
       }
 
-      // If positive intent, send instant warm auto-reply
+      // If positive intent, send instant warm greeting & commitment to connect ASAP
       if (isPositive) {
-        const prospectConfirmText = `Namaste! 🙏 Thank you for reaching out.\n\nOur Solutions Architect (*Satish from WebCore Studios*) has received your message and will connect with you within 15 minutes to share your custom interactive demo & free 3-day pilot setup!\n\nFeel free to share any specific requirements in the meantime.`;
+        const prospectConfirmText = `🙏 *Namaste! Thank you for showing interest in WebCore Studios.*\n\nOur Solutions Architect (*Satish Mehtre*) has received your response and will personally connect with you within *15 to 30 minutes* with your live custom demo & pricing!\n\nIf you need immediate assistance or want to talk right now, feel free to call or WhatsApp us anytime at *+91 87798 41346*. 🚀`;
         try {
           await sendMessage(customerNumber, businessNumber, prospectConfirmText);
         } catch (replyErr) {
           console.error('[Webhook Prospect Confirm Error]:', replyErr);
+        }
+      } else if (isNegative) {
+        const declineAckText = `Understood! Thank you for your time. 🙏\n\nFeel free to reach out to WebCore Studios anytime if you plan to upgrade your website, mobile app, or WhatsApp AI automation. Have a wonderful day ahead!`;
+        try {
+          await sendMessage(customerNumber, businessNumber, declineAckText);
+        } catch (replyErr) {
+          console.error('[Webhook Prospect Decline Error]:', replyErr);
         }
       }
     }

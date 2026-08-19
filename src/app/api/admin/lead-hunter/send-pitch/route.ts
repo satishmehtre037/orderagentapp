@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendWhatsAppTextMessage } from '@/lib/whatsapp';
+import { sendWhatsAppTextMessage, sendWhatsAppInteractiveButtons } from '@/lib/whatsapp';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: Request) {
@@ -41,8 +41,16 @@ export async function POST(req: Request) {
 
     console.log(`[Lead Hunter Outreach] 📤 Dispatching pitch to ${businessName} (${cleanPhone})...`);
 
-    // Dispatch via live WhatsApp Cloud API
-    const waResult = await sendWhatsAppTextMessage(cleanPhone, pitchText);
+    // Dispatch via live WhatsApp Cloud API with interactive quick reply buttons
+    const waResult = await sendWhatsAppInteractiveButtons(
+      cleanPhone,
+      pitchText,
+      [
+        { id: 'btn_show_demo', title: '✅ Yes, Show Demo' },
+        { id: 'btn_pricing', title: '💰 Pricing & Cost?' },
+        { id: 'btn_not_now', title: '❌ Not Now' },
+      ]
+    );
 
     // Record outbound pitch in conversations ledger
     try {

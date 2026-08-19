@@ -1,4 +1,4 @@
-import { sendMessage } from '@/services/whatsappService';
+import { sendMessage, sendInteractiveButtonsMessage } from '@/services/whatsappService';
 
 export async function sendWhatsAppTextMessage(
   toNumber: string,
@@ -9,6 +9,20 @@ export async function sendWhatsAppTextMessage(
     await sendMessage(toNumber, businessNumber, message);
   } catch (error) {
     console.error('[WhatsApp Helper Error]:', error);
+  }
+}
+
+export async function sendWhatsAppInteractiveButtons(
+  toNumber: string,
+  bodyText: string,
+  buttons: Array<{ id: string; title: string }>,
+  businessNumber: string = '919876543210'
+): Promise<boolean> {
+  try {
+    return await sendInteractiveButtonsMessage(toNumber, businessNumber, bodyText, buttons);
+  } catch (error) {
+    console.error('[WhatsApp Interactive Buttons Error]:', error);
+    return false;
   }
 }
 
