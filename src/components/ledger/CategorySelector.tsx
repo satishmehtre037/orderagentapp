@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Sparkles,
   MessageSquare,
+  FileText,
 } from 'lucide-react';
 import { BusinessCategory } from '../../types';
 
@@ -199,6 +200,26 @@ const CATEGORIES: CategoryConfig[] = [
     previewGreeting: {
       text: '✨ *Welcome to Prime Realty Advisory!* ✨\n\nWe have premium 2BHK & 3BHK ready-to-move properties in prime locations. Would you like a brochure or book a site visit?',
       subtext: 'Captures buyer budget, preferred locations & books weekend site visits',
+    },
+  },
+  {
+    id: 'ca_firm',
+    title: 'CA & Tax Consulting',
+    icon: FileText,
+    description: 'GST, ITR, TDS, ROC, Audit & Advisory. AI answers tax queries, collects documents & automates filing deadlines.',
+    badge: 'Tax & Compliance',
+    accent: {
+      iconBg: 'bg-indigo-100 text-indigo-700',
+      iconText: 'text-indigo-700',
+      selectedBorder: 'border-indigo-600',
+      selectedRing: 'ring-indigo-500/20',
+      badgeBg: 'bg-indigo-50 border-indigo-200 text-indigo-800',
+      badgeText: 'text-indigo-700',
+    },
+    capabilities: ['📊 GST & ITR Filings', '📂 WhatsApp PDF Uploads', '⏰ 4x Autonomous Schedulers'],
+    previewGreeting: {
+      text: '✨ *Welcome to Apex Tax & Financial Advisors!* ✨\n\nI can assist you with your GST returns, ITR filings, document submissions, and compliance countdowns. How can I assist your firm today?',
+      subtext: 'Auto-scores hot leads, tracks compliance deadlines & follows up on missing client documents',
     },
   },
 ];

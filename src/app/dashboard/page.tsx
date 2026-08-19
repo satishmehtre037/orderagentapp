@@ -114,6 +114,12 @@ export default function DashboardPage() {
         }
         setIsBotPaused(resData.configs?.bot_paused === true || resData.configs?.bot_paused === 'true');
       } else {
+        // If user is authenticated with email, direct them straight to onboarding wizard
+        if (session?.user?.email) {
+          router.push('/onboarding');
+          return;
+        }
+
         setBusiness({
           id: 'demo-business-id',
           name: 'Demo Store',
@@ -261,6 +267,14 @@ export default function DashboardPage() {
               </span>
             </button>
 
+            <Link
+              href="/onboarding"
+              className="hidden lg:inline-flex items-center space-x-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 rounded-xl border border-indigo-300/50 dark:border-indigo-500/30 transition-all shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Register / Setup Firm</span>
+            </Link>
+
             <a
               href="https://web.whatsapp.com"
               target="_blank"
@@ -277,11 +291,27 @@ export default function DashboardPage() {
               className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 transition-all shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden sm:inline">Sign Out</span>
+              <span className="hidden sm:inline">Log out</span>
             </button>
           </div>
         </div>
       </header>
+
+      {/* Demo Store Notice Banner */}
+      {business?.id === 'demo-business-id' && (
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white px-4 py-3 text-xs sm:text-sm font-medium flex flex-col sm:flex-row items-center justify-between gap-2 shadow-md">
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0" />
+            <span>You are currently in Preview Mode. Register your Chartered Accountant (CA) firm to activate live WhatsApp automation!</span>
+          </div>
+          <Link
+            href="/onboarding"
+            className="px-3.5 py-1.5 bg-white text-indigo-700 font-bold rounded-xl shadow hover:bg-indigo-50 transition whitespace-nowrap text-xs"
+          >
+            Register My CA Firm →
+          </Link>
+        </div>
+      )}
 
       {/* Trial Expired Alert Banner */}
       {isTrialExpired && business?.subscription_status !== 'active' && (

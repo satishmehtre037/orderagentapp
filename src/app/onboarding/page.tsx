@@ -282,6 +282,8 @@ export default function OnboardingPage() {
                         ? 'Set up your Retail Product Catalog & Prices'
                         : selectedCategory === 'real_estate'
                         ? 'Set up your Property Configurations & Advisory'
+                        : selectedCategory === 'ca_firm'
+                        ? 'Set up your CA & Tax Filing Services & Fees'
                         : 'Set up your Service Catalog & Pricing'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">
@@ -297,6 +299,7 @@ export default function OnboardingPage() {
                   {selectedCategory === 'tuition' && <TuitionForm />}
                   {selectedCategory === 'retail' && <RetailForm />}
                   {selectedCategory === 'real_estate' && <RealEstateForm />}
+                  {selectedCategory === 'ca_firm' && <SalonForm />}
                   {selectedCategory === 'custom' && <SalonForm />}
                 </div>
               )}
