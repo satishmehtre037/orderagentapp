@@ -204,6 +204,11 @@ export async function DELETE(req: Request) {
 
     if (businessId && businessId !== 'all' && businessId !== 'demo-business-id') {
       // 1. Delete associated data for this specific business
+      await adminSupabase.from('ca_compliance_calendar').delete().eq('business_id', businessId);
+      await adminSupabase.from('ca_documents_tracker').delete().eq('business_id', businessId);
+      await adminSupabase.from('ca_leads').delete().eq('business_id', businessId);
+      await adminSupabase.from('ca_clients').delete().eq('business_id', businessId);
+      await adminSupabase.from('ca_query_logs').delete().eq('business_id', businessId);
       await adminSupabase.from('conversations').delete().eq('business_id', businessId);
       await adminSupabase.from('orders_bookings_leads').delete().eq('business_id', businessId);
       await adminSupabase.from('payment_events').delete().eq('business_id', businessId);
@@ -211,6 +216,11 @@ export async function DELETE(req: Request) {
       await adminSupabase.from('businesses').delete().eq('id', businessId);
     } else {
       // Clean everything from database
+      await adminSupabase.from('ca_compliance_calendar').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('ca_documents_tracker').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('ca_leads').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('ca_clients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await adminSupabase.from('ca_query_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await adminSupabase.from('conversations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await adminSupabase.from('orders_bookings_leads').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await adminSupabase.from('payment_events').delete().neq('id', '00000000-0000-0000-0000-000000000000');
