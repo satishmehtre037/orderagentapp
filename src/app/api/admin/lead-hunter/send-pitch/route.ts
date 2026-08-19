@@ -104,6 +104,9 @@ export async function POST(req: Request) {
 /**
  * Builds high-converting multi-service pitches tailored for WebCore Studios
  */
+/**
+ * Builds high-converting multi-service pitches tailored for WebCore Studios
+ */
 function buildPersonalizedPitch(
   businessName: string,
   category: string,
@@ -111,83 +114,59 @@ function buildPersonalizedPitch(
   pitchType: string,
   senderName: string
 ): string {
+  const cat = (category || '').toLowerCase();
+  const name = businessName;
+  const isCA =
+    cat.includes('ca') ||
+    cat.includes('tax') ||
+    cat.includes('audit') ||
+    cat.includes('accountant') ||
+    name.toLowerCase().includes('ca ') ||
+    name.toLowerCase().includes('accountant') ||
+    name.toLowerCase().includes('gst');
+  const isHospital = cat.includes('hospital') || name.toLowerCase().includes('hospital');
+  const isSalon = cat.includes('salon') || cat.includes('spa') || cat.includes('beauty') || name.toLowerCase().includes('salon');
+
   switch (pitchType) {
     case 'all_in_one':
-      // Multi-service: Web App + Android App + WhatsApp AI + SEO
-      if (category === 'hospital' || category === 'clinic') {
-        return `Namaste Dr. / Team *${businessName}* 🙏
-
-I noticed your clinic in ${city} and saw your patient reviews!
-
-I am ${senderName}. We specialize in complete digital & AI tech solutions for healthcare centers:
-
-🚀 *What We Build for You:*
-1. 🩺 *24/7 WhatsApp AI Receptionist* — Issues automated OPD queue tokens & confirms appointments.
-2. 📱 *Custom Android & Web App* — Fast patient portal, doctor schedules & online booking.
-3. ⭐ *Google Maps Local SEO* — Automates 5-star Google review collection to rank your clinic #1 in ${city}.
-4. ⚡ *Ultra-Fast Modern Website* — Mobile-responsive with direct WhatsApp consultation CTAs.
-
-Would you be open to a quick 2-minute live demo on WhatsApp? I can set up a free 3-day pilot on your clinic number!`;
-      } else if (category === 'ca_firm') {
-        return `Namaste Team *${businessName}* (Chartered Accountants) 🙏
-
-I am ${senderName}. We build custom full-stack software and automation suites for top CA & Tax firms in ${city}.
-
-💼 *What We Deliver for Your Firm:*
-1. 📊 *WhatsApp Client Vault* — Automatically pings clients before GST/ITR deadlines and collects tax invoices on WhatsApp.
-2. 🌐 *Custom Web Portal & Android App* — Secure client login, document tracker, and billing ledger.
-3. ⭐ *Google Business SEO* — Boosts your firm's visibility for corporate and NRI clients in ${city}.
-
-Can I share a 45-second interactive preview video showing how it automates tax document collection?`;
+      if (isCA) {
+        return `Namaste Team *${name}* (Chartered Accountants)! 📊\n\nI am ${senderName}. We build custom client automation & secure tech suites for top CA firms in ${city}:\n\n1️⃣ *Modern CA Firm Portal & Mobile App* (Secure client login & ITR tracker)\n2️⃣ *24/7 WhatsApp AI Tax Assistant* (Instant answers to client compliance queries)\n3️⃣ *Automated Document Collection Vault* (Auto-collects GST bills on WhatsApp)\n4️⃣ *Proactive GST/ITR Deadline Reminders* (Zero manual client follow-ups)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
+      } else if (isHospital) {
+        return `Namaste Team *${name}*! 🏥\n\nI am ${senderName}. We deliver full-stack hospital digitization & AI reception suites in ${city}:\n\n1️⃣ *Modern Hospital Web Portal & Android App* (Multi-specialty doctor schedule)\n2️⃣ *24/7 WhatsApp AI OPD Reception* (Auto token issue & bed inquiries)\n3️⃣ *Automated Lab Report Delivery on WhatsApp* (PDF dispatch to patients)\n4️⃣ *Google Maps Top #1 Healthcare Ranking* (5-star reviews engine)\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
+      } else if (isSalon) {
+        return `Hello Team *${name}*! ✂️\n\nI am ${senderName}. We provide complete technology and AI booking solutions for luxury salons in ${city}:\n\n1️⃣ *Modern Salon Web App & Android App* (Interactive style gallery & rates)\n2️⃣ *24/7 WhatsApp AI Appointment Booking* (Stylist slot allocation)\n3️⃣ *Automated 3-Week Re-engagement Campaigns* (Boosts repeat client visits)\n4️⃣ *Google Maps Top #1 Ranking & 5-Star Reviews Engine*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a live demo!`;
       } else {
-        return `Namaste Team *${businessName}* 🙏
-
-I am ${senderName}. We build custom high-speed tech suites for growing businesses in ${city}:
-
-🚀 *Our Core Services:*
-• 🌐 *Custom Websites & Full-Stack Web Apps* (Ultra-fast, Next.js / React)
-• 📱 *Native Android Mobile Apps* (Play Store ready)
-• 🤖 *24/7 WhatsApp AI Automation* (Auto-orders, bookings & customer replies)
-• 📈 *Local SEO & Google Maps Ranking* (Generate more 5-star reviews & leads)
-
-Would you like to see a quick 2-minute interactive demo tailored for *${businessName}*?`;
+        return `Namaste Dr. / Team *${name}*! 🩺\n\nI am ${senderName}. We provide complete modern technology solutions for healthcare centers in ${city}:\n\n1️⃣ *Modern Responsive Website* (Ultra-fast Next.js)\n2️⃣ *Native Android App* (Play Store ready patient portal)\n3️⃣ *24/7 AI WhatsApp Assistant* (Auto OPD & Booking tokens)\n4️⃣ *Google Maps SEO* (Top Local Rankings & 5-Star Reviews)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
       }
 
     case 'web_mobile':
-      return `Namaste Team *${businessName}* 🙏
-
-I am ${senderName}. We build high-performance, modern websites and native Android apps for businesses in ${city}.
-
-🌟 *Why Upgrade with Us:*
-• ⚡ 100% Mobile-optimized, blazing fast loading (< 1 sec)
-• 📱 Native Android app published on Google Play Store
-• 💬 Built-in direct WhatsApp chat & lead capture
-• 💳 Integrated online UPI / Razorpay payment gateway
-
-Can we share a modern design mockup tailored for *${businessName}* this week?`;
+      if (isCA) {
+        return `Namaste Team *${name}*! 🌐\n\nLegacy CA websites look outdated. We build high-authority *Client Portals & Mobile Apps* for Chartered Accountants in ${city}:\n\n🔒 *Secure Client Document Vault & ITR Tracker*\n⚡ *Ultra-Fast Next.js Firm Website* (< 1s load speed)\n📱 *Native Android Client App* on Google Play Store\n💳 *Integrated Online Invoicing & UPI Payments*\n\nCan I send you a custom design mockup for *${name}*? Reply *YES* to review!`;
+      } else if (isHospital) {
+        return `Namaste Team *${name}*! 🌐\n\nWe build lightning-fast *Patient Portals & Android Mobile Apps* for hospitals in ${city}:\n\n🚀 *Ultra-Fast Hospital Website* with instant WhatsApp appointment booking\n📱 *Native Android Patient App* (Doctor profiles, OPD booking & health records)\n💳 *Integrated Online Consultation & UPI Payment Gateway*\n\nCan I share a custom design mockup for *${name}*? Reply *YES* to see it!`;
+      } else {
+        return `Hello Team *${name}*! 👋\n\nWe build *Lightning-Fast Modern Websites & Android Apps* for businesses in ${city}:\n\n🚀 *Ultra-Fast Next.js High-Performance Website*\n📱 *Play Store Ready Native Android App*\n💳 *Integrated UPI & Online Payment Gateway*\n\nCan I send you a custom mockup for *${name}*? Reply *YES* to review!`;
+      }
 
     case 'whatsapp_ai':
-      return `Namaste Team *${businessName}* 🙏
-
-Did you know 35% of customer inquiries on WhatsApp are missed when your front desk is busy?
-
-We built a *24/7 WhatsApp AI Assistant* tailored for *${businessName}* that:
-✅ Instantly answers customer inquiries & shares menus/services
-✅ Books appointment slots / takes orders automatically 24/7
-✅ Collects customer feedback & Google ratings
-
-Can we activate a free 3-day test pilot on your number?`;
+      if (isCA) {
+        return `Namaste Team *${name}* (Chartered Accountants)! 💼\n\nStop spending hours manually chasing clients for GST invoices and ITR documents.\n\nWe build *24/7 WhatsApp AI Agents for CA & Tax Firms* in ${city} that:\n\n✅ *Auto-Collect Tax Docs*: Clients upload PAN, Form 16 & GST bills directly on WhatsApp\n✅ *Automated Deadline Reminders*: Smart proactive alerts before 20th GST & Advance Tax dates\n✅ *24/7 Tax Query Bot*: Answers client compliance & filing status queries instantly\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
+      } else if (isHospital) {
+        return `Namaste Team *${name}*! 🏥\n\nEliminate front-desk phone bottlenecks and patient wait times.\n\nWe build *24/7 WhatsApp AI Receptionists for Hospitals* in ${city} that:\n\n✅ *Instant OPD Token & Bed Inquiries*: Automated token issuance 24/7 on WhatsApp\n✅ *Doctor Scheduling*: Real-time OPD slot booking across all specialties\n✅ *Automated Lab Report Delivery*: Dispatches PDF lab reports directly to patient WhatsApp\n\nWould you like a quick 2-minute live demo on WhatsApp? Reply *YES* to test it!\n\nBest regards,\n${senderName}`;
+      } else if (isSalon) {
+        return `Hello Team *${name}*! ✂️\n\nStop losing appointments during busy styling hours when your staff is occupied.\n\nWe build *24/7 WhatsApp AI Booking Agents for Luxury Salons* in ${city} that:\n\n✅ *Instant Slot Booking*: Shows stylist availability & service menu 24/7\n✅ *Automated Client Re-engagement*: Proactively invites clients back for grooming every 3-4 weeks\n✅ *5-Star Review Engine*: Collects 5-star Google ratings after every visit\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
+      } else {
+        return `Namaste Dr. / Team *${name}*! 🩺\n\nI noticed your practice on Google Maps. We build *24/7 AI WhatsApp Assistants* for top doctors in ${city}.\n\n✅ *Auto-Book Consultations*: Patients book appointments 24/7 on WhatsApp\n✅ *Automated OPD Tokens*: Reduces clinic waiting room crowd by 40%\n✅ *Medicine & Follow-up Reminders*: Proactively reminds patients about checkups\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
+      }
 
     case 'local_seo':
-      return `Namaste Team *${businessName}* 🙏
-
-We noticed your Google Maps profile in ${city}! 
-
-We help local businesses rank in the **Top 3 on Google Maps** and automatically gather **50+ genuine 5-star reviews** every month via automated post-visit WhatsApp messages.
-
-Would you like a free 3-minute Google SEO audit for *${businessName}*?`;
+      if (isCA) {
+        return `Namaste Team *${name}*! 📍\n\nWe help Chartered Accountant & Tax consulting firms in ${city} rank *Top #1 on Google Maps* when corporate companies and HNIs search for "Best CA near me":\n\n⭐ *Automated 5-Star Google Reviews via WhatsApp*\n📍 *Google Business Profile Optimization & Audit*\n🔍 *Dominate Local Corporate Searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
+      } else {
+        return `Namaste Team *${name}*! 📍\n\nWe help businesses in ${city} rank *Top 3 on Google Maps* to generate 50+ new client inquiries every month:\n\n⭐ *5-Star Review Automation via WhatsApp*\n📍 *Google Business Profile Optimization*\n🔍 *Dominate local neighborhood searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
+      }
 
     default:
-      return `Namaste Team *${businessName}* 🙏\n\nI am ${senderName}. We build high-speed websites, Android apps, and 24/7 WhatsApp AI automation suites for businesses in ${city}.\n\nWould you be open to a quick 2-minute preview?`;
+      return `Namaste Team *${name}* 🙏\n\nI am ${senderName}. We build high-speed websites, Android apps, and 24/7 WhatsApp AI automation suites for businesses in ${city}.\n\nWould you be open to a quick 2-minute preview?`;
   }
 }
