@@ -49,6 +49,7 @@ import {
   UserPlus,
   Receipt,
   Zap,
+  Plus,
   BarChart3,
 } from 'lucide-react';
 
@@ -442,115 +443,115 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Desktop & Tablet Segmented Navigation Tabs */}
-        <div className="hidden sm:flex bg-slate-200/60 dark:bg-slate-800/80 p-1 rounded-xl items-center space-x-1 overflow-x-auto">
+        {/* Native Mobile & Desktop Horizontal Scrollable Tab Bar */}
+        <div className="flex bg-slate-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl items-center space-x-1.5 overflow-x-auto no-scrollbar shadow-inner backdrop-blur-md">
           {effectiveCategory === 'ca_firm' ? (
             <>
               <button
                 onClick={() => setActiveTab('ca_dashboard')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_dashboard'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <BarChart3 className="w-3.5 h-3.5 text-teal-500" />
+                <BarChart3 className="w-4 h-4 text-teal-500" />
                 <span>Dashboard</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_compliance')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_compliance'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                <Calendar className="w-4 h-4 text-indigo-500" />
                 <span>Compliance</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_documents')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_documents'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5 text-blue-500" />
+                <FileText className="w-4 h-4 text-blue-500" />
                 <span>Doc Hub</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_leads')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_leads'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Users className="w-3.5 h-3.5 text-rose-500" />
+                <Users className="w-4 h-4 text-rose-500" />
                 <span>Leads CRM</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_invoices')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_invoices'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Receipt className="w-3.5 h-3.5 text-amber-500" />
+                <Receipt className="w-4 h-4 text-amber-500" />
                 <span>Invoices & Fees</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_agent')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_agent'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Bot className="w-3.5 h-3.5 text-purple-500" />
+                <Bot className="w-4 h-4 text-purple-500" />
                 <span>AI Agent Desk</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ca_automation')}
-                className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'ca_automation'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                <Zap className="w-4 h-4 text-emerald-500" />
                 <span>Cron Engines</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('conversations')}
-                className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'conversations'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <MessageSquare className="w-4 h-4" />
                 <span>Chats</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('billing')}
-                className={`flex-1 min-w-[90px] py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center space-x-1.5 ${
+                className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
                   activeTab === 'billing'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-semibold'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold scale-[1.02]'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <CreditCard className="w-3.5 h-3.5" />
+                <CreditCard className="w-4 h-4" />
                 <span>Billing</span>
               </button>
             </>
@@ -705,80 +706,67 @@ export default function DashboardPage() {
         />
       </main>
 
-      {/* Mobile Native Bottom Navigation Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/85 dark:bg-slate-900/90 border-t border-slate-200/60 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-2 py-2 flex items-center justify-around pb-safe transition-colors duration-200">
+      {/* Mobile Native App Bottom Navigation Dock */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-slate-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.1)] px-3 py-1.5 flex items-center justify-between pb-safe transition-colors duration-200">
         {effectiveCategory === 'ca_firm' ? (
           <>
             <button
               onClick={() => setActiveTab('ca_dashboard')}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
                 activeTab === 'ca_dashboard'
                   ? 'text-teal-600 dark:text-teal-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <BarChart3 className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Home</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('ca_compliance')}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-                activeTab === 'ca_compliance'
-                  ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <Calendar className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Tax</span>
+              <BarChart3 className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Home</span>
             </button>
 
             <button
               onClick={() => setActiveTab('ca_documents')}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
                 activeTab === 'ca_documents'
                   ? 'text-blue-600 dark:text-blue-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <FileText className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Docs</span>
+              <FileText className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Docs</span>
+            </button>
+
+            {/* Floating Center Action Button: + Onboard Client */}
+            <button
+              onClick={() => setIsNewClientModalOpen(true)}
+              className="flex flex-col items-center justify-center -mt-5"
+            >
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-600 via-teal-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-500/30 border-2 border-white dark:border-slate-900 active:scale-95 transition-transform">
+                <Plus className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <span className="text-[9px] tracking-tight font-bold text-teal-600 dark:text-teal-400 mt-0.5">+ Client</span>
             </button>
 
             <button
               onClick={() => setActiveTab('ca_invoices')}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
                 activeTab === 'ca_invoices'
                   ? 'text-amber-600 dark:text-amber-400 font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Receipt className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Fees</span>
+              <Receipt className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Fees</span>
             </button>
 
             <button
               onClick={() => setActiveTab('conversations')}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
                 activeTab === 'conversations'
-                  ? 'text-slate-950 dark:text-white font-bold scale-105'
+                  ? 'text-slate-900 dark:text-white font-bold scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <MessageSquare className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Chats</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('billing')}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
-                activeTab === 'billing'
-                  ? 'text-slate-950 dark:text-white font-bold scale-105'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <CreditCard className="w-4 h-4 mb-0.5" />
-              <span className="text-[9px] tracking-tight font-medium">Billing</span>
+              <MessageSquare className="w-5 h-5 mb-0.5" />
+              <span className="text-[10px] tracking-tight font-medium">Chats</span>
             </button>
           </>
         ) : (
