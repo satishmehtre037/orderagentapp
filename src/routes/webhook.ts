@@ -131,28 +131,34 @@ router.post('/webhook', async (req: Request, res: Response) => {
     console.log(`======================================================`);
 
     // --------------------------------------------------------------------------
-    // 0. LEAD HUNTER PROSPECT INTENT INTERCEPTOR (Alert Satish on WhatsApp)
+    // 0. LEAD HUNTER & GENERAL INBOUND NOTIFIER (Alert Satish on WhatsApp for ANY message)
     // --------------------------------------------------------------------------
-    const isPositiveLeadIntent = /(yes|interested|demo|call me|tell me|cost|price|pricing|batao|haan|ready|need website|need app|sure|connect|schedule|karna hai)/i.test(messageText);
-    
-    if (isPositiveLeadIntent) {
-      console.log(`[Webhook 🔥 HOT LEAD DETECTED] Prospect ${customerNumber} replied: "${messageText}". Dispatching instant WhatsApp alert to Satish (+918779841346)...`);
+    const cleanSender = customerNumber.replace(/\D/g, '');
+    const isSatishSelf = cleanSender === '918779841346' || cleanSender === '8779841346';
+
+    if (!isSatishSelf) {
+      console.log(`[Webhook 📥 INBOUND ALERT] Received message from ${customerNumber}: "${messageText}". Dispatching real-time notification to Satish (+918779841346)...`);
       
-      const adminAlertText = `🔥 *HOT CLIENT LEAD ALERT! (WebCore Studios)* 🔥\n\n👤 *Prospect*: ${contactProfile?.name || 'Client Lead'}\n📱 *Phone*: ${customerNumber}\n💬 *Message*: "${messageText}"\n⏰ *Time*: ${new Date().toLocaleTimeString('en-IN')}\n\n👉 *Click to Chat & Close Client Instantly*:\nhttps://wa.me/${customerNumber.replace(/\D/g, '')}`;
+      const isPositive = /(yes|interested|demo|call me|tell me|cost|price|pricing|batao|haan|ready|need website|need app|sure|connect|schedule|karna hai)/i.test(messageText);
+      const alertHeader = isPositive ? `🔥 *HOT CLIENT LEAD ALERT! (WebCore Studios)* 🔥` : `💬 *NEW INBOUND CLIENT REPLY! (WebCore Studios)* 💬`;
       
-      // Dispatch alert to Satish's WhatsApp
+      const adminAlertText = `${alertHeader}\n\n👤 *From*: ${contactProfile?.name || 'Prospect / Client'}\n📱 *Phone*: ${customerNumber}\n💬 *Message*: "${messageText}"\n⏰ *Time*: ${new Date().toLocaleTimeString('en-IN')}\n\n👉 *Click to Reply Instantly*:\nhttps://wa.me/${cleanSender}`;
+      
+      // Dispatch alert directly to Satish's WhatsApp
       try {
         await sendMessage('918779841346', businessNumber, adminAlertText);
       } catch (alertErr) {
-        console.error('[Webhook Hot Lead Alert Error]:', alertErr);
+        console.error('[Webhook Admin Notification Error]:', alertErr);
       }
 
-      // Send warm instant confirmation to the interested client
-      const prospectConfirmText = `Namaste! 🙏 Thank you for reaching out.\n\nOur Solutions Architect (*Satish from WebCore Studios*) has received your request and will connect with you within 15 minutes to share your custom interactive demo & free 3-day pilot setup!\n\nFeel free to share any specific requirements you have in mind.`;
-      try {
-        await sendMessage(customerNumber, businessNumber, prospectConfirmText);
-      } catch (replyErr) {
-        console.error('[Webhook Prospect Confirm Error]:', replyErr);
+      // If positive intent, send instant warm auto-reply
+      if (isPositive) {
+        const prospectConfirmText = `Namaste! 🙏 Thank you for reaching out.\n\nOur Solutions Architect (*Satish from WebCore Studios*) has received your message and will connect with you within 15 minutes to share your custom interactive demo & free 3-day pilot setup!\n\nFeel free to share any specific requirements in the meantime.`;
+        try {
+          await sendMessage(customerNumber, businessNumber, prospectConfirmText);
+        } catch (replyErr) {
+          console.error('[Webhook Prospect Confirm Error]:', replyErr);
+        }
       }
     }
 
