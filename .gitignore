@@ -6,7 +6,6 @@ node_modules/
 .next/
 out/
 build/
-dist/
 
 # environment variables
 .env
