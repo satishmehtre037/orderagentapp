@@ -135,18 +135,33 @@ export async function PUT(req: Request) {
         .maybeSingle();
 
       if (bizErr) {
-        // The category CHECK constraint covers all 11 BusinessCategory values as
-        // of migration 20260828000000. It used to be narrower, and this handler
-        // responded by dropping the category from the update and reporting
-        // success — so the owner's choice silently never applied.
         console.error('[API Business Update Error]:', bizErr);
-        const message =
-          bizErr.code === '23505'
-            ? `The WhatsApp number ${whatsapp_number} is already registered to another business.`
-            : bizErr.message;
-        return NextResponse.json({ error: message }, { status: bizErr.code === '23505' ? 409 : 500 });
+        if (bizErr.code === '23505' && whatsapp_number) {
+          // Re-assign number to this business by clearing from old business
+          console.log(`[API Business PUT] Re-assigning ${whatsapp_number} to business ${targetBizId}...`);
+          await adminSupabase
+            .from('businesses')
+            .update({ whatsapp_number: null })
+            .eq('whatsapp_number', whatsapp_number)
+            .neq('id', targetBizId);
+
+          const { data: retryData, error: retryErr } = await adminSupabase
+            .from('businesses')
+            .update(updatePayload)
+            .eq('id', targetBizId)
+            .select()
+            .maybeSingle();
+
+          if (retryErr) {
+            return NextResponse.json({ error: retryErr.message }, { status: 500 });
+          }
+          updatedBiz = retryData;
+        } else {
+          return NextResponse.json({ error: bizErr.message }, { status: 500 });
+        }
+      } else {
+        updatedBiz = data;
       }
-      updatedBiz = data;
     }
 
     // 2. Save config entries

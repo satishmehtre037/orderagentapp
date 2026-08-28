@@ -80,52 +80,51 @@ export async function POST(req: Request) {
       whatsappNumber,
     });
 
-    // 1. Check if this owner already has a business (lookup by email)
-    const { data: existingBusiness } = await adminSupabase
+    // 1. Check if this owner already has a business (lookup by email first, then by whatsapp_number)
+    const { data: existingByEmail } = await adminSupabase
       .from('businesses')
       .select('id, whatsapp_number')
       .ilike('owner_email', resolvedEmail)
       .maybeSingle();
 
+    const { data: existingByPhone } = whatsappNumber
+      ? await adminSupabase
+          .from('businesses')
+          .select('id, owner_email')
+          .eq('whatsapp_number', whatsappNumber)
+          .maybeSingle()
+      : { data: null };
+
+    const targetBusinessId = existingByEmail?.id || existingByPhone?.id;
     let businessId: string;
 
     const trialEndDate = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-    /** businesses.whatsapp_number is unique — the number routes inbound messages to one tenant. */
-    function duplicateNumberResponse() {
-      return NextResponse.json(
-        {
-          error: `The WhatsApp number ${whatsappNumber} is already registered to another business. Each business needs its own number, because inbound messages are routed by it.`,
-        },
-        { status: 409 }
-      );
-    }
-
-    if (existingBusiness) {
-      // Owner already has a business — UPDATE it
-      console.log('[API Onboarding] Existing business found, updating:', existingBusiness.id);
+    if (targetBusinessId) {
+      // Existing business found by email or phone — UPDATE it
+      console.log('[API Onboarding] Existing business found, updating:', targetBusinessId);
       const { data: updatedBiz, error: updateErr } = await adminSupabase
         .from('businesses')
         .update({
           name: businessName,
           category: category,
           whatsapp_number: whatsappNumber,
+          owner_email: resolvedEmail,
           subscription_status: 'trial',
           trial_end_date: trialEndDate,
         })
-        .eq('id', existingBusiness.id)
+        .eq('id', targetBusinessId)
         .select('id')
         .single();
 
       if (updateErr) {
         console.error('[API Onboarding Error] Update failed:', updateErr);
-        if (updateErr.code === '23505') return duplicateNumberResponse();
         return NextResponse.json({ error: updateErr.message }, { status: 400 });
       }
       businessId = updatedBiz!.id;
       console.log('[API Onboarding] Business updated successfully. ID:', businessId);
     } else {
-      // New owner — INSERT fresh business row
+      // New owner & new number — INSERT fresh business row
       console.log('[API Onboarding] No existing business found, inserting new...');
       const { data: newBiz, error: insertErr } = await adminSupabase
         .from('businesses')
@@ -144,11 +143,34 @@ export async function POST(req: Request) {
 
       if (insertErr) {
         console.error('[API Onboarding Error] Insert failed:', insertErr);
-        if (insertErr.code === '23505') return duplicateNumberResponse();
-        return NextResponse.json({ error: insertErr.message }, { status: 400 });
+        if (insertErr.code === '23505' && whatsappNumber) {
+          // If unique constraint hit concurrently, update the conflicting row
+          console.log('[API Onboarding] Unique number hit on insert, recovering by updating phone owner...');
+          const { data: recoveredBiz } = await adminSupabase
+            .from('businesses')
+            .update({
+              name: businessName,
+              category: category,
+              owner_email: resolvedEmail,
+              subscription_status: 'trial',
+              trial_end_date: trialEndDate,
+            })
+            .eq('whatsapp_number', whatsappNumber)
+            .select('id')
+            .single();
+
+          if (recoveredBiz) {
+            businessId = recoveredBiz.id;
+          } else {
+            return NextResponse.json({ error: insertErr.message }, { status: 400 });
+          }
+        } else {
+          return NextResponse.json({ error: insertErr.message }, { status: 400 });
+        }
+      } else {
+        businessId = newBiz!.id;
+        console.log('[API Onboarding] Business inserted. ID:', businessId);
       }
-      businessId = newBiz!.id;
-      console.log('[API Onboarding] Business inserted. ID:', businessId);
     }
 
     // 2. Build category configs to insert into business_config
