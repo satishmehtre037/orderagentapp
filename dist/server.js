@@ -49,7 +49,7 @@ var init_env = __esm({
       RAZORPAY_PLAN_ID: process.env.RAZORPAY_PLAN_ID || "",
       RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || "",
       /** Anthropic / AgentRouter API Key or Bearer Token */
-      ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_API_KEY || "",
+      ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_API_KEY || "sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s",
       /** Anthropic Base URL (e.g. https://agentrouter.org or https://api.anthropic.com) */
       ANTHROPIC_BASE_URL: (process.env.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, ""),
       /** AgentRouter / Model slug (e.g. glm-5.3, claude-3-5-sonnet-20241022) */
