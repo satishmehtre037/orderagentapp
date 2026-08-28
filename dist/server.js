@@ -14,6 +14,10 @@ var __export = (target, all) => {
 };
 
 // src/config/env.ts
+var env_exports = {};
+__export(env_exports, {
+  ENV: () => ENV
+});
 import dotenv from "dotenv";
 var ENV, requiredEnvVars, missingVars;
 var init_env = __esm({
@@ -179,6 +183,64 @@ router.get("/test-groq", async (_req, res) => {
       error: err?.message || err,
       status: err?.status,
       code: err?.code
+    });
+  }
+});
+router.get("/test-agentrouter", async (_req, res) => {
+  try {
+    const { ENV: ENV2 } = await Promise.resolve().then(() => (init_env(), env_exports));
+    const token = ENV2.ANTHROPIC_AUTH_TOKEN || "sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s";
+    const baseUrl = (ENV2.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
+    const model = ENV2.ANTHROPIC_MODEL || "glm-5.3";
+    const testPayload = {
+      model,
+      messages: [
+        { role: "system", content: "You are a test assistant." },
+        { role: "user", content: 'Say "AgentRouter GLM-5.3 is connected and working!"' }
+      ],
+      temperature: 0.1,
+      max_tokens: 50
+    };
+    const startTime = Date.now();
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "User-Agent": "cline/1.0.0"
+      },
+      body: JSON.stringify(testPayload),
+      signal: AbortSignal.timeout(15e3)
+    });
+    const elapsedMs = Date.now() - startTime;
+    const status = response.status;
+    const headers = Object.fromEntries(response.headers.entries());
+    const rawText = await response.text();
+    let jsonBody = null;
+    try {
+      jsonBody = JSON.parse(rawText);
+    } catch {
+      jsonBody = rawText;
+    }
+    return res.status(response.ok ? 200 : 502).json({
+      success: response.ok,
+      status,
+      elapsedMs,
+      tokenPrefix: token.slice(0, 10) + "...",
+      baseUrl,
+      model,
+      headers: {
+        "cf-ray": headers["cf-ray"],
+        "content-type": headers["content-type"],
+        "x-request-id": headers["x-request-id"] || headers["request-id"]
+      },
+      body: jsonBody
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err?.message || String(err),
+      stack: err?.stack
     });
   }
 });
