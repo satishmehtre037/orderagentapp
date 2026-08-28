@@ -46,14 +46,14 @@ async function callAgentRouterAPI(
     sanitizedMessages.push({ role: 'user', content: 'Hello' });
   }
 
-  const isAnthropic = model.toLowerCase().includes('claude');
-  console.log(`[AgentRouter] Requesting model: ${model} (${isAnthropic ? 'Anthropic' : 'OpenAI'} format) via ${baseUrl}...`);
+  if (sanitizedMessages[0].role === 'assistant') {
+    sanitizedMessages.unshift({ role: 'user', content: 'Hi' });
+  }
 
-  if (isAnthropic) {
-    if (sanitizedMessages[0].role === 'assistant') {
-      sanitizedMessages.unshift({ role: 'user', content: 'Hi' });
-    }
+  console.log(`[AgentRouter] Requesting model: ${model} via ${baseUrl}/v1/messages...`);
 
+  // 1. Primary: Anthropic Messages Protocol (/v1/messages) — standard on AgentRouter for GLM-5.3 & Claude
+  try {
     const res = await fetch(`${baseUrl}/v1/messages`, {
       method: 'POST',
       headers: {
@@ -68,58 +68,62 @@ async function callAgentRouterAPI(
         system: systemPrompt,
         messages: sanitizedMessages,
         temperature: options.temperature ?? 0.2,
-        max_tokens: options.maxTokens ?? 650,
+        max_tokens: options.maxTokens ?? 1024,
       }),
       signal: AbortSignal.timeout(15000),
     });
 
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => '');
-      throw new Error(`AgentRouter Anthropic API returned HTTP ${res.status}: ${errorText || res.statusText}`);
+    if (res.ok) {
+      const data = await res.json();
+      const textContent = data?.content
+        ?.filter((c: any) => c.type === 'text')
+        ?.map((c: any) => c.text)
+        ?.join('\n')
+        ?.trim();
+
+      if (textContent) {
+        return groqService.cleanLLMOutput(textContent);
+      }
+    } else {
+      const errText = await res.text().catch(() => '');
+      console.warn(`[AgentRouter /v1/messages HTTP ${res.status}]: ${errText.slice(0, 150)}`);
     }
-
-    const data = await res.json();
-    const textContent = data?.content
-      ?.filter((c: any) => c.type === 'text')
-      ?.map((c: any) => c.text)
-      ?.join('\n')
-      ?.trim();
-
-    if (!textContent) throw new Error('AgentRouter Anthropic API returned empty response.');
-    return groqService.cleanLLMOutput(textContent);
-  } else {
-    // OpenAI / GLM format
-    const openAiMessages = [
-      { role: 'system', content: systemPrompt },
-      ...sanitizedMessages.map((m) => ({ role: m.role, content: m.content })),
-    ];
-
-    const res = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'User-Agent': 'cline/1.0.0',
-      },
-      body: JSON.stringify({
-        model,
-        messages: openAiMessages,
-        temperature: options.temperature ?? 0.2,
-        max_tokens: options.maxTokens ?? 650,
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => '');
-      throw new Error(`AgentRouter API returned HTTP ${res.status}: ${errorText || res.statusText}`);
-    }
-
-    const data = await res.json();
-    const textContent = data?.choices?.[0]?.message?.content?.trim();
-    if (!textContent) throw new Error('AgentRouter API returned empty response.');
-    return groqService.cleanLLMOutput(textContent);
+  } catch (err: any) {
+    console.warn(`[AgentRouter /v1/messages Error]: ${err?.message || err}`);
   }
+
+  // 2. Fallback: OpenAI Chat Completions Protocol (/v1/chat/completions)
+  console.log(`[AgentRouter] Falling back to ${baseUrl}/v1/chat/completions...`);
+  const openAiMessages = [
+    { role: 'system', content: systemPrompt },
+    ...sanitizedMessages.map((m) => ({ role: m.role, content: m.content })),
+  ];
+
+  const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'User-Agent': 'cline/1.0.0',
+    },
+    body: JSON.stringify({
+      model,
+      messages: openAiMessages,
+      temperature: options.temperature ?? 0.2,
+      max_tokens: options.maxTokens ?? 1024,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => '');
+    throw new Error(`AgentRouter API returned HTTP ${res.status}: ${errorText || res.statusText}`);
+  }
+
+  const data = await res.json();
+  const textContent = data?.choices?.[0]?.message?.content?.trim();
+  if (!textContent) throw new Error('AgentRouter API returned empty response.');
+  return groqService.cleanLLMOutput(textContent);
 }
 
 /**

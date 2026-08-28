@@ -1320,13 +1320,12 @@ ${m.content}`;
   if (sanitizedMessages.length === 0) {
     sanitizedMessages.push({ role: "user", content: "Hello" });
   }
-  const isAnthropic = model.toLowerCase().includes("claude");
-  console.log(`[AgentRouter] Requesting model: ${model} (${isAnthropic ? "Anthropic" : "OpenAI"} format) via ${baseUrl}...`);
-  if (isAnthropic) {
-    if (sanitizedMessages[0].role === "assistant") {
-      sanitizedMessages.unshift({ role: "user", content: "Hi" });
-    }
-    const res = await fetch(`${baseUrl}/v1/messages`, {
+  if (sanitizedMessages[0].role === "assistant") {
+    sanitizedMessages.unshift({ role: "user", content: "Hi" });
+  }
+  console.log(`[AgentRouter] Requesting model: ${model} via ${baseUrl}/v1/messages...`);
+  try {
+    const res2 = await fetch(`${baseUrl}/v1/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1340,47 +1339,51 @@ ${m.content}`;
         system: systemPrompt,
         messages: sanitizedMessages,
         temperature: options.temperature ?? 0.2,
-        max_tokens: options.maxTokens ?? 650
+        max_tokens: options.maxTokens ?? 1024
       }),
       signal: AbortSignal.timeout(15e3)
     });
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => "");
-      throw new Error(`AgentRouter Anthropic API returned HTTP ${res.status}: ${errorText || res.statusText}`);
+    if (res2.ok) {
+      const data2 = await res2.json();
+      const textContent2 = data2?.content?.filter((c) => c.type === "text")?.map((c) => c.text)?.join("\n")?.trim();
+      if (textContent2) {
+        return cleanLLMOutput(textContent2);
+      }
+    } else {
+      const errText = await res2.text().catch(() => "");
+      console.warn(`[AgentRouter /v1/messages HTTP ${res2.status}]: ${errText.slice(0, 150)}`);
     }
-    const data = await res.json();
-    const textContent = data?.content?.filter((c) => c.type === "text")?.map((c) => c.text)?.join("\n")?.trim();
-    if (!textContent) throw new Error("AgentRouter Anthropic API returned empty response.");
-    return cleanLLMOutput(textContent);
-  } else {
-    const openAiMessages = [
-      { role: "system", content: systemPrompt },
-      ...sanitizedMessages.map((m) => ({ role: m.role, content: m.content }))
-    ];
-    const res = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "User-Agent": "cline/1.0.0"
-      },
-      body: JSON.stringify({
-        model,
-        messages: openAiMessages,
-        temperature: options.temperature ?? 0.2,
-        max_tokens: options.maxTokens ?? 650
-      }),
-      signal: AbortSignal.timeout(15e3)
-    });
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => "");
-      throw new Error(`AgentRouter API returned HTTP ${res.status}: ${errorText || res.statusText}`);
-    }
-    const data = await res.json();
-    const textContent = data?.choices?.[0]?.message?.content?.trim();
-    if (!textContent) throw new Error("AgentRouter API returned empty response.");
-    return cleanLLMOutput(textContent);
+  } catch (err) {
+    console.warn(`[AgentRouter /v1/messages Error]: ${err?.message || err}`);
   }
+  console.log(`[AgentRouter] Falling back to ${baseUrl}/v1/chat/completions...`);
+  const openAiMessages = [
+    { role: "system", content: systemPrompt },
+    ...sanitizedMessages.map((m) => ({ role: m.role, content: m.content }))
+  ];
+  const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+      "User-Agent": "cline/1.0.0"
+    },
+    body: JSON.stringify({
+      model,
+      messages: openAiMessages,
+      temperature: options.temperature ?? 0.2,
+      max_tokens: options.maxTokens ?? 1024
+    }),
+    signal: AbortSignal.timeout(15e3)
+  });
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "");
+    throw new Error(`AgentRouter API returned HTTP ${res.status}: ${errorText || res.statusText}`);
+  }
+  const data = await res.json();
+  const textContent = data?.choices?.[0]?.message?.content?.trim();
+  if (!textContent) throw new Error("AgentRouter API returned empty response.");
+  return cleanLLMOutput(textContent);
 }
 async function getResponse2(systemPrompt, conversationHistory, newMessage, business, configs) {
   const provider = (ENV.AI_PROVIDER || "auto").toLowerCase();
