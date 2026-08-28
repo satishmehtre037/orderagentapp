@@ -33,10 +33,10 @@ export const ENV = {
   ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_API_KEY || '',
   /** Anthropic Base URL (e.g. https://agentrouter.org or https://api.anthropic.com) */
   ANTHROPIC_BASE_URL: (process.env.ANTHROPIC_BASE_URL || 'https://agentrouter.org').replace(/\/+$/, ''),
-  /** Anthropic / Claude Model slug (e.g. claude-3-5-sonnet-20241022, claude-opus-4-6, claude-3-7-sonnet-20250219) */
-  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022',
-  /** Preferred AI Provider: 'claude' (AgentRouter), 'groq', or 'auto' (Claude first, Groq fallback) */
-  AI_PROVIDER: process.env.AI_PROVIDER || 'auto',
+  /** AgentRouter / Model slug (e.g. glm-5.3, claude-3-5-sonnet-20241022) */
+  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'glm-5.3',
+  /** Preferred AI Provider: 'agentrouter', 'claude', 'groq', or 'auto' */
+  AI_PROVIDER: process.env.AI_PROVIDER || 'agentrouter',
   PORT: parseInt(process.env.PORT || '3001', 10),
 };
 

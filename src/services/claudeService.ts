@@ -61,6 +61,7 @@ async function callAgentRouterAPI(
         'anthropic-version': '2023-06-01',
         'x-api-key': token,
         'Authorization': `Bearer ${token}`,
+        'User-Agent': 'cline/1.0.0',
       },
       body: JSON.stringify({
         model,
@@ -98,6 +99,7 @@ async function callAgentRouterAPI(
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
+        'User-Agent': 'cline/1.0.0',
       },
       body: JSON.stringify({
         model,
