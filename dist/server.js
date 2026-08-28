@@ -1295,6 +1295,37 @@ ${m.content}`;
   if (sanitizedMessages[0].role === "assistant") {
     sanitizedMessages.unshift({ role: "user", content: "Hi" });
   }
+  const isOpenAiStandard = baseUrl.includes("/v1") || baseUrl.includes("/v4") || baseUrl.includes("kiraai.vn") || baseUrl.includes("bigmodel.cn") || baseUrl.includes("openai.com");
+  if (isOpenAiStandard) {
+    const chatUrl = baseUrl.endsWith("/chat/completions") ? baseUrl : `${baseUrl}/chat/completions`;
+    console.log(`[AI Service] Requesting model: ${model} via OpenAI gateway ${chatUrl}...`);
+    const openAiMessages2 = [
+      { role: "system", content: systemPrompt },
+      ...sanitizedMessages.map((m) => ({ role: m.role, content: m.content }))
+    ];
+    const res2 = await fetch(chatUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: openAiMessages2,
+        temperature: options.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? 1024
+      }),
+      signal: AbortSignal.timeout(15e3)
+    });
+    if (!res2.ok) {
+      const errText = await res2.text().catch(() => "");
+      throw new Error(`OpenAI-compatible API (${chatUrl}) returned HTTP ${res2.status}: ${errText || res2.statusText}`);
+    }
+    const data2 = await res2.json();
+    const textContent2 = data2?.choices?.[0]?.message?.content?.trim();
+    if (!textContent2) throw new Error("API returned empty choices response.");
+    return cleanLLMOutput(textContent2);
+  }
   console.log(`[AgentRouter] Requesting model: ${model} via ${baseUrl}/v1/messages...`);
   try {
     const res2 = await fetch(`${baseUrl}/v1/messages`, {

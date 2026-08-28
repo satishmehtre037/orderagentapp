@@ -50,9 +50,55 @@ async function callAgentRouterAPI(
     sanitizedMessages.unshift({ role: 'user', content: 'Hi' });
   }
 
+  const isOpenAiStandard =
+    baseUrl.includes('/v1') ||
+    baseUrl.includes('/v4') ||
+    baseUrl.includes('kiraai.vn') ||
+    baseUrl.includes('bigmodel.cn') ||
+    baseUrl.includes('openai.com');
+
+  // 1. Direct OpenAI Chat Completions Protocol (for Kira AI, BigModel, OpenAI endpoints)
+  if (isOpenAiStandard) {
+    const chatUrl = baseUrl.endsWith('/chat/completions')
+      ? baseUrl
+      : `${baseUrl}/chat/completions`;
+
+    console.log(`[AI Service] Requesting model: ${model} via OpenAI gateway ${chatUrl}...`);
+
+    const openAiMessages = [
+      { role: 'system', content: systemPrompt },
+      ...sanitizedMessages.map((m) => ({ role: m.role, content: m.content })),
+    ];
+
+    const res = await fetch(chatUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: openAiMessages,
+        temperature: options.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? 1024,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`OpenAI-compatible API (${chatUrl}) returned HTTP ${res.status}: ${errText || res.statusText}`);
+    }
+
+    const data = await res.json();
+    const textContent = data?.choices?.[0]?.message?.content?.trim();
+    if (!textContent) throw new Error('API returned empty choices response.');
+    return groqService.cleanLLMOutput(textContent);
+  }
+
   console.log(`[AgentRouter] Requesting model: ${model} via ${baseUrl}/v1/messages...`);
 
-  // 1. Primary: Anthropic Messages Protocol (/v1/messages) — standard on AgentRouter for GLM-5.3 & Claude
+  // 2. Anthropic Messages Protocol (/v1/messages) — standard on AgentRouter for GLM-5.3 & Claude
   try {
     const res = await fetch(`${baseUrl}/v1/messages`, {
       method: 'POST',
@@ -92,7 +138,7 @@ async function callAgentRouterAPI(
     console.warn(`[AgentRouter /v1/messages Error]: ${err?.message || err}`);
   }
 
-  // 2. Fallback: OpenAI Chat Completions Protocol (/v1/chat/completions)
+  // 3. Fallback: AgentRouter OpenAI Chat Completions Protocol (/v1/chat/completions)
   console.log(`[AgentRouter] Falling back to ${baseUrl}/v1/chat/completions...`);
   const openAiMessages = [
     { role: 'system', content: systemPrompt },
