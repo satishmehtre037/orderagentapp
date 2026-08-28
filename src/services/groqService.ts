@@ -14,9 +14,10 @@ import { ConversationMessage, Business, BusinessConfig } from '../types/index';
  * so a newer model can be rolled out without a code change.
  */
 const GROQ_MODEL_CASCADE = [
-  'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant',
-  'mixtral-8x7b-32768',
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-20b',
+  'qwen/qwen3.8-27b',
+  'groq/compound-mini',
 ] as const;
 
 function modelCascade(): string[] {
