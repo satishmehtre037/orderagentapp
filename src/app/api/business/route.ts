@@ -262,8 +262,19 @@ export async function DELETE(req: Request) {
     for (const table of OWNED_TABLES) {
       const { error } = await adminSupabase.from(table).delete().eq('business_id', businessId);
       if (error) {
-        // A table that does not exist in this deployment is not a failure.
-        if (error.code === '42P01') continue;
+        // A table or column that does not exist in this deployment is not a failure.
+        const isMissingTableOrCol =
+          error.code === '42P01' ||
+          error.code === '42703' ||
+          error.code === 'PGRST205' ||
+          error.code === 'PGRST204' ||
+          error.code === 'PGRST116' ||
+          error.message?.toLowerCase().includes('could not find the table') ||
+          error.message?.toLowerCase().includes('does not exist') ||
+          error.message?.toLowerCase().includes('column');
+
+        if (isMissingTableOrCol) continue;
+
         console.error(`[API Business DELETE] Could not clear ${table}:`, error.message);
         failures.push(`${table}: ${error.message}`);
       }

@@ -205,10 +205,19 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
       });
 
       if (!res.ok) {
-        throw new Error('Failed to delete business');
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server responded with ${res.status}`);
       }
 
-      await supabaseClient.auth.signOut();
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('biz_id');
+        localStorage.removeItem('biz_email');
+        localStorage.removeItem('biz_category');
+        localStorage.removeItem('webcore_lead_threads');
+        localStorage.clear();
+      }
+
+      await supabaseClient.auth.signOut().catch(() => {});
       window.location.href = '/signup';
     } catch (err: any) {
       showToast({
