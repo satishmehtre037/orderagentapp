@@ -119,17 +119,20 @@ async function loadCurrentCampaign(): Promise<any | null> {
     .limit(1);
 
   if (activeErr) {
-    console.error('[Campaign] Failed to read active campaign:', activeErr.message);
+    if (!activeErr.message?.includes('schema cache') && !activeErr.message?.includes('does not exist')) {
+      console.error('[Campaign] Failed to read active campaign:', activeErr.message);
+    }
     return null;
   }
   if (active && active.length > 0) return active[0];
 
-  const { data: recent } = await supabase
+  const { data: recent, error: recentErr } = await supabase
     .from('campaigns')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(1);
 
+  if (recentErr) return null;
   return recent && recent.length > 0 ? recent[0] : null;
 }
 
@@ -362,7 +365,15 @@ export async function tickCampaign(): Promise<{
     .limit(1);
 
   if (dueErr) {
-    console.error('[Campaign Worker] Could not read due campaigns:', dueErr.message);
+    const isSchemaError =
+      dueErr.message?.includes('schema cache') ||
+      dueErr.message?.includes('does not exist') ||
+      (dueErr as any).code === 'PGRST205' ||
+      (dueErr as any).code === '42P01';
+
+    if (!isSchemaError) {
+      console.error('[Campaign Worker] Could not read due campaigns:', dueErr.message);
+    }
     return { acted: false, reason: 'query_failed' };
   }
   if (!dueRows || dueRows.length === 0) return { acted: false, reason: 'nothing_due' };
