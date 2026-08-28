@@ -14,11 +14,9 @@ import { ConversationMessage, Business, BusinessConfig } from '../types/index';
  * so a newer model can be rolled out without a code change.
  */
 const GROQ_MODEL_CASCADE = [
-  'qwen/qwen3.8-27b',
-  'qwen/qwen3.6-27b',
-  'openai/gpt-oss-120b',
   'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
+  'mixtral-8x7b-32768',
 ] as const;
 
 function modelCascade(): string[] {
@@ -84,7 +82,7 @@ export async function getResponse(
             })),
           ],
           temperature: 0.2,
-          max_tokens: 1024,
+          max_tokens: 350,
         });
 
         const reply = cleanLLMOutput(completion.choices[0]?.message?.content || '');
@@ -333,7 +331,7 @@ export async function getGroqChatCompletion(
           ...messages,
         ],
         temperature: options.temperature ?? 0.3,
-        max_tokens: options.maxTokens ?? 1024,
+        max_tokens: options.maxTokens ?? 350,
       });
 
       const reply = cleanLLMOutput(completion.choices[0]?.message?.content || '');

@@ -556,15 +556,14 @@ async function handleFeedbackRating(inbound: ParsedInbound, business: any, numer
 async function handleStandardAIReply(inbound: ParsedInbound, business: any, configs: any[]): Promise<void> {
   const { customerNumber, messageText } = inbound;
 
-  const history = await getRecentConversations(business.id, customerNumber, 4);
-
-  let systemPrompt = '';
-  try {
-    systemPrompt = await buildSystemPrompt(business.id);
-  } catch (pErr) {
-    console.warn('[Webhook Pipeline] Prompt builder fallback:', pErr);
-    systemPrompt = `You are a helpful customer service assistant for ${business.name}.`;
-  }
+  // Ultra-fast parallel execution of history & prompt building
+  const [history, systemPrompt] = await Promise.all([
+    getRecentConversations(business.id, customerNumber, 4),
+    buildSystemPrompt(business.id).catch((pErr) => {
+      console.warn('[Webhook Pipeline] Prompt builder fallback:', pErr);
+      return `You are a helpful customer service assistant for ${business.name}.`;
+    }),
+  ]);
 
   const aiResponseText = await getResponse(systemPrompt, history, messageText, business, configs);
 
