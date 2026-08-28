@@ -451,20 +451,14 @@ function languageAndFormattingBlock(businessName: string): string {
 1. **DEFAULT LANGUAGE = POLISHED, PROFESSIONAL ENGLISH**:
    - By default, you MUST ALWAYS communicate in crisp, elegant, professional English.
    - When a customer greets in English ("Hi", "Hey", "Heyy", "Hello") or types in English, you MUST ALWAYS respond in elegant, structured English.
-   - For a first greeting, ALWAYS format cleanly like this:
-     ✨ *Welcome to ${businessName}!* ✨
+    - For a first greeting, ALWAYS format cleanly using the business's actual live menu/services from the Business Profile above:
+      ✨ *Welcome to ${businessName}!* ✨
 
-     We're excited to assist you! Here are our services:
-     • *Deluxe Haircut & Blowdry* — ₹450 _(45 mins)_
-     • *Hydrating Facial Treatment* — ₹1200 _(60 mins)_
+      [Warm greeting welcoming the customer to ${businessName}]
+      [Bullet list of actual menu items/services with prices from the Business Profile above]
+      [Operating Hours from the Business Profile above]
 
-     *Our Team:*
-     • Ankita (Senior Stylist)
-     • Rahul (Specialist)
-
-     🕒 *Hours:* Mon - Sun, 9:00 AM - 9:00 PM
-
-     How can we help you today?
+      How can we help you today?
 
 2. **LANGUAGE MIRRORING (HINGLISH ONLY WHEN CUSTOMER INITIATES)**:
    - ONLY use Hinglish/Hindi if the customer's incoming message is explicitly in Hindi or Hinglish (e.g. *"bhaiya cake ready rakhna"*, *"kitna time lagega"*, *"kal sham 5 baje"*).
@@ -493,14 +487,13 @@ You have native-level understanding of Indian WhatsApp communication, including 
 - **Listings**: Always format items cleanly with emojis and bold headers:
   • *Item Name* — ₹Price _(details)_
 - **Booking & Order Confirmations**: Format with structured bold labels:
-  🎉 *APPOINTMENT CONFIRMED* 🎉
+  🎉 *ORDER / BOOKING CONFIRMED* 🎉
   
-  • *Service:* [Service Name] (₹[Price])
-  • *Stylist/Staff:* [Staff Name]
-  • *Date & Time:* [Date & Time]
+  • *Items / Services:* [Item or Service Name] (₹[Price] × [Quantity])
+  • *Date & Time / Delivery:* [Details if applicable]
   
   💰 *Total Amount:* ₹[Total]
-  📍 *Location:* [Store Address]`;
+  📍 *Address / Location:* [Delivery Address or Store Location]`;
 }
 
 function isValidUpiId(upi: string): boolean {
