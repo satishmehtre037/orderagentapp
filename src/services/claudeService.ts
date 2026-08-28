@@ -15,23 +15,22 @@ export interface ClaudeMessage {
 }
 
 /**
- * Direct request to Claude / AgentRouter /v1/messages
+ * Direct request to AgentRouter (supporting both OpenAI /v1/chat/completions for GLM/GPT and Anthropic /v1/messages for Claude)
  */
-async function callClaudeAPI(
+async function callAgentRouterAPI(
   systemPrompt: string,
   messages: ClaudeMessage[],
   options: { temperature?: number; maxTokens?: number; model?: string } = {}
 ): Promise<string> {
   const token = ENV.ANTHROPIC_AUTH_TOKEN;
   if (!token) {
-    throw new Error('ANTHROPIC_AUTH_TOKEN / ANTHROPIC_API_KEY is not configured in environment.');
+    throw new Error('ANTHROPIC_AUTH_TOKEN / AgentRouter token is not configured in environment.');
   }
 
   const baseUrl = (ENV.ANTHROPIC_BASE_URL || 'https://agentrouter.org').replace(/\/+$/, '');
-  const url = `${baseUrl}/v1/messages`;
-  const model = options.model || ENV.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
+  const model = options.model || ENV.ANTHROPIC_MODEL || 'glm-5.3';
 
-  // Ensure message roles strictly alternate and start with 'user'
+  // Sanitize messages
   const sanitizedMessages: ClaudeMessage[] = [];
   for (const m of messages) {
     if (!m.content || !m.content.trim()) continue;
@@ -45,55 +44,84 @@ async function callClaudeAPI(
 
   if (sanitizedMessages.length === 0) {
     sanitizedMessages.push({ role: 'user', content: 'Hello' });
-  } else if (sanitizedMessages[0].role === 'assistant') {
-    sanitizedMessages.unshift({ role: 'user', content: 'Hi' });
   }
 
-  console.log(`[AgentRouter/Claude] Calling model: ${model} via ${baseUrl}...`);
+  const isAnthropic = model.toLowerCase().includes('claude');
+  console.log(`[AgentRouter] Requesting model: ${model} (${isAnthropic ? 'Anthropic' : 'OpenAI'} format) via ${baseUrl}...`);
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'anthropic-version': '2023-06-01',
-    'x-api-key': token,
-    'Authorization': `Bearer ${token}`,
-  };
+  if (isAnthropic) {
+    if (sanitizedMessages[0].role === 'assistant') {
+      sanitizedMessages.unshift({ role: 'user', content: 'Hi' });
+    }
 
-  const body = {
-    model,
-    system: systemPrompt,
-    messages: sanitizedMessages,
-    temperature: options.temperature ?? 0.2,
-    max_tokens: options.maxTokens ?? 1024,
-  };
+    const res = await fetch(`${baseUrl}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'x-api-key': token,
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        model,
+        system: systemPrompt,
+        messages: sanitizedMessages,
+        temperature: options.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? 650,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(20000), // 20s timeout
-  });
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      throw new Error(`AgentRouter Anthropic API returned HTTP ${res.status}: ${errorText || res.statusText}`);
+    }
 
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => '');
-    throw new Error(`Claude API returned HTTP ${res.status}: ${errorText || res.statusText}`);
+    const data = await res.json();
+    const textContent = data?.content
+      ?.filter((c: any) => c.type === 'text')
+      ?.map((c: any) => c.text)
+      ?.join('\n')
+      ?.trim();
+
+    if (!textContent) throw new Error('AgentRouter Anthropic API returned empty response.');
+    return groqService.cleanLLMOutput(textContent);
+  } else {
+    // OpenAI / GLM format
+    const openAiMessages = [
+      { role: 'system', content: systemPrompt },
+      ...sanitizedMessages.map((m) => ({ role: m.role, content: m.content })),
+    ];
+
+    const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: openAiMessages,
+        temperature: options.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? 650,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      throw new Error(`AgentRouter API returned HTTP ${res.status}: ${errorText || res.statusText}`);
+    }
+
+    const data = await res.json();
+    const textContent = data?.choices?.[0]?.message?.content?.trim();
+    if (!textContent) throw new Error('AgentRouter API returned empty response.');
+    return groqService.cleanLLMOutput(textContent);
   }
-
-  const data = await res.json();
-  const textContent = data?.content
-    ?.filter((c: any) => c.type === 'text')
-    ?.map((c: any) => c.text)
-    ?.join('\n')
-    ?.trim();
-
-  if (!textContent) {
-    throw new Error('Claude API returned an empty text response.');
-  }
-
-  return groqService.cleanLLMOutput(textContent);
 }
 
 /**
- * Main conversational response entry point with automated Claude -> Groq fallback cascade
+ * Main conversational response entry point with automated AgentRouter (GLM / Claude) -> Groq fallback cascade
  */
 export async function getResponse(
   systemPrompt: string,
@@ -109,7 +137,7 @@ export async function getResponse(
     return groqService.getResponse(systemPrompt, conversationHistory, newMessage, business, configs);
   }
 
-  // Format history for Claude
+  // Format history
   const formattedHistory: ClaudeMessage[] = [];
   for (const msg of conversationHistory) {
     const isUser =
@@ -134,20 +162,20 @@ export async function getResponse(
   // Mandatory system guardrail block
   const fullSystemPrompt = `${systemPrompt}\n\n### MANDATORY RULES:\n1. ACCEPT ALL LIVE MENU & SERVICE ITEMS: If the customer asks to book an appointment, checkup, or service, confirm the slot, date, time, and details immediately.\n2. When user provides date/time (e.g. "20 august 2 pm"), CONFIRM the appointment warmly and append the JSON capture block.\n3. NEVER INVENT FACTS: do not state a phone number, token number, address, price, or timing that is not present in the business information above. If you don't have it, say you'll have the team confirm.\n4. STRICT DOMAIN GUARDRAIL: Never write code (Python, JS, etc.), do homework, or answer unrelated general queries. Politely refuse and state that you are exclusively the virtual assistant for this business.`;
 
-  // 1. Try Claude / AgentRouter Primary
+  // 1. Try AgentRouter (GLM-5.3 / Claude) Primary
   if (ENV.ANTHROPIC_AUTH_TOKEN) {
     try {
-      const response = await callClaudeAPI(fullSystemPrompt, formattedHistory);
-      console.log(`[AgentRouter/Claude] ✅ Response generated successfully (${response.length} chars).`);
+      const response = await callAgentRouterAPI(fullSystemPrompt, formattedHistory);
+      console.log(`[AgentRouter] ✅ Response generated successfully (${response.length} chars).`);
       return response;
     } catch (err: any) {
-      console.warn(`[AgentRouter/Claude Warning] Primary Claude call failed (${err?.message || err}). Falling back to Groq Llama 3.3...`);
+      console.warn(`[AgentRouter Warning] Primary AgentRouter call failed (${err?.message || err}). Falling back to Groq...`);
     }
   } else {
-    console.log('[AI Router] ANTHROPIC_AUTH_TOKEN not set, using Groq as primary.');
+    console.log('[AI Router] AgentRouter token not set, using Groq as primary.');
   }
 
-  // 2. Automated Fallback to Groq Llama 3.3
+  // 2. Automated Fallback to Groq LPU
   return groqService.getResponse(systemPrompt, conversationHistory, newMessage, business, configs);
 }
 
@@ -165,9 +193,9 @@ export async function getChatCompletion(
 
   if (ENV.ANTHROPIC_AUTH_TOKEN) {
     try {
-      return await callClaudeAPI(systemMessage, chatMessages, options);
+      return await callAgentRouterAPI(systemMessage, chatMessages, options);
     } catch (err: any) {
-      console.warn(`[AgentRouter/Claude Warning] Chat completion failed (${err?.message || err}). Falling back to Groq...`);
+      console.warn(`[AgentRouter Warning] Chat completion failed (${err?.message || err}). Falling back to Groq...`);
     }
   }
 
