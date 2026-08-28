@@ -83,7 +83,7 @@ export async function getResponse(
             })),
           ],
           temperature: 0.2,
-          max_tokens: 350,
+          max_tokens: 650,
         });
 
         const reply = cleanLLMOutput(completion.choices[0]?.message?.content || '');
@@ -332,7 +332,7 @@ export async function getGroqChatCompletion(
           ...messages,
         ],
         temperature: options.temperature ?? 0.3,
-        max_tokens: options.maxTokens ?? 350,
+        max_tokens: options.maxTokens ?? 650,
       });
 
       const reply = cleanLLMOutput(completion.choices[0]?.message?.content || '');

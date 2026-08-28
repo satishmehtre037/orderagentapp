@@ -614,7 +614,14 @@ async function handleStandardAIReply(inbound: ParsedInbound, business: any, conf
     capturedData = await extractStructuredCapture(fullHistory, business.category);
   }
 
-  replyText = replyText.replace(/\{[\s\S]*?"(?:type|capture|details|items)"[\s\S]*?\}/g, '').trim();
+  // 100% clean customer-facing message (remove complete/partial JSON blocks, fences, or capture fragments)
+  replyText = replyText
+    .replace(/```(?:json)?[\s\S]*?(?:```|$)/gi, '')
+    .replace(/\{[\s\S]*?(?:\}|$)/gi, '')
+    .replace(/"(?:type|capture|details|items|total|fulfillment|delivery_address|appointment_time)"\s*:[\s\S]*$/gim, '')
+    .replace(/```[a-z]*$/gi, '')
+    .replace(/`+$/g, '')
+    .trim();
 
   const isCancelIntent =
     /\b(cancel|cancle|discard|abort)\b/i.test(messageText) ||
