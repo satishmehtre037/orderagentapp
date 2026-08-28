@@ -91,10 +91,15 @@ export async function sendMessage(
   message: string
 ): Promise<SendResult> {
   const formattedMessage = formatWhatsAppMessage(message);
-  const cleanToNumber = (toNumber || '').replace(/\D/g, '');
+  let cleanToNumber = (toNumber || '').replace(/\D/g, '');
 
   if (!cleanToNumber) {
     return { success: false, error: 'No recipient number supplied.' };
+  }
+
+  // Normalize 10-digit Indian numbers to E.164 standard with 91 prefix
+  if (cleanToNumber.length === 10) {
+    cleanToNumber = `91${cleanToNumber}`;
   }
 
   return postToGraph(
@@ -120,10 +125,14 @@ export async function sendInteractiveButtonsMessage(
   buttons: Array<{ id: string; title: string }>
 ): Promise<SendResult> {
   const formattedMessage = formatWhatsAppMessage(bodyText);
-  const cleanToNumber = (toNumber || '').replace(/\D/g, '');
+  let cleanToNumber = (toNumber || '').replace(/\D/g, '');
 
   if (!cleanToNumber) {
     return { success: false, error: 'No recipient number supplied.' };
+  }
+
+  if (cleanToNumber.length === 10) {
+    cleanToNumber = `91${cleanToNumber}`;
   }
 
   // Meta limits: max 3 buttons, title max 20 chars, body max 1024 chars.
@@ -168,9 +177,13 @@ export async function sendMediaMessage(
   mediaUrl: string,
   options: { caption?: string; filename?: string; type?: 'document' | 'image' } = {}
 ): Promise<SendResult> {
-  const cleanToNumber = (toNumber || '').replace(/\D/g, '');
+  let cleanToNumber = (toNumber || '').replace(/\D/g, '');
   if (!cleanToNumber) return { success: false, error: 'No recipient number supplied.' };
   if (!mediaUrl) return { success: false, error: 'No media URL supplied.' };
+
+  if (cleanToNumber.length === 10) {
+    cleanToNumber = `91${cleanToNumber}`;
+  }
 
   const inferredType =
     options.type || (/\.(png|jpe?g|webp)(\?|$)/i.test(mediaUrl) ? 'image' : 'document');

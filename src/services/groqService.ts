@@ -13,7 +13,13 @@ import { ConversationMessage, Business, BusinessConfig } from '../types/index';
  * These are the slugs Groq actually serves. GROQ_MODEL, when set, is tried first
  * so a newer model can be rolled out without a code change.
  */
-const GROQ_MODEL_CASCADE = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama3-8b-8192'] as const;
+const GROQ_MODEL_CASCADE = [
+  'qwen/qwen3.8-27b',
+  'qwen/qwen3.6-27b',
+  'openai/gpt-oss-120b',
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+] as const;
 
 function modelCascade(): string[] {
   const configured = ENV.GROQ_MODEL || process.env.GROQ_MODEL || '';
