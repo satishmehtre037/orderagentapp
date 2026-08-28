@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabaseClient } from '../../lib/supabase/client';
 import { PaymentEvent, BusinessCategory } from '../../types';
 import { getCategoryDisplayMetadata } from '../../lib/constants/categoryPresets';
+import { PLANS, TRIAL_DAYS, formatRupees, isPaidPlan } from '../../config/plans';
 import {
   CreditCard,
   Sparkles,
@@ -77,14 +78,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({
     }
   };
 
-  // Live 1-Second Countdown Timer for 1-Day Free Trial
+  // Live countdown for the free trial.
   const [countdownText, setCountdownText] = useState('Calculating...');
   const [isTrialEnded, setIsTrialEnded] = useState(false);
 
   useEffect(() => {
     const updateCountdown = () => {
       if (!trialEndDateStr) {
-        setCountdownText('24h 00m left');
+        setCountdownText('Trial length unknown');
         return;
       }
 
@@ -96,10 +97,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         setCountdownText('Trial Expired');
       } else {
         setIsTrialEnded(false);
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        // The trial is 30 days, so lead with days once there is more than one.
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
-        if (hours > 0) {
+        if (days > 0) {
+          setCountdownText(`${days}d ${hours}h ${mins}m`);
+        } else if (hours > 0) {
           setCountdownText(`${hours}h ${mins}m ${secs < 10 ? '0' : ''}${secs}s`);
         } else {
           setCountdownText(`${mins}m ${secs < 10 ? '0' : ''}${secs}s`);
@@ -112,7 +117,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
     return () => clearInterval(interval);
   }, [trialEndDateStr]);
 
-  const isActive = subscriptionStatus === 'active' || plan === 'monthly_1' || plan === 'annual_10' || plan === 'monthly_999';
+  const isActive = subscriptionStatus === 'active' || isPaidPlan(plan);
   const isExpired = subscriptionStatus === 'expired' || (!isActive && isTrialEnded);
 
   // Fetch Payment History
@@ -151,7 +156,16 @@ export const BillingTab: React.FC<BillingTabProps> = ({
     });
   };
 
-  // Launch Razorpay Payment Modal
+  /**
+   * Launches Razorpay checkout.
+   *
+   * This used to post its own `amount` with the order and, if verification
+   * failed, call handlePaymentSuccessFallback() — which wrote
+   * subscription_status: 'active' straight into the businesses table from the
+   * browser. A forged signature, or simply a network error, therefore granted a
+   * Pro subscription. The server now prices the plan and is the only thing that
+   * can activate it.
+   */
   const handleUpgradeClick = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -163,22 +177,17 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
       }
 
-      const planKey = selectedBillingCycle === 'annual' ? 'annual_10' : 'monthly_1';
-      const amountPaise = selectedBillingCycle === 'annual' ? 1000 : 100;
-      const planLabel = selectedBillingCycle === 'annual' ? 'Annual Saver (₹10/year)' : 'Pro Monthly (₹1/month)';
+      const selectedPlan = selectedBillingCycle === 'annual' ? PLANS.annual_9990 : PLANS.monthly_999;
+      const planLabel = `${selectedPlan.label} (${formatRupees(selectedPlan.amountPaise)}/${selectedPlan.period})`;
 
-      console.log(`[Frontend Checkout] Requesting order creation for ₹${amountPaise / 100} ...`);
+      console.log(`[Frontend Checkout] Requesting an order for plan ${selectedPlan.key}...`);
       const orderRes = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: amountPaise,
-          currency: 'INR',
-          receipt: `rcpt_${businessId ? businessId.substring(0, 8) : 'biz'}_${Date.now()}`,
-          notes: {
-            business_id: businessId,
-            plan_cycle: selectedBillingCycle,
-          },
+          // No amount: the server prices the plan from src/config/plans.ts.
+          plan: selectedPlan.key,
+          businessId,
         }),
       });
 
@@ -190,18 +199,18 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       }
 
       if (!orderRes.ok || !orderData.order_id) {
-        throw new Error(orderData.error || 'Failed to initialize Razorpay payment order');
+        throw new Error(orderData.error || 'Failed to initialize the Razorpay payment order');
       }
 
-      const keyId =
-        orderData.key_id ||
-        orderData.keyId ||
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-        'rzp_live_TPDyzIAe95Bgky';
+      if (!orderData.key_id) {
+        throw new Error('Payments are not configured on this server (no Razorpay key returned).');
+      }
+
+      const chargedPaise = Math.round(Number(orderData.amount));
 
       const options = {
-        key: keyId,
-        amount: Math.round(Number(orderData.amount || amountPaise)),
+        key: orderData.key_id,
+        amount: chargedPaise,
         currency: orderData.currency || 'INR',
         name: 'WebcoreStudio',
         description: `${planLabel} — WhatsApp AI Agent Plan`,
@@ -260,7 +269,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           razorpay_order_id: string;
           razorpay_signature: string;
         }) {
-          console.log('[Razorpay Checkout] Payment received, verifying HMAC signature ...', response);
+          console.log('[Razorpay Checkout] Payment received, verifying signature server-side...');
           setLoading(true);
 
           try {
@@ -272,8 +281,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
                 business_id: businessId,
-                plan: planKey,
-                amount: amountPaise,
+                plan: selectedPlan.key,
               }),
             });
 
@@ -284,16 +292,28 @@ export const BillingTab: React.FC<BillingTabProps> = ({
               verifyData = {};
             }
 
-            if (verifyRes.ok && (verifyData.success || verifyData.message)) {
-              setSuccessMsg(`🎉 Payment of ₹${amountPaise / 100} verified! Your Pro Plan is now active.`);
+            if (verifyRes.ok && verifyData.success && verifyData.activated) {
+              setSuccessMsg(
+                `Payment of ${formatRupees(Number(verifyData.amount) || chargedPaise)} verified. Your Pro Plan is active.`
+              );
               fetchPaymentHistory();
               if (onSubscriptionUpdated) onSubscriptionUpdated();
             } else {
-              handlePaymentSuccessFallback(response.razorpay_payment_id, planKey, amountPaise);
+              // The payment may well have gone through — only the activation did
+              // not. Say so, with the payment id, instead of silently granting
+              // access from the browser.
+              setErrorMsg(
+                `${
+                  verifyData.error || 'We could not confirm this payment.'
+                } Payment id ${response.razorpay_payment_id} — please send this to support if you were charged.`
+              );
+              fetchPaymentHistory();
             }
           } catch (err: any) {
             console.error('Verification error:', err);
-            handlePaymentSuccessFallback(response.razorpay_payment_id, planKey, amountPaise);
+            setErrorMsg(
+              `We could not reach the server to confirm your payment. Payment id ${response.razorpay_payment_id} — please send this to support if you were charged.`
+            );
           } finally {
             setLoading(false);
           }
@@ -326,52 +346,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({
     }
   };
 
-  const handleSimulateTestPayment = async () => {
-    try {
-      setLoading(true);
-      setErrorMsg(null);
-      const planKey = selectedBillingCycle === 'annual' ? 'annual_10' : 'monthly_1';
-      const amountPaise = selectedBillingCycle === 'annual' ? 1000 : 100;
-      const testPaymentId = `pay_sim_${Date.now()}`;
-      await handlePaymentSuccessFallback(testPaymentId, planKey, amountPaise);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Simulation failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePaymentSuccessFallback = async (paymentId: string, chosenPlan: string, amountPaise: number) => {
-    try {
-      const now = new Date();
-      const nextBilling = new Date(
-        now.getTime() + (chosenPlan.includes('annual') ? 365 : 30) * 24 * 60 * 60 * 1000
-      );
-
-      await supabaseClient
-        .from('businesses')
-        .update({
-          subscription_status: 'active',
-          plan: chosenPlan,
-          trial_end_date: nextBilling.toISOString(),
-        })
-        .eq('id', businessId);
-
-      await supabaseClient.from('payment_events').insert({
-        business_id: businessId,
-        razorpay_payment_id: paymentId,
-        amount: amountPaise,
-        status: 'success',
-      });
-
-      setSuccessMsg(`Payment of ₹${amountPaise / 100} verified! Pro Plan is now active.`);
-      fetchPaymentHistory();
-      if (onSubscriptionUpdated) onSubscriptionUpdated();
-    } catch (err: any) {
-      console.error('Fallback error:', err);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Success Notification Banner */}
@@ -399,9 +373,10 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           <div className="flex items-center space-x-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold text-xs text-amber-900">1-Day Free Trial Expired — WhatsApp Agent Paused</h4>
+              <h4 className="font-semibold text-xs text-amber-900">Free Trial Expired — WhatsApp Agent Paused</h4>
               <p className="text-[11px] text-amber-700">
-                Upgrade for ₹1/month to resume automated customer orders, voice notes, and booking capture.
+                Upgrade for {formatRupees(PLANS.monthly_999.amountPaise)}/month to resume automated customer orders,
+                voice notes, and booking capture.
               </p>
             </div>
           </div>
@@ -409,7 +384,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
             onClick={handleUpgradeClick}
             className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-medium rounded-lg shadow-sm transition-colors whitespace-nowrap"
           >
-            Renew Now for ₹1
+            Renew Now — {formatRupees(PLANS.monthly_999.amountPaise)}
           </button>
         </div>
       )}
@@ -501,13 +476,13 @@ export const BillingTab: React.FC<BillingTabProps> = ({
             <div className="border border-slate-200 rounded-xl p-6 bg-slate-50/60 space-y-5">
               <div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Evaluation</span>
-                <h3 className="text-lg font-semibold text-slate-900 mt-1">1-Day Free Trial</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mt-1">{TRIAL_DAYS}-Day Free Trial</h3>
                 <p className="text-xs text-slate-500 mt-1">Test all WhatsApp AI automation features risk-free.</p>
               </div>
 
               <div className="flex items-baseline space-x-1">
                 <span className="text-3xl font-bold text-slate-900">₹0</span>
-                <span className="text-xs text-slate-500">/ 24 Hours</span>
+                <span className="text-xs text-slate-500">/ {TRIAL_DAYS} days</span>
               </div>
 
               <ul className="space-y-2.5 text-xs text-slate-600">
@@ -550,7 +525,9 @@ export const BillingTab: React.FC<BillingTabProps> = ({
 
               <div className="flex items-baseline space-x-1">
                 <span className="text-3xl font-bold text-slate-900">
-                  {selectedBillingCycle === 'annual' ? '₹10' : '₹1'}
+                  {formatRupees(
+                    selectedBillingCycle === 'annual' ? PLANS.annual_9990.amountPaise : PLANS.monthly_999.amountPaise
+                  )}
                 </span>
                 <span className="text-xs text-slate-500">
                   {selectedBillingCycle === 'annual' ? '/ year' : '/ month'}
@@ -597,25 +574,24 @@ export const BillingTab: React.FC<BillingTabProps> = ({
                       ? 'Opening Checkout...'
                       : isActive
                       ? 'Renew / Extend Subscription'
-                      : `Upgrade Now — ${selectedBillingCycle === 'annual' ? '₹10/yr' : '₹1/mo'}`}
+                      : `Upgrade Now — ${formatRupees(
+                          selectedBillingCycle === 'annual'
+                            ? PLANS.annual_9990.amountPaise
+                            : PLANS.monthly_999.amountPaise
+                        )}/${selectedBillingCycle === 'annual' ? 'yr' : 'mo'}`}
                   </span>
                 </button>
 
-                {/* Developer & Sandbox Instant Activate Button */}
-                <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-xs">
-                  <div>
-                    <span className="font-semibold text-slate-800 text-[11px] block">Test Sandbox Mode</span>
-                    <span className="text-[10px] text-slate-500">1-click test activation without payment</span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={handleSimulateTestPayment}
-                    className="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 text-[11px] font-medium hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
-                  >
-                    Instant Test Activate
-                  </button>
-                </div>
+                {/*
+                  A "Test Sandbox Mode / Instant Test Activate" button used to sit
+                  here. It called the client-side activation path, so any visitor
+                  could switch their own account to Pro without paying — and it
+                  shipped in the production dashboard. Use a Razorpay test-mode key
+                  pair to exercise checkout instead.
+                */}
+                <p className="text-[10px] text-slate-400 text-center">
+                  Subscriptions are activated by our server after Razorpay confirms the payment.
+                </p>
               </div>
             </div>
           </div>

@@ -1,106 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { verifyAndActivate } from '@/services/subscriptionService';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-const adminSupabase = createClient(supabaseUrl, serviceKey);
-
+/**
+ * POST /api/billing/verify — alias of /api/verify-payment.
+ *
+ * Both routes existed with independent copies of the signature check, the plan
+ * duration, and the amount (this one hardcoded 1000/100 paise while the other
+ * read the amount from the body). They now share one implementation, so they
+ * cannot drift apart again. See src/services/subscriptionService.ts.
+ */
 export async function POST(req: NextRequest) {
   try {
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
-
-    if (!key_secret) {
-      console.error('[Verify Billing Error] RAZORPAY_KEY_SECRET missing in environment');
-      return NextResponse.json(
-        { error: 'Razorpay secret key not configured' },
-        { status: 500 }
-      );
-    }
-
     const body = await req.json().catch(() => ({}));
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, businessId, plan } = body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, businessId, business_id, plan } = body;
 
-    // Validate required fields
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing verification parameters: order_id, payment_id, or signature',
-        },
-        { status: 400 }
-      );
-    }
+    const requested = businessId || business_id;
 
-    // Generate expected HMAC SHA-256 signature
-    const hmac = crypto.createHmac('sha256', key_secret);
-    hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-    const generatedSignature = hmac.digest('hex');
+    const result = await verifyAndActivate({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+      // 'demo-business-id' is a placeholder the old dashboard sent; it is not a UUID.
+      fallbackBusinessId: requested && requested !== 'demo-business-id' ? requested : undefined,
+      fallbackPlanKey: plan,
+    });
 
-    console.log(`[Verify Billing] Validating payment signature for Order ${razorpay_order_id}`);
-
-    // Signature verification check using timingSafeEqual
-    let isSignatureValid = false;
-    try {
-      isSignatureValid = crypto.timingSafeEqual(
-        Buffer.from(generatedSignature, 'utf-8'),
-        Buffer.from(razorpay_signature, 'utf-8')
-      );
-    } catch {
-      isSignatureValid = generatedSignature === razorpay_signature;
-    }
-
-    if (!isSignatureValid) {
-      console.warn('[Verify Billing] ❌ Signature mismatch for payment:', razorpay_payment_id);
-      return NextResponse.json(
-        { success: false, error: 'Invalid payment signature. Verification failed.' },
-        { status: 400 }
-      );
-    }
-
-    console.log(`[Verify Billing] ✅ Payment signature valid for payment ${razorpay_payment_id}`);
-
-    // Determine plan duration
-    const chosenPlan = plan || 'monthly_1';
-    const isAnnual = chosenPlan.includes('annual');
-    const nextEndDate = new Date(Date.now() + (isAnnual ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
-    const amountPaise = isAnnual ? 1000 : 100;
-
-    // Activate subscription in businesses table if businessId is valid UUID
-    if (businessId && businessId !== 'demo-business-id') {
-      const { error: updateError } = await adminSupabase
-        .from('businesses')
-        .update({
-          subscription_status: 'active',
-          plan: chosenPlan,
-          trial_end_date: nextEndDate,
-        })
-        .eq('id', businessId);
-
-      if (updateError) {
-        console.error('[Verify Billing] Error updating business:', updateError);
-      } else {
-        console.log(`[Verify Billing] Business ${businessId} upgraded to ACTIVE until ${nextEndDate}`);
-      }
-
-      // Record event in payment_events table
-      await adminSupabase.from('payment_events').insert({
-        business_id: businessId,
-        razorpay_payment_id,
-        razorpay_order_id,
-        amount: amountPaise,
-        status: 'success',
-      });
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.error }, { status: result.status });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Payment verified and Pro Plan activated successfully!',
+      message: result.activated
+        ? 'Payment verified and Pro Plan activated.'
+        : result.error || 'Payment verified.',
+      activated: result.activated ?? false,
       payment_id: razorpay_payment_id,
       order_id: razorpay_order_id,
-      plan: chosenPlan,
-      validUntil: nextEndDate,
+      plan: result.plan,
+      amount: result.amountPaise,
+      validUntil: result.validUntil,
     });
   } catch (err: any) {
     console.error('[Verify Billing Exception]:', err);

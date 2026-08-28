@@ -29,6 +29,7 @@ import HospitalNewAppointmentModal from '../../components/dashboard/hospital/Hos
 import HospitalNewPatientModal from '../../components/dashboard/hospital/HospitalNewPatientModal';
 import HospitalUploadReportModal from '../../components/dashboard/hospital/HospitalUploadReportModal';
 import { resolveCategoryFromNameOrType, getCategoryDisplayMetadata } from '../../lib/constants/categoryPresets';
+import { PLANS, TRIAL_DAYS, formatRupees } from '../../config/plans';
 import { useToast } from '../../components/ui/ToastContext';
 import { ThemeToggle } from '../../components/ui/ThemeContext';
 import {
@@ -168,7 +169,7 @@ export default function DashboardPage() {
           category: (storedCat as any) || 'hospital',
           whatsapp_number: 'Not configured',
           owner_email: userEmail,
-          trial_end_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          trial_end_date: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
           subscription_status: 'trial',
           plan: 'trial',
           created_at: new Date().toISOString(),
@@ -206,11 +207,16 @@ export default function DashboardPage() {
         setCountdownStr('Trial Expired');
         setIsTrialEnded(true);
       } else {
-        const hours = Math.floor(distance / (1000 * 60 * 60));
+        // Day-aware. The trial is TRIAL_DAYS long, so an hours-only counter
+        // rendered a fresh 30-day trial as "719h 59m".
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const secs = Math.floor((distance % (1000 * 60)) / 1000);
 
-        if (hours > 0) {
+        if (days > 0) {
+          setCountdownStr(`${days}d ${hours}h ${mins}m`);
+        } else if (hours > 0) {
           setCountdownStr(`${hours}h ${mins}m ${secs < 10 ? '0' : ''}${secs}s`);
         } else {
           setCountdownStr(`${mins}m ${secs < 10 ? '0' : ''}${secs}s`);
@@ -384,13 +390,13 @@ export default function DashboardPage() {
         <div className="backdrop-blur-md bg-amber-500/90 text-white py-2.5 px-4 text-center text-xs font-semibold flex items-center justify-center space-x-2 shadow-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>
-            Your 24-hour free trial has expired. WhatsApp replies are currently paused.
+            Your {TRIAL_DAYS}-day free trial has expired. WhatsApp replies are currently paused.
           </span>
           <button
             onClick={() => setActiveTab('billing')}
             className="font-bold underline ml-1 hover:text-amber-100"
           >
-            Upgrade for ₹1/month
+            Upgrade for {formatRupees(PLANS.monthly_999.amountPaise)}/month
           </button>
         </div>
       )}

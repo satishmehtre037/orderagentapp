@@ -1,8 +1,36 @@
-import { sendWhatsAppInteractiveButtons } from '@/lib/whatsapp';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '../config/supabase';
+import { ENV } from '../config/env';
+import { sendInteractiveButtonsMessage } from './whatsappService';
+import { resolveOperatorBusinessId } from './businessService';
+import { checkOutreachAllowed, normalizeIndianPhone } from './optOutService';
+import {
+  buildPersonalizedPitch,
+  renderCustomMessage,
+  PITCH_BUTTONS,
+  type PitchType,
+} from './pitchTemplates';
+
+/**
+ * Campaign queue — database backed.
+ *
+ * The previous implementation kept the whole campaign in module memory: a
+ * `queue` array, a `currentIndex`, and a `for` loop that counted down 35 seconds
+ * between sends with `setTimeout`. On Vercel that loop was killed when the
+ * serverless function returned, and on any restart or redeploy the campaign
+ * vanished mid-run with no record of who had already been contacted. Two Node
+ * instances behind a load balancer each had their own private copy of "the"
+ * campaign, so pause/resume hit whichever instance the request landed on.
+ *
+ * State now lives in `campaigns` + `campaign_targets`. Pacing is a timestamp
+ * (`next_send_at`) rather than a countdown, so a cold start resumes exactly
+ * where it left off without double-sending and without losing the delay.
+ * `tickCampaign()` sends at most one message per call and is safe to invoke
+ * from several workers at once — it claims the slot with a compare-and-swap on
+ * `next_send_at` before sending.
+ */
 
 export interface CampaignLead {
-  id: string;
+  id?: string;
   business_name: string;
   phone_number: string;
   category?: string;
@@ -30,296 +58,566 @@ export interface CampaignState {
   startedAt: string | null;
   finishedAt: string | null;
   logs: CampaignLog[];
+  sent?: number;
+  failed?: number;
+  skipped?: number;
 }
 
-export function buildPersonalizedPitch(
-  businessName: string,
-  category: string,
-  city: string,
-  pitchType: string,
-  senderName: string
-): string {
-  const cat = (category || '').toLowerCase();
-  const name = businessName;
-  const isCA =
-    cat.includes('ca') ||
-    cat.includes('tax') ||
-    cat.includes('audit') ||
-    cat.includes('accountant') ||
-    name.toLowerCase().includes('ca ') ||
-    name.toLowerCase().includes('accountant') ||
-    name.toLowerCase().includes('gst');
-  const isHospital = cat.includes('hospital') || name.toLowerCase().includes('hospital');
-  const isSalon = cat.includes('salon') || cat.includes('spa') || cat.includes('beauty') || name.toLowerCase().includes('salon');
-  const isRestaurant = cat.includes('restaurant') || cat.includes('cafe') || cat.includes('food') || cat.includes('dine') || cat.includes('bar') || name.toLowerCase().includes('cafe') || name.toLowerCase().includes('dining');
-  const isRealEstate = cat.includes('real_estate') || cat.includes('realty') || cat.includes('builder') || cat.includes('property');
-  const isTuition = cat.includes('tuition') || cat.includes('coach') || cat.includes('academy') || cat.includes('class') || cat.includes('institute');
-  const isRetail = cat.includes('retail') || cat.includes('boutique') || cat.includes('store') || cat.includes('shop') || cat.includes('jewel');
+const IDLE_STATE: CampaignState = {
+  id: '',
+  status: 'idle',
+  currentIndex: 0,
+  total: 0,
+  delaySeconds: 35,
+  countdown: 0,
+  currentLead: null,
+  pitchType: 'all_in_one',
+  senderName: '',
+  startedAt: null,
+  finishedAt: null,
+  logs: [],
+};
 
-  switch (pitchType) {
-    case 'all_in_one':
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 🍽️\n\nI am ${senderName}. We build direct ordering & WhatsApp AI booking suites for top restaurants in ${city}:\n\n1️⃣ *Direct QR & WhatsApp Food Ordering* (Zero 30% Swiggy/Zomato commission fees)\n2️⃣ *24/7 WhatsApp AI Table & Party Booking* (Instant reservation confirmation)\n3️⃣ *Automated Weekend Foodie Re-engagement* (Brings repeat diners back)\n4️⃣ *Google Maps Top #1 Food Ranking & 5-Star Reviews Booster*\n\n🎁 We offer a *Free 3-Day Live Pilot* with zero setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      } else if (isCA) {
-        return `Namaste Team *${name}* (Chartered Accountants)! 📊\n\nI am ${senderName}. We build custom client automation & secure tech suites for top CA firms in ${city}:\n\n1️⃣ *Modern CA Firm Portal & Mobile App* (Secure client login & ITR tracker)\n2️⃣ *24/7 WhatsApp AI Tax Assistant* (Instant answers to client compliance queries)\n3️⃣ *Automated Document Collection Vault* (Auto-collects GST bills on WhatsApp)\n4️⃣ *Proactive GST/ITR Deadline Reminders* (Zero manual client follow-ups)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🏥\n\nI am ${senderName}. We deliver full-stack hospital digitization & AI reception suites in ${city}:\n\n1️⃣ *Modern Hospital Web Portal & Android App* (Multi-specialty doctor schedule)\n2️⃣ *24/7 WhatsApp AI OPD Reception* (Auto token issue & bed inquiries)\n3️⃣ *Automated Lab Report Delivery on WhatsApp* (PDF dispatch to patients)\n4️⃣ *Google Maps Top #1 Healthcare Ranking* (5-star reviews engine)\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      } else if (isSalon) {
-        return `Hello Team *${name}*! ✂️\n\nI am ${senderName}. We provide complete technology and AI booking solutions for luxury salons in ${city}:\n\n1️⃣ *Modern Salon Web App & Android App* (Interactive style gallery & rates)\n2️⃣ *24/7 WhatsApp AI Appointment Booking* (Stylist slot allocation)\n3️⃣ *Automated 3-Week Re-engagement Campaigns* (Boosts repeat client visits)\n4️⃣ *Google Maps Top #1 Ranking & 5-Star Reviews Engine*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a live demo!`;
-      } else if (isRealEstate) {
-        return `Namaste Team *${name}*! 🏢\n\nI am ${senderName}. We build automated lead qualification & digital sales suites for real estate leaders in ${city}:\n\n1️⃣ *Interactive Project Showcase Website & Buyer App* (3D floor plans & brochures)\n2️⃣ *24/7 WhatsApp AI Property Qualifier* (Auto-answers pricing & books site visits)\n3️⃣ *Automated Investor Re-engagement Broadcasts*\n4️⃣ *Google Maps SEO & Verified Local Dominance*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a custom demo!`;
-      } else if (isTuition) {
-        return `Namaste Team *${name}*! 🎓\n\nI am ${senderName}. We build student admissions & parent automation suites for premier academies in ${city}:\n\n1️⃣ *Modern Academy Web Portal & Student Mobile App* (Timetables & test series)\n2️⃣ *24/7 WhatsApp AI Admissions & Demo Class Bot*\n3️⃣ *Automated Fee Reminders & Attendance WhatsApp Alerts*\n4️⃣ *Google Maps Top #1 Education Ranking & 5-Star Reviews*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* for a live preview!`;
-      } else if (isRetail) {
-        return `Hello Team *${name}*! 🛍️\n\nI am ${senderName}. We build digital catalog & WhatsApp commerce suites for premier retail stores in ${city}:\n\n1️⃣ *Interactive Mobile Catalog & E-Commerce Web App*\n2️⃣ *24/7 WhatsApp AI Product Inquiries & Order Taking*\n3️⃣ *Automated Festival & VIP Customer Broadcasts*\n4️⃣ *Google Maps Top Local Shopping Dominance*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a live demo!`;
-      } else {
-        return `Namaste Dr. / Team *${name}*! 🩺\n\nI am ${senderName}. We provide complete modern technology solutions for healthcare centers in ${city}:\n\n1️⃣ *Modern Responsive Website* (Ultra-fast Next.js)\n2️⃣ *Native Android App* (Play Store ready patient portal)\n3️⃣ *24/7 AI WhatsApp Assistant* (Auto OPD & Booking tokens)\n4️⃣ *Google Maps SEO* (Top Local Rankings & 5-Star Reviews)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      }
+const MAX_LOGS = 70;
+const DEFAULT_SENDER = 'WebCore Studios';
 
-    case 'web_mobile':
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 🌐\n\nTake direct orders without giving away 30% commission. We build custom *Online Ordering Web Apps & Android Apps* for restaurants in ${city}:\n\n🍔 *Direct Digital QR Menu & Mobile Ordering*\n⚡ *Ultra-Fast Customer Web App* with UPI payment\n📱 *Play Store Native App* for your brand\n\nCan I send you a custom mockup for *${name}*? Reply *YES* to review!`;
-      } else if (isCA) {
-        return `Namaste Team *${name}*! 🌐\n\nLegacy CA websites look outdated. We build high-authority *Client Portals & Mobile Apps* for Chartered Accountants in ${city}:\n\n🔒 *Secure Client Document Vault & ITR Tracker*\n⚡ *Ultra-Fast Next.js Firm Website* (< 1s load speed)\n📱 *Native Android Client App* on Google Play Store\n💳 *Integrated Online Invoicing & UPI Payments*\n\nCan I send you a custom design mockup for *${name}*? Reply *YES* to review!`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🌐\n\nWe build lightning-fast *Patient Portals & Android Mobile Apps* for hospitals in ${city}:\n\n🚀 *Ultra-Fast Hospital Website* with instant WhatsApp appointment booking\n📱 *Native Android Patient App* (Doctor profiles, OPD booking & health records)\n💳 *Integrated Online Consultation & UPI Payment Gateway*\n\nCan I share a custom design mockup for *${name}*? Reply *YES* to see it!`;
-      } else {
-        return `Hello Team *${name}*! 👋\n\nWe build *Lightning-Fast Modern Websites & Android Apps* for businesses in ${city}:\n\n🚀 *Ultra-Fast Next.js High-Performance Website*\n📱 *Play Store Ready Native Android App*\n💳 *Integrated UPI & Online Payment Gateway*\n\nCan I send you a custom mockup for *${name}*? Reply *YES* to review!`;
-      }
-
-    case 'whatsapp_ai':
-      if (isRestaurant) {
-        return `Hello Team *${name}*! 🍽️\n\nStop missing table inquiries and party bookings during rush hours.\n\nWe build *24/7 WhatsApp AI Food & Table Booking Agents* in ${city} that:\n\n✅ *Instant Table & Party Reservations*: Confirms bookings automatically 24/7 on WhatsApp\n✅ *Interactive WhatsApp Food Menu*: Customers browse dishes and place delivery orders directly\n✅ *Weekend Re-engagement*: Proactively sends special weekend offers to your past diners\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to test it!\n\nBest regards,\n${senderName}`;
-      } else if (isCA) {
-        return `Namaste Team *${name}* (Chartered Accountants)! 💼\n\nStop spending hours manually chasing clients for GST invoices and ITR documents.\n\nWe build *24/7 WhatsApp AI Agents for CA & Tax Firms* in ${city} that:\n\n✅ *Auto-Collect Tax Docs*: Clients upload PAN, Form 16 & GST bills directly on WhatsApp\n✅ *Automated Deadline Reminders*: Smart proactive alerts before 20th GST & Advance Tax dates\n✅ *24/7 Tax Query Bot*: Answers client compliance & filing status queries instantly\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🏥\n\nEliminate front-desk phone bottlenecks and patient wait times.\n\nWe build *24/7 WhatsApp AI Receptionists for Hospitals* in ${city} that:\n\n✅ *Instant OPD Token & Bed Inquiries*: Automated token issuance 24/7 on WhatsApp\n✅ *Doctor Scheduling*: Real-time OPD slot booking across all specialties\n✅ *Automated Lab Report Delivery*: Dispatches PDF lab reports directly to patient WhatsApp\n\nWould you like a quick 2-minute live demo on WhatsApp? Reply *YES* to test it!\n\nBest regards,\n${senderName}`;
-      } else if (isSalon) {
-        return `Hello Team *${name}*! ✂️\n\nStop losing appointments during busy styling hours when your staff is occupied.\n\nWe build *24/7 WhatsApp AI Booking Agents for Luxury Salons* in ${city} that:\n\n✅ *Instant Slot Booking*: Shows stylist availability & service menu 24/7\n✅ *Automated Client Re-engagement*: Proactively invites clients back for grooming every 3-4 weeks\n✅ *5-Star Review Engine*: Collects 5-star Google ratings after every visit\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
-      } else {
-        return `Namaste Dr. / Team *${name}*! 🩺\n\nI noticed your practice on Google Maps. We build *24/7 AI WhatsApp Assistants* for top professionals in ${city}.\n\n✅ *Auto-Book Consultations*: Clients book appointments 24/7 on WhatsApp\n✅ *Instant Inquiry Answers*: Resolves common questions automatically\n✅ *Follow-up Reminders*: Proactively reminds clients about next steps\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
-      }
-
-    case 'local_seo':
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 📍\n\nWe help restaurants and cafes in ${city} rank *Top #1 on Google Maps* when hungry diners search for "Best restaurants near me":\n\n⭐ *Automated 5-Star Google Reviews via WhatsApp*\n📍 *Google Maps Menu & Photos Optimization*\n🔍 *Dominate Local Food Searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
-      } else if (isCA) {
-        return `Namaste Team *${name}*! 📍\n\nWe help Chartered Accountant & Tax consulting firms in ${city} rank *Top #1 on Google Maps* when corporate companies and HNIs search for "Best CA near me":\n\n⭐ *Automated 5-Star Google Reviews via WhatsApp*\n📍 *Google Business Profile Optimization & Audit*\n🔍 *Dominate Local Corporate Searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
-      } else {
-        return `Namaste Team *${name}*! 📍\n\nWe help businesses in ${city} rank *Top 3 on Google Maps* to generate 50+ new client inquiries every month:\n\n⭐ *5-Star Review Automation via WhatsApp*\n📍 *Google Business Profile Optimization*\n🔍 *Dominate local neighborhood searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
-      }
-
-    default:
-      return `Namaste Team *${name}* 🙏\n\nI am ${senderName}. We build high-speed websites, Android apps, and 24/7 WhatsApp AI automation suites for businesses in ${city}.\n\nWould you be open to a quick 2-minute preview?`;
-  }
+function nowIso(): string {
+  return new Date().toISOString();
 }
 
-class CampaignService {
-  private state: CampaignState = {
-    id: '',
-    status: 'idle',
-    currentIndex: 0,
-    total: 0,
-    delaySeconds: 35,
-    countdown: 0,
-    currentLead: null,
-    pitchType: 'all_in_one',
-    senderName: 'Satish (WebCore Studios)',
-    startedAt: null,
-    finishedAt: null,
-    logs: [],
+function logEntry(text: string, type: CampaignLog['type'] = 'info'): CampaignLog {
+  return {
+    time: new Date().toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }),
+    text,
+    type,
   };
+}
 
-  private queue: CampaignLead[] = [];
-  private customMessage: string = '';
-  private isCancelled: boolean = false;
-  private isPaused: boolean = false;
-  private isRunning: boolean = false;
-
-  public getStatus(): CampaignState {
-    return { ...this.state };
+/** Appends to the campaign's log ring buffer, newest first. */
+async function appendLog(campaignId: string, text: string, type: CampaignLog['type'] = 'info') {
+  try {
+    const { data } = await supabase.from('campaigns').select('logs').eq('id', campaignId).maybeSingle();
+    const existing: CampaignLog[] = Array.isArray(data?.logs) ? data!.logs : [];
+    const logs = [logEntry(text, type), ...existing].slice(0, MAX_LOGS);
+    await supabase.from('campaigns').update({ logs }).eq('id', campaignId);
+  } catch (err: any) {
+    console.warn('[Campaign] Could not persist log:', err?.message || err);
   }
+}
 
-  public addLog(text: string, type: 'info' | 'success' | 'warn' = 'info') {
-    const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    this.state.logs = [{ time, text, type }, ...this.state.logs.slice(0, 70)];
+/** The campaign the dashboard should be looking at: the live one, else the most recent. */
+async function loadCurrentCampaign(): Promise<any | null> {
+  const { data: active, error: activeErr } = await supabase
+    .from('campaigns')
+    .select('*')
+    .in('status', ['running', 'paused'])
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (activeErr) {
+    console.error('[Campaign] Failed to read active campaign:', activeErr.message);
+    return null;
   }
+  if (active && active.length > 0) return active[0];
 
-  public startCampaign(params: {
-    leads: CampaignLead[];
-    pitchType?: string;
-    customMessage?: string;
-    senderName?: string;
-    delaySeconds?: number;
-  }): { success: boolean; error?: string; campaignId?: string } {
-    if (this.isRunning && this.state.status === 'running') {
-      return { success: false, error: 'A background campaign is already actively running.' };
-    }
+  const { data: recent } = await supabase
+    .from('campaigns')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-    const validLeads = (params.leads || []).filter(
-      (l) => (l.phone_number || '').replace(/\D/g, '').length >= 10
-    );
+  return recent && recent.length > 0 ? recent[0] : null;
+}
 
-    if (validLeads.length === 0) {
-      return { success: false, error: 'No valid leads with phone numbers provided.' };
-    }
+async function targetCounts(campaignId: string): Promise<{ sent: number; failed: number; skipped: number; pending: number }> {
+  const { data } = await supabase.from('campaign_targets').select('status').eq('campaign_id', campaignId);
+  const rows = data || [];
+  return {
+    sent: rows.filter((r: any) => r.status === 'sent').length,
+    failed: rows.filter((r: any) => r.status === 'failed').length,
+    skipped: rows.filter((r: any) => String(r.status || '').startsWith('skipped')).length,
+    pending: rows.filter((r: any) => r.status === 'pending').length,
+  };
+}
 
-    this.queue = validLeads;
-    this.customMessage = params.customMessage || '';
-    this.isCancelled = false;
-    this.isPaused = false;
-    this.isRunning = true;
+function toState(row: any, counts: { sent: number; failed: number; skipped: number }, currentLead: CampaignLead | null): CampaignState {
+  const nextSendAt = row.next_send_at ? new Date(row.next_send_at).getTime() : 0;
+  const countdown =
+    row.status === 'running' && nextSendAt > Date.now() ? Math.ceil((nextSendAt - Date.now()) / 1000) : 0;
 
-    const campaignId = `camp_${Date.now()}`;
-    this.state = {
-      id: campaignId,
-      status: 'running',
-      currentIndex: 0,
-      total: validLeads.length,
-      delaySeconds: params.delaySeconds && params.delaySeconds >= 10 ? params.delaySeconds : 35,
-      countdown: 0,
-      currentLead: null,
-      pitchType: params.pitchType || 'all_in_one',
-      senderName: params.senderName || 'Satish (WebCore Studios)',
-      startedAt: new Date().toISOString(),
-      finishedAt: null,
-      logs: [],
-    };
+  return {
+    id: row.id,
+    status: row.status,
+    currentIndex: row.current_index ?? 0,
+    total: row.total ?? 0,
+    delaySeconds: row.delay_seconds ?? 35,
+    countdown,
+    currentLead,
+    pitchType: row.pitch_type || 'all_in_one',
+    senderName: row.sender_name || DEFAULT_SENDER,
+    startedAt: row.started_at || null,
+    finishedAt: row.finished_at || null,
+    logs: Array.isArray(row.logs) ? row.logs : [],
+    ...counts,
+  };
+}
 
-    this.addLog(`🚀 Cloud Background Campaign started with ${validLeads.length} leads (${this.state.delaySeconds}s safe pacing)`, 'info');
+/** Reads live campaign state. Any server instance returns the same answer. */
+export async function getStatus(): Promise<CampaignState> {
+  const row = await loadCurrentCampaign();
+  if (!row) return { ...IDLE_STATE };
 
-    // Launch non-blocking background loop on server
-    this.runBackgroundLoop();
+  const counts = await targetCounts(row.id);
 
-    return { success: true, campaignId };
-  }
+  // The target currently at the head of the queue, for the dashboard's "now pitching" line.
+  const { data: nextTarget } = await supabase
+    .from('campaign_targets')
+    .select('*')
+    .eq('campaign_id', row.id)
+    .eq('status', 'pending')
+    .order('position', { ascending: true })
+    .limit(1);
 
-  public pauseCampaign(): { success: boolean } {
-    if (this.state.status === 'running') {
-      this.isPaused = true;
-      this.state.status = 'paused';
-      this.addLog(`⏸️ Background campaign paused by user`, 'warn');
-      return { success: true };
-    }
-    return { success: false };
-  }
-
-  public resumeCampaign(): { success: boolean } {
-    if (this.state.status === 'paused') {
-      this.isPaused = false;
-      this.state.status = 'running';
-      this.addLog(`▶️ Background campaign resumed`, 'info');
-      return { success: true };
-    }
-    return { success: false };
-  }
-
-  public cancelCampaign(): { success: boolean } {
-    this.isCancelled = true;
-    this.isRunning = false;
-    this.state.status = 'cancelled';
-    this.state.finishedAt = new Date().toISOString();
-    this.addLog(`🛑 Background campaign cancelled by user`, 'warn');
-    return { success: true };
-  }
-
-  private async runBackgroundLoop() {
-    for (let i = 0; i < this.queue.length; i++) {
-      if (this.isCancelled) break;
-
-      while (this.isPaused) {
-        await new Promise((r) => setTimeout(r, 800));
-        if (this.isCancelled) break;
-      }
-      if (this.isCancelled) break;
-
-      const lead = this.queue[i];
-      this.state.currentIndex = i + 1;
-      this.state.currentLead = lead;
-
-      await this.dispatchLeadPitch(lead);
-
-      // Safe pacing countdown delay between sends
-      if (i < this.queue.length - 1 && !this.isCancelled) {
-        for (let c = this.state.delaySeconds; c > 0; c--) {
-          if (this.isCancelled) break;
-          while (this.isPaused) {
-            await new Promise((r) => setTimeout(r, 800));
-            if (this.isCancelled) break;
-          }
-          this.state.countdown = c;
-          await new Promise((r) => setTimeout(r, 1000));
+  const currentLead: CampaignLead | null =
+    nextTarget && nextTarget.length > 0
+      ? {
+          id: nextTarget[0].lead_id || undefined,
+          business_name: nextTarget[0].business_name,
+          phone_number: nextTarget[0].phone_number,
+          category: nextTarget[0].category || undefined,
+          city: nextTarget[0].city || undefined,
         }
-        this.state.countdown = 0;
-      }
-    }
+      : null;
 
-    if (!this.isCancelled) {
-      this.state.status = 'completed';
-      this.state.finishedAt = new Date().toISOString();
-      this.isRunning = false;
-      this.addLog(`🎉 Background Campaign completed! Dispatched ${this.state.total} leads.`, 'success');
+  return toState(row, { sent: counts.sent, failed: counts.failed, skipped: counts.skipped }, currentLead);
+}
+
+/**
+ * Creates a campaign and its target list. Nothing is sent here — the worker
+ * picks it up on the next tick, so this returns fast enough for a serverless
+ * request and survives the function shutting down immediately afterwards.
+ */
+export async function startCampaign(params: {
+  leads: CampaignLead[];
+  pitchType?: string;
+  customMessage?: string;
+  senderName?: string;
+  delaySeconds?: number;
+}): Promise<{ success: boolean; error?: string; campaignId?: string; queued?: number; rejected?: number }> {
+  const { data: alreadyRunning } = await supabase
+    .from('campaigns')
+    .select('id')
+    .in('status', ['running', 'paused'])
+    .limit(1);
+
+  if (alreadyRunning && alreadyRunning.length > 0) {
+    return {
+      success: false,
+      error: 'A campaign is already running or paused. Cancel it before starting another.',
+    };
+  }
+
+  const businessId = await resolveOperatorBusinessId();
+
+  // Normalise and de-duplicate before writing anything.
+  const seen = new Set<string>();
+  const valid: Array<{ lead: CampaignLead; phone: string }> = [];
+  let rejected = 0;
+
+  for (const lead of params.leads || []) {
+    const phone = normalizeIndianPhone(lead?.phone_number || '');
+    if (!phone || seen.has(phone)) {
+      rejected++;
+      continue;
+    }
+    seen.add(phone);
+    valid.push({ lead, phone });
+  }
+
+  if (valid.length === 0) {
+    return { success: false, error: 'No leads with a valid 10-digit Indian mobile number were provided.' };
+  }
+
+  const delaySeconds = params.delaySeconds && params.delaySeconds >= 10 ? params.delaySeconds : 35;
+
+  const { data: created, error: createErr } = await supabase
+    .from('campaigns')
+    .insert({
+      business_id: businessId,
+      status: 'running',
+      pitch_type: params.pitchType || 'all_in_one',
+      sender_name: params.senderName || DEFAULT_SENDER,
+      custom_message: params.customMessage || null,
+      delay_seconds: delaySeconds,
+      total: valid.length,
+      current_index: 0,
+      next_send_at: nowIso(), // first send is due immediately
+      logs: [
+        logEntry(
+          `🚀 Campaign queued with ${valid.length} leads (${delaySeconds}s pacing)${
+            rejected > 0 ? `, ${rejected} rejected as invalid or duplicate` : ''
+          }`,
+          'info'
+        ),
+      ],
+      started_at: nowIso(),
+    })
+    .select()
+    .single();
+
+  if (createErr || !created) {
+    console.error('[Campaign] Failed to create campaign:', createErr?.message);
+    return { success: false, error: createErr?.message || 'Could not create campaign.' };
+  }
+
+  const targets = valid.map(({ lead, phone }, index) => ({
+    campaign_id: created.id,
+    lead_id: lead.id || null,
+    position: index,
+    business_name: lead.business_name || 'Business Owner',
+    phone_number: phone,
+    category: lead.category || null,
+    city: lead.city || null,
+    status: 'pending',
+  }));
+
+  // Chunked so a large list does not exceed the request body limit.
+  for (let i = 0; i < targets.length; i += 500) {
+    const { error: targetErr } = await supabase.from('campaign_targets').insert(targets.slice(i, i + 500));
+    if (targetErr) {
+      console.error('[Campaign] Failed to insert targets:', targetErr.message);
+      await supabase
+        .from('campaigns')
+        .update({ status: 'cancelled', finished_at: nowIso() })
+        .eq('id', created.id);
+      return { success: false, error: `Could not queue targets: ${targetErr.message}` };
     }
   }
 
-  private async dispatchLeadPitch(lead: CampaignLead) {
-    const businessName = lead.business_name || 'Business Owner';
-    const city = lead.city || 'your city';
-    const category = lead.category || 'business';
+  console.log(`[Campaign] ✅ ${created.id} queued with ${valid.length} targets.`);
+  return { success: true, campaignId: created.id, queued: valid.length, rejected };
+}
 
-    let pitchText = '';
-    if (this.customMessage && this.customMessage.trim().length > 0) {
-      pitchText = this.customMessage
-        .replace(/{Business_Name}/gi, businessName)
-        .replace(/{City}/gi, city)
-        .replace(/{Category}/gi, category);
-    } else {
-      pitchText = buildPersonalizedPitch(businessName, category, city, this.state.pitchType, this.state.senderName);
-    }
+async function setCampaignStatus(
+  from: string[],
+  to: 'running' | 'paused' | 'cancelled',
+  logText: string,
+  logType: CampaignLog['type']
+): Promise<{ success: boolean; error?: string }> {
+  const row = await loadCurrentCampaign();
+  if (!row) return { success: false, error: 'No campaign found.' };
+  if (!from.includes(row.status)) {
+    return { success: false, error: `Campaign is ${row.status}; expected one of ${from.join(', ')}.` };
+  }
 
-    let cleanPhone = lead.phone_number.replace(/[^\d+]/g, '');
-    if (!cleanPhone.startsWith('+')) {
-      const digits = cleanPhone.replace(/\D/g, '');
-      cleanPhone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
-    }
+  const patch: Record<string, any> = { status: to };
+  if (to === 'cancelled') patch.finished_at = nowIso();
+  // Resuming restarts the clock rather than firing a burst of overdue sends.
+  if (to === 'running') patch.next_send_at = new Date(Date.now() + (row.delay_seconds ?? 35) * 1000).toISOString();
 
-    this.addLog(`[${this.state.currentIndex}/${this.state.total}] 📤 Pitching ${businessName} (${cleanPhone})...`, 'info');
+  const { error } = await supabase.from('campaigns').update(patch).eq('id', row.id);
+  if (error) return { success: false, error: error.message };
 
-    try {
-      await sendWhatsAppInteractiveButtons(
-        cleanPhone,
-        pitchText,
-        [
-          { id: 'btn_show_demo', title: '✅ Yes, Show Demo' },
-          { id: 'btn_pricing', title: '💰 Pricing & Cost?' },
-          { id: 'btn_not_now', title: '❌ Not Now' },
-        ]
+  await appendLog(row.id, logText, logType);
+  return { success: true };
+}
+
+export async function pauseCampaign() {
+  return setCampaignStatus(['running'], 'paused', '⏸️ Campaign paused by user', 'warn');
+}
+
+export async function resumeCampaign() {
+  return setCampaignStatus(['paused'], 'running', '▶️ Campaign resumed', 'info');
+}
+
+export async function cancelCampaign() {
+  const result = await setCampaignStatus(['running', 'paused'], 'cancelled', '🛑 Campaign cancelled by user', 'warn');
+  return result;
+}
+
+/**
+ * Sends at most one queued pitch, if one is due.
+ *
+ * Call this from a scheduler (the Express interval, or a platform cron hitting
+ * /api/admin/lead-hunter/campaign/tick). Returning after a single send keeps
+ * each invocation short and means a killed process loses nothing.
+ */
+export async function tickCampaign(): Promise<{
+  acted: boolean;
+  reason?: string;
+  campaignId?: string;
+  target?: string;
+  result?: 'sent' | 'failed' | 'skipped';
+}> {
+  const { data: dueRows, error: dueErr } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('status', 'running')
+    .lte('next_send_at', nowIso())
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  if (dueErr) {
+    console.error('[Campaign Worker] Could not read due campaigns:', dueErr.message);
+    return { acted: false, reason: 'query_failed' };
+  }
+  if (!dueRows || dueRows.length === 0) return { acted: false, reason: 'nothing_due' };
+
+  const campaign = dueRows[0];
+
+  // Claim this slot: only the worker that successfully moves next_send_at
+  // forward proceeds. If two workers tick simultaneously the loser sees zero
+  // updated rows and backs off, so the lead is never pitched twice.
+  const claimedUntil = new Date(Date.now() + (campaign.delay_seconds ?? 35) * 1000).toISOString();
+  const { data: claimed, error: claimErr } = await supabase
+    .from('campaigns')
+    .update({ next_send_at: claimedUntil })
+    .eq('id', campaign.id)
+    .eq('status', 'running')
+    .eq('next_send_at', campaign.next_send_at)
+    .select('id');
+
+  if (claimErr) {
+    console.error('[Campaign Worker] Claim failed:', claimErr.message);
+    return { acted: false, reason: 'claim_failed' };
+  }
+  if (!claimed || claimed.length === 0) {
+    return { acted: false, reason: 'claimed_by_another_worker' };
+  }
+
+  const { data: pending } = await supabase
+    .from('campaign_targets')
+    .select('*')
+    .eq('campaign_id', campaign.id)
+    .eq('status', 'pending')
+    .order('position', { ascending: true })
+    .limit(1);
+
+  if (!pending || pending.length === 0) {
+    const counts = await targetCounts(campaign.id);
+    await supabase
+      .from('campaigns')
+      .update({ status: 'completed', finished_at: nowIso() })
+      .eq('id', campaign.id);
+    await appendLog(
+      campaign.id,
+      `🎉 Campaign complete — ${counts.sent} sent, ${counts.skipped} skipped, ${counts.failed} failed.`,
+      'success'
+    );
+    console.log(`[Campaign Worker] ✅ ${campaign.id} complete.`);
+    return { acted: true, campaignId: campaign.id, reason: 'completed' };
+  }
+
+  const target = pending[0];
+  const outcome = await dispatchTarget(campaign, target);
+
+  await supabase
+    .from('campaigns')
+    .update({ current_index: (target.position ?? 0) + 1 })
+    .eq('id', campaign.id);
+
+  return {
+    acted: true,
+    campaignId: campaign.id,
+    target: target.business_name,
+    result: outcome,
+  };
+}
+
+async function dispatchTarget(campaign: any, target: any): Promise<'sent' | 'failed' | 'skipped'> {
+  const businessName = target.business_name || 'Business Owner';
+  const city = target.city || 'your city';
+  const category = target.category || 'business';
+  const label = `[${(target.position ?? 0) + 1}/${campaign.total}]`;
+
+  // Consent gate. A cold WhatsApp pitch to someone who has not opted in — or who
+  // has replied STOP — is exactly what gets a WABA number banned, so it is
+  // checked here rather than trusted from whatever queued the campaign.
+  const consentStatus = await lookupConsentStatus(target.lead_id, target.phone_number);
+  const gate = await checkOutreachAllowed({ phone: target.phone_number, consentStatus });
+
+  if (!gate.allowed) {
+    const status = gate.reason === 'opted_out' ? 'skipped_opt_out' : 'skipped_no_consent';
+    await supabase
+      .from('campaign_targets')
+      .update({ status, error: gate.detail })
+      .eq('id', target.id);
+    await appendLog(campaign.id, `${label} ⏭️ Skipped ${businessName}: ${gate.detail}`, 'warn');
+    console.warn(`[Campaign Worker] Skipped ${businessName} (${gate.reason}).`);
+    return 'skipped';
+  }
+
+  const pitchText = campaign.custom_message
+    ? renderCustomMessage(campaign.custom_message, {
+        businessName,
+        city,
+        category,
+        senderName: campaign.sender_name || DEFAULT_SENDER,
+      })
+    : buildPersonalizedPitch(
+        businessName,
+        category,
+        city,
+        (campaign.pitch_type || 'all_in_one') as PitchType,
+        campaign.sender_name || DEFAULT_SENDER
       );
 
-      // Record in conversations table
-      try {
-        let bizId = 'e39dee77-e7b9-45cf-ad64-fd6400f59a29';
-        const { data: bizList } = await supabaseAdmin.from('businesses').select('id').limit(1);
-        if (bizList && bizList.length > 0) bizId = bizList[0].id;
+  await appendLog(campaign.id, `${label} 📤 Pitching ${businessName} (${target.phone_number})...`, 'info');
 
-        await supabaseAdmin.from('conversations').insert({
-          business_id: bizId,
-          customer_number: cleanPhone,
-          message_text: pitchText,
-          message_direction: 'outbound',
-        });
-      } catch (dbErr) {
-        console.warn('[Campaign DB Save Notice]:', dbErr);
-      }
+  const sendResult = await sendInteractiveButtonsMessage(
+    target.phone_number,
+    ENV.WHATSAPP_BUSINESS_NUMBER,
+    pitchText,
+    PITCH_BUTTONS.map((b) => ({ id: b.id, title: b.title }))
+  );
 
-      this.addLog(`✅ Pitch delivered to ${businessName}!`, 'success');
-    } catch (err: any) {
-      this.addLog(`⚠️ Failed pitching ${businessName}: ${err.message}`, 'warn');
+  if (!sendResult.success) {
+    await supabase
+      .from('campaign_targets')
+      .update({ status: 'failed', error: sendResult.error || 'send failed' })
+      .eq('id', target.id);
+    await appendLog(campaign.id, `${label} ⚠️ Failed ${businessName}: ${sendResult.error}`, 'warn');
+
+    // A credentials problem will fail every remaining target too — pause rather
+    // than burn through the whole queue logging the same error.
+    if (sendResult.notConfigured) {
+      await supabase.from('campaigns').update({ status: 'paused' }).eq('id', campaign.id);
+      await appendLog(
+        campaign.id,
+        '⏸️ Campaign auto-paused: WhatsApp credentials are not configured. Set WHATSAPP_CLOUD_API_TOKEN and WHATSAPP_PHONE_NUMBER_ID, then resume.',
+        'warn'
+      );
     }
+    return 'failed';
+  }
+
+  await supabase
+    .from('campaign_targets')
+    .update({ status: 'sent', sent_at: nowIso(), error: null })
+    .eq('id', target.id);
+
+  await recordOutboundConversation(campaign.business_id, target.phone_number, pitchText);
+  await markLeadContacted(target.lead_id, target.phone_number, campaign.pitch_type);
+
+  await appendLog(campaign.id, `${label} ✅ Delivered to ${businessName}`, 'success');
+  return 'sent';
+}
+
+/** Consent comes from the lead record, never from the campaign request body. */
+async function lookupConsentStatus(leadId: string | null, phone: string): Promise<string> {
+  try {
+    if (leadId) {
+      const { data } = await supabase
+        .from('lead_hunter_leads')
+        .select('consent_status')
+        .eq('id', leadId)
+        .maybeSingle();
+      if (data) return data.consent_status || 'none';
+    }
+
+    const last10 = (phone || '').replace(/\D/g, '').slice(-10);
+    if (last10.length === 10) {
+      const { data } = await supabase
+        .from('lead_hunter_leads')
+        .select('consent_status')
+        .like('phone_number', `%${last10}`)
+        .limit(1);
+      if (data && data.length > 0) return data[0].consent_status || 'none';
+    }
+  } catch (err: any) {
+    console.warn('[Campaign] Consent lookup failed:', err?.message || err);
+  }
+  // Unknown number, or a lookup we could not complete: treat as no consent.
+  return 'none';
+}
+
+async function recordOutboundConversation(businessId: string | null, phone: string, text: string) {
+  const bizId = businessId || (await resolveOperatorBusinessId());
+  if (!bizId) {
+    console.warn('[Campaign] No operator business resolved — outbound pitch not logged to conversations.');
+    return;
+  }
+  try {
+    await supabase.from('conversations').insert({
+      business_id: bizId,
+      customer_number: phone,
+      message_text: text,
+      message_direction: 'outbound',
+    });
+  } catch (err: any) {
+    console.warn('[Campaign] Conversation log failed:', err?.message || err);
   }
 }
 
-// Global Singleton instance in server environment
-const globalForCampaign = global as unknown as { campaignService?: CampaignService };
-export const campaignService = globalForCampaign.campaignService || new CampaignService();
-if (process.env.NODE_ENV !== 'production') globalForCampaign.campaignService = campaignService;
+async function markLeadContacted(leadId: string | null, phone: string, pitchType: string | null) {
+  try {
+    const columns = 'id, contact_attempts, first_contacted_at';
+    let lead: any = null;
+
+    if (leadId) {
+      const { data } = await supabase.from('lead_hunter_leads').select(columns).eq('id', leadId).maybeSingle();
+      lead = data;
+    } else {
+      const last10 = (phone || '').replace(/\D/g, '').slice(-10);
+      if (last10.length !== 10) return;
+      const { data } = await supabase
+        .from('lead_hunter_leads')
+        .select(columns)
+        .like('phone_number', `%${last10}`)
+        .limit(1);
+      lead = data && data.length > 0 ? data[0] : null;
+    }
+
+    if (!lead) return;
+
+    await supabase
+      .from('lead_hunter_leads')
+      .update({
+        status: 'sent',
+        pitch_type: pitchType || null,
+        first_contacted_at: lead.first_contacted_at || nowIso(),
+        last_contacted_at: nowIso(),
+        contact_attempts: (lead.contact_attempts || 0) + 1,
+      })
+      .eq('id', lead.id);
+  } catch (err: any) {
+    console.warn('[Campaign] Could not update lead contact state:', err?.message || err);
+  }
+}
+
+/**
+ * Runs ticks on an interval inside a long-lived process (the Express server).
+ * Serverless deployments should hit the /campaign/tick route from a platform
+ * cron instead; both paths are safe to run simultaneously.
+ */
+export function startCampaignWorker(intervalMs = 5000): NodeJS.Timeout {
+  console.log(`[Campaign Worker] Started — polling every ${Math.round(intervalMs / 1000)}s.`);
+  return setInterval(async () => {
+    try {
+      await tickCampaign();
+    } catch (err: any) {
+      console.error('[Campaign Worker] Tick failed:', err?.message || err);
+    }
+  }, intervalMs);
+}
+
+/**
+ * Kept so existing route handlers keep working. Every method is async now
+ * because the state is in Postgres, not in this process.
+ */
+export const campaignService = {
+  getStatus,
+  startCampaign,
+  pauseCampaign,
+  resumeCampaign,
+  cancelCampaign,
+  tickCampaign,
+};
+
+// Re-exported from the single canonical copy in pitchTemplates. This module used
+// to carry its own 80-line duplicate that drifted from the one in send-pitch.
+export { buildPersonalizedPitch };

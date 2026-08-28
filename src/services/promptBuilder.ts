@@ -373,12 +373,30 @@ function buildConfigMap(business: Business, configs: ConfigRow[]): Record<string
   return map;
 }
 
+/**
+ * Substitutes {key} and {{key}} placeholders with config values.
+ *
+ * This only matched the single-brace form. Every template in
+ * CATEGORY_FALLBACK_TEMPLATES uses the double-brace form, so on the fallback
+ * path the regex matched `{business_name}` *inside* `{{business_name}}`,
+ * substituted it, and left the outer braces behind — the model received
+ * "{Sharma Bakery}" and, for anything not in the config map, a literal
+ * "{[Not provided]}". Both forms are now accepted.
+ */
 function injectPlaceholders(template: string, configMap: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_match, key) => {
-    if (configMap[key] !== undefined) return configMap[key];
-    warn(`[PromptBuilder Warning] Missing config value for key: ${key}. Defaulting to empty.`);
-    return '[Not provided]';
-  });
+  // Double-brace first: {{key}} would otherwise be consumed by the single-brace
+  // pattern and leave stray braces around the substituted value.
+  return template
+    .replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key) => resolvePlaceholder(key, configMap))
+    .replace(/\{\s*(\w+)\s*\}/g, (_match, key) => resolvePlaceholder(key, configMap));
+}
+
+function resolvePlaceholder(key: string, configMap: Record<string, string>): string {
+  const value = configMap[key];
+  if (value !== undefined && String(value).trim() !== '') return String(value);
+
+  warn(`[PromptBuilder Warning] Missing config value for key: ${key}.`);
+  return '[Not provided]';
 }
 
 // ---------------------------------------------------------------------------

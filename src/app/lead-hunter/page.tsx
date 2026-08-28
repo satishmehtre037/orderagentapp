@@ -13,6 +13,9 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
+  ShieldAlert,
+  ShieldCheck,
   ExternalLink,
   Shield,
   Layers,
@@ -29,7 +32,40 @@ import {
   Bot,
   Zap,
 } from 'lucide-react';
-import { ScrapedLead } from '../api/admin/lead-hunter/search/route';
+import { ScrapedLead } from '../../services/leadSourceService';
+import {
+  buildPersonalizedPitch,
+  renderCustomMessage,
+  type PitchType,
+} from '../../services/pitchTemplates';
+
+/** Consent values that let the campaign worker actually send. */
+const SENDABLE_CONSENT = ['opt_in', 'legitimate_b2b'];
+
+const CONSENT_LABELS: Record<string, { text: string; className: string; title: string }> = {
+  opt_in: {
+    text: '✅ Opt-in',
+    className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    title: 'This contact asked to be messaged. Sending is allowed.',
+  },
+  legitimate_b2b: {
+    text: '✅ B2B basis',
+    className: 'bg-teal-500/10 text-teal-300 border-teal-500/20',
+    title: 'A documented existing business relationship is on file. Sending is allowed.',
+  },
+  opted_out: {
+    text: '🚫 Opted out',
+    className: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    title: 'This person replied STOP. They are suppressed permanently and cannot be re-enabled.',
+  },
+  none: {
+    text: '⚠️ No consent',
+    className: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    title:
+      'Sourced from a public listing, which is not consent. The campaign worker will skip this lead until a lawful basis is recorded.',
+  },
+};
+
 
 export default function LeadHunterPage() {
   // Navigation Tab: 'hunter' = Lead Scraper & Dispatcher, 'chats' = Live WhatsApp Conversations
@@ -52,6 +88,18 @@ export default function LeadHunterPage() {
   const [showPasteModal, setShowPasteModal] = useState(false);
   const [pastedNumbersText, setPastedNumbersText] = useState('');
 
+  // Sourcing / consent state. Leads arrive with consent_status 'none' and the
+  // campaign worker refuses to send to them, so the operator needs to see that
+  // and be able to record a basis before dispatch.
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchNotice, setSearchNotice] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isRecordingConsent, setIsRecordingConsent] = useState(false);
+  const [consentBasis, setConsentBasis] = useState<'opt_in' | 'legitimate_b2b'>('legitimate_b2b');
+  const [consentNote, setConsentNote] = useState('');
+  const [pasteConsentNote, setPasteConsentNote] = useState('');
+  const [pasteConsentBasis, setPasteConsentBasis] = useState<'opt_in' | 'legitimate_b2b'>('opt_in');
+
   // 3. Multi-Service Pitch Arsenal State
   const [pitchType, setPitchType] = useState<'all_in_one' | 'whatsapp_ai' | 'web_mobile' | 'local_seo' | 'custom'>('all_in_one');
   const [senderName, setSenderName] = useState('Satish (WebCore Studios)');
@@ -67,6 +115,9 @@ export default function LeadHunterPage() {
   const [campaignTotal, setCampaignTotal] = useState(0);
   const [countdown, setCountdown] = useState(0);
   const [campaignLogs, setCampaignLogs] = useState<Array<{ time: string; text: string; type: 'info' | 'success' | 'warn' }>>([]);
+  const [campaignSent, setCampaignSent] = useState(0);
+  const [campaignFailed, setCampaignFailed] = useState(0);
+  const [campaignSkipped, setCampaignSkipped] = useState(0);
 
   // 5. Live WhatsApp Chat Inbox State
   const [chatThreads, setChatThreads] = useState<any[]>([]);
@@ -116,6 +167,8 @@ export default function LeadHunterPage() {
   // Search / Scrape Leads
   const handleSearchLeads = async () => {
     setIsSearching(true);
+    setSearchError(null);
+    setSearchNotice(null);
     try {
       const res = await fetch('/api/admin/lead-hunter/search', {
         method: 'POST',
@@ -129,19 +182,131 @@ export default function LeadHunterPage() {
         }),
       });
       const data = await res.json();
-      if (data.success && data.leads) {
-        setLeads(data.leads);
-        setSelectedLeadIds(data.leads.map((l: ScrapedLead) => l.id));
-        addLog(`⚡ Extracted ${data.leads.length} live verified leads for "${data.query}"`, 'success');
-      } else {
-        addLog(`Search failed: ${data.error || 'Unknown error'}`, 'warn');
+
+      // 503 means Google Places is not configured. The route deliberately does
+      // not fall back to generating leads, so say so plainly rather than showing
+      // an empty table that looks like "no businesses found".
+      if (res.status === 503) {
+        setSearchError(data.error || 'Lead sourcing is not configured on this server.');
+        addLog('⛔ Lead sourcing unavailable — see the banner above.', 'warn');
+        return;
+      }
+
+      if (!res.ok || !data.success) {
+        setSearchError(data.error || `Search failed (HTTP ${res.status}).`);
+        addLog(`Search failed: ${data.error || res.status}`, 'warn');
+        return;
+      }
+
+      setLeads(data.leads || []);
+      // Nothing is pre-selected any more. Everything Places returns has
+      // consent_status 'none', so auto-selecting the whole page made it one
+      // click to queue a campaign that the worker would skip in its entirety.
+      setSelectedLeadIds([]);
+      setSearchNotice(data.notice || null);
+
+      const s = data.skipped || {};
+      addLog(
+        `🔎 Places query "${data.query}" — scanned ${data.scanned ?? '?'}, kept ${data.count ?? 0}.`,
+        (data.count ?? 0) > 0 ? 'success' : 'warn'
+      );
+      const skippedParts = [
+        s.noPhone ? `${s.noPhone} no phone` : '',
+        s.invalidPhone ? `${s.invalidPhone} not a mobile` : '',
+        s.closed ? `${s.closed} permanently closed` : '',
+        s.hasWebsite ? `${s.hasWebsite} filtered out by the website rule` : '',
+      ].filter(Boolean);
+      if (skippedParts.length > 0) {
+        addLog(`↪️ Skipped: ${skippedParts.join(', ')}.`, 'info');
+      }
+      if ((data.count ?? 0) > 0) {
+        addLog('⚠️ These leads have no consent recorded yet — record a basis before starting a campaign.', 'warn');
       }
     } catch (err: any) {
+      setSearchError(err.message);
       addLog(`Error searching leads: ${err.message}`, 'warn');
     } finally {
       setIsSearching(false);
     }
   };
+
+  /** Reloads persisted leads so consent changes and opt-outs survive a refresh. */
+  const reloadSavedLeads = async () => {
+    try {
+      const res = await fetch(`/api/admin/lead-hunter/search?limit=200&_t=${Date.now()}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.leads) && data.leads.length > 0) {
+        setLeads(data.leads);
+      }
+    } catch {
+      /* the table just stays as it is */
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) reloadSavedLeads();
+  }, [isAuthenticated]);
+
+  /**
+   * Records a lawful basis for the selected leads.
+   *
+   * Leads sourced from Google Places sit at consent_status 'none' and the
+   * campaign worker skips them. This is the only route past that gate, and the
+   * note is mandatory: it is what makes the decision auditable later.
+   */
+  const handleRecordConsent = async () => {
+    const targets = leads.filter(
+      (l) => selectedLeadIds.includes(l.id) && l.consent_status !== 'opted_out' && !String(l.id).startsWith('lead_')
+    );
+
+    if (targets.length === 0) {
+      alert(
+        'Select at least one saved lead first. Leads that are opted out cannot be re-enabled, and unsaved rows have no record to attach consent to.'
+      );
+      return;
+    }
+    if (consentNote.trim().length < 10) {
+      alert('Write at least 10 characters describing the basis — where the opt-in came from, or what the relationship is.');
+      return;
+    }
+
+    setIsRecordingConsent(true);
+    try {
+      const res = await fetch('/api/admin/lead-hunter/leads', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ids: targets.map((l) => l.id),
+          consentStatus: consentBasis,
+          consentNote: consentNote.trim(),
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(`Could not record consent: ${data.error}`);
+        addLog(`⚠️ Consent not recorded: ${data.error}`, 'warn');
+        return;
+      }
+
+      const updatedIds = new Set((data.leads || []).map((l: any) => l.id));
+      setLeads((prev) =>
+        prev.map((l) => (updatedIds.has(l.id) ? { ...l, consent_status: consentBasis } : l))
+      );
+      addLog(
+        `🛡️ Recorded "${consentBasis}" for ${data.updated} lead(s)${
+          data.skippedOptedOut ? ` (${data.skippedOptedOut} left suppressed — they opted out)` : ''
+        }.`,
+        'success'
+      );
+      setConsentNote('');
+    } catch (err: any) {
+      alert(`Consent request failed: ${err.message}`);
+    } finally {
+      setIsRecordingConsent(false);
+    }
+  };
+
 
   // Toggle Single Lead Selection
   const handleToggleLeadSelection = (leadId: string) => {
@@ -161,76 +326,136 @@ export default function LeadHunterPage() {
     }
   };
 
-  // Import Pasted Numbers
-  const handleImportPastedNumbers = () => {
+  /**
+   * Imports pasted numbers through the manual sourcing endpoint.
+   *
+   * This used to build ScrapedLead objects in the browser with `rating: 4.5,
+   * reviews_count: 50` and an id like `lead_pasted_3_1699…`. Two problems: the
+   * operator was shown a 4.5-star rating for a business nobody had rated, and
+   * the row existed only in React state — so it had no consent record and the
+   * campaign worker skipped every one of them. The server now saves them with
+   * the basis the operator states here.
+   */
+  const handleImportPastedNumbers = async () => {
     if (!pastedNumbersText.trim()) return;
-    const lines = pastedNumbersText.split('\n');
-    const imported: ScrapedLead[] = [];
 
-    lines.forEach((line, idx) => {
+    if (pasteConsentNote.trim().length < 10) {
+      alert(
+        'A consent note is required (at least 10 characters). Record where these numbers came from and why they may be contacted — that note is the audit trail.'
+      );
+      return;
+    }
+
+    const entries: Array<{ phone: string; businessName?: string; category?: string; city?: string }> = [];
+
+    pastedNumbersText.split('\n').forEach((line) => {
       const trimmed = line.trim();
       if (!trimmed) return;
       const parts = trimmed.split(/,|\t/);
-      let name = '';
-      let phone = '';
-
       if (parts.length >= 2) {
-        name = parts[0].trim();
-        phone = parts[1].trim();
-      } else {
-        phone = trimmed;
-        name = `External Contact #${idx + 1}`;
-      }
-
-      const digits = phone.replace(/\D/g, '');
-      if (digits.length >= 10) {
-        const cleanPhone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
-        imported.push({
-          id: `lead_pasted_${idx}_${Date.now()}`,
-          business_name: name,
+        entries.push({
+          businessName: parts[0].trim(),
+          phone: parts[1].trim(),
           category: selectedCategory,
           city: city || 'Thane',
-          phone_number: cleanPhone,
-          rating: 4.5,
-          reviews_count: 50,
-          address: `${city || 'Thane'} (Direct Upload)`,
-          has_website: false,
-          maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + (city || 'Thane'))}`,
-          status: 'pending',
         });
+      } else {
+        entries.push({ phone: trimmed, category: selectedCategory, city: city || 'Thane' });
       }
     });
 
-    if (imported.length > 0) {
-      setLeads((prev) => [...imported, ...prev]);
-      setSelectedLeadIds((prev) => [...imported.map((l) => l.id), ...prev]);
-      addLog(`📥 Successfully imported ${imported.length} external leads into queue!`, 'success');
+    if (entries.length === 0) {
+      alert('No lines to import.');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const res = await fetch('/api/admin/lead-hunter/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'manual',
+          entries,
+          consentStatus: pasteConsentBasis,
+          consentNote: pasteConsentNote.trim(),
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(`Import failed: ${data.error}`);
+        addLog(`⚠️ Manual import failed: ${data.error}`, 'warn');
+        return;
+      }
+
+      const saved: ScrapedLead[] = data.leads || [];
+      setLeads((prev) => [...saved, ...prev.filter((p) => !saved.some((s) => s.id === p.id))]);
+      setSelectedLeadIds((prev) => [...saved.map((l) => l.id), ...prev]);
+
+      addLog(`📥 Imported ${saved.length} lead(s) with basis "${pasteConsentBasis}".`, 'success');
+      if (data.rejected?.length > 0) {
+        addLog(
+          `↪️ ${data.rejected.length} rejected as not valid Indian mobile numbers: ${data.rejected
+            .slice(0, 5)
+            .map((r: any) => r.phone)
+            .join(', ')}${data.rejected.length > 5 ? '…' : ''}`,
+          'warn'
+        );
+      }
+
       setShowPasteModal(false);
       setPastedNumbersText('');
-    } else {
-      alert('No valid 10-digit phone numbers detected in text.');
+      setPasteConsentNote('');
+    } catch (err: any) {
+      alert(`Import error: ${err.message}`);
+    } finally {
+      setIsImporting(false);
     }
   };
 
-  // Quick Add Personal Test Lead
-  const handleAddMyNumberTestLead = () => {
-    const myTestLead: ScrapedLead = {
-      id: `lead_my_test_${Date.now()}`,
-      business_name: 'Satish Mehtre (WebCore Demo Lead)',
-      category: selectedCategory,
-      city: city || 'Thane',
-      phone_number: '+918779841346',
-      rating: 5.0,
-      reviews_count: 120,
-      address: `${city || 'Thane'} HQ (Personal Test Lead)`,
-      has_website: true,
-      website: 'https://webcorestudios.com',
-      maps_url: `https://www.google.com/maps/search/?api=1&query=Thane+West+Maharashtra`,
-      status: 'pending',
-    };
-    setLeads((prev) => [myTestLead, ...prev.filter((l) => l.phone_number !== '+918779841346')]);
-    setSelectedLeadIds((prev) => [myTestLead.id, ...prev]);
-    addLog(`📱 Added your personal test lead (+918779841346). Click "Send Pitch" to test live!`, 'success');
+  /**
+   * Adds the operator's own number as a test lead — via the manual endpoint, so
+   * it gets a real row and a real consent record. It used to be built in the
+   * browser with `rating: 5.0, reviews_count: 120`, neither of which was real,
+   * and with no database row it could never pass the send gate.
+   */
+  const handleAddMyNumberTestLead = async () => {
+    setIsImporting(true);
+    try {
+      const res = await fetch('/api/admin/lead-hunter/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'manual',
+          entries: [
+            {
+              phone: '+918779841346',
+              businessName: 'Satish Mehtre (WebCore test number)',
+              category: selectedCategory,
+              city: city || 'Thane',
+            },
+          ],
+          consentStatus: 'opt_in',
+          consentNote: 'Operator’s own number, added from the Lead Hunter console for live delivery testing.',
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        addLog(`⚠️ Could not add the test lead: ${data.error}`, 'warn');
+        return;
+      }
+
+      const saved: ScrapedLead[] = data.leads || [];
+      setLeads((prev) => [...saved, ...prev.filter((p) => !saved.some((s) => s.id === p.id))]);
+      setSelectedLeadIds((prev) => [...saved.map((l) => l.id), ...prev]);
+      addLog('📱 Test lead saved with an opt-in basis. "Send Pitch" will now go through.', 'success');
+    } catch (err: any) {
+      addLog(`⚠️ Could not add the test lead: ${err.message}`, 'warn');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   // Fetch Conversations / Threads (Merging server + local state)
@@ -518,6 +743,16 @@ export default function LeadHunterPage() {
         });
 
         addLog(`✅ WhatsApp Pitch delivered to ${lead.business_name}!`, 'success');
+      } else if (res.status === 403) {
+        // The consent gate lives on the server and it refused. Say why, and say
+        // what would change it, rather than reporting a generic failure.
+        addLog(
+          `🛡️ Not sent to ${lead.business_name}: ${data.error} ` +
+            (data.reason === 'opted_out'
+              ? 'This number is permanently suppressed.'
+              : 'Select the lead in the table and record a lawful basis first.'),
+          'warn'
+        );
       } else {
         addLog(`⚠️ Failed delivering to ${lead.business_name}: ${data.error}`, 'warn');
       }
@@ -535,6 +770,9 @@ export default function LeadHunterPage() {
       const data = await res.json();
       if (data.success && data.campaign) {
         const camp = data.campaign;
+        setCampaignSent(camp.sent || 0);
+        setCampaignFailed(camp.failed || 0);
+        setCampaignSkipped(camp.skipped || 0);
         if (camp.status === 'running' || camp.status === 'paused') {
           setIsCampaignRunning(true);
           setIsCampaignPaused(camp.status === 'paused');
@@ -549,6 +787,9 @@ export default function LeadHunterPage() {
             setIsCampaignRunning(false);
             setIsCampaignPaused(false);
             setCountdown(0);
+            // Consent may have flipped to opted_out mid-campaign if anyone
+            // replied STOP, so re-read the lead rows rather than keep stale ones.
+            reloadSavedLeads();
           }
         }
       }
@@ -566,19 +807,42 @@ export default function LeadHunterPage() {
 
   // 24/7 Paced Server Campaign Dispatcher
   const handleStartPacedCampaign = async () => {
-    const validQueue = leads.filter(
-      (l) => selectedLeadIds.includes(l.id) && l.status === 'pending' && (l.phone_number || '').replace(/\D/g, '').length >= 10
-    );
-    const missingQueue = leads.filter(
-      (l) => selectedLeadIds.includes(l.id) && l.status === 'pending' && (l.phone_number || '').replace(/\D/g, '').length < 10
-    );
+    const selected = leads.filter((l) => selectedLeadIds.includes(l.id) && l.status === 'pending');
+
+    const missingQueue = selected.filter((l) => (l.phone_number || '').replace(/\D/g, '').length < 10);
+    const withPhone = selected.filter((l) => (l.phone_number || '').replace(/\D/g, '').length >= 10);
+
+    // The worker checks consent itself and skips anything without a basis, so
+    // sending these would just produce a campaign of skipped rows. Report it
+    // here instead, where the operator can act on it.
+    const noConsent = withPhone.filter((l) => !SENDABLE_CONSENT.includes(String(l.consent_status)));
+    const validQueue = withPhone.filter((l) => SENDABLE_CONSENT.includes(String(l.consent_status)));
 
     if (missingQueue.length > 0) {
-      addLog(`ℹ️ Skipped ${missingQueue.length} leads with missing phone numbers. Click Maps or edit their number in the table.`, 'warn');
+      addLog(`ℹ️ ${missingQueue.length} lead(s) have no usable mobile number and were left out.`, 'warn');
+    }
+    if (noConsent.length > 0) {
+      addLog(
+        `🛡️ ${noConsent.length} lead(s) have no recorded lawful basis and were left out. Select them and use "Record consent" first.`,
+        'warn'
+      );
     }
 
     if (validQueue.length === 0) {
-      alert('No pending leads with valid phone numbers selected. Please enter phone numbers in the table or click "Add My Number".');
+      alert(
+        noConsent.length > 0
+          ? `None of the ${selected.length} selected leads can be contacted yet: ${noConsent.length} have no recorded consent. Select them and use "Record consent basis" to log an opt-in or a documented B2B relationship first.`
+          : 'No pending leads with a valid Indian mobile number are selected.'
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Queue ${validQueue.length} WhatsApp pitch(es) at one every ${delaySeconds}s?\n\n` +
+          `Each recipient has a recorded lawful basis and every message carries a "Reply STOP" footer.`
+      )
+    ) {
       return;
     }
 
@@ -586,7 +850,7 @@ export default function LeadHunterPage() {
     setIsCampaignPaused(false);
     setCampaignTotal(validQueue.length);
     setCampaignCurrentIdx(0);
-    addLog(`🚀 Handing off ${validQueue.length} verified leads to 24/7 Cloud Background Queue with ${delaySeconds}s safe pacing...`, 'info');
+    addLog(`🚀 Queueing ${validQueue.length} lead(s) on the server at ${delaySeconds}s pacing...`, 'info');
 
     try {
       const res = await fetch('/api/admin/lead-hunter/campaign', {
@@ -601,15 +865,21 @@ export default function LeadHunterPage() {
         }),
       });
       const data = await res.json();
-      if (data.success) {
-        addLog(`☁️ 24/7 Cloud Queue Activated! You can now safely close this browser, lock your screen, or shut down your PC.`, 'success');
+      if (res.ok && data.success) {
+        addLog(
+          `☁️ ${data.queued} queued on the server${
+            data.rejected ? `, ${data.rejected} rejected as invalid or duplicate` : ''
+          }. Safe to close this browser — the worker keeps sending.`,
+          'success'
+        );
         syncServerCampaign();
       } else {
-        alert(`Failed to start cloud campaign: ${data.error}`);
+        alert(`Failed to start the campaign: ${data.error}`);
+        addLog(`⚠️ Campaign not started: ${data.error}`, 'warn');
         setIsCampaignRunning(false);
       }
     } catch (err: any) {
-      alert(`Cloud Campaign Request Error: ${err.message}`);
+      alert(`Campaign request error: ${err.message}`);
       setIsCampaignRunning(false);
     }
   };
@@ -643,80 +913,25 @@ export default function LeadHunterPage() {
     } catch (e) {}
   };
 
-  // Generate Pitch Preview Text (Category-Aware High-Conversion AI Copy)
+  /**
+   * Preview / optimistic-bubble text.
+   *
+   * This used to be a fourth verbatim copy of the pitch copy (the other three
+   * were campaignService, send-pitch and pitchTemplates). It had already
+   * drifted: this one omitted the opt-out footer, so the preview did not match
+   * the message the server actually sent. It now calls the same builder.
+   */
   const generatePitchText = (lead: ScrapedLead, type: string, custom: string, sender: string) => {
-    if (type === 'custom' && custom.trim()) {
-      return custom
-        .replace(/{business_name}/gi, lead.business_name)
-        .replace(/{city}/gi, lead.city)
-        .replace(/{sender_name}/gi, sender);
-    }
-    const name = lead.business_name;
-    const cat = (lead.category || '').toLowerCase();
-    const city = lead.city || 'your city';
+    const businessName = lead.business_name;
+    const leadCity = lead.city || 'your city';
+    const category = lead.category || 'business';
 
-    const isCA = cat.includes('ca') || cat.includes('tax') || cat.includes('audit') || cat.includes('accountant') || name.toLowerCase().includes('ca ') || name.toLowerCase().includes('accountant') || name.toLowerCase().includes('gst');
-    const isHospital = cat.includes('hospital') || name.toLowerCase().includes('hospital');
-    const isSalon = cat.includes('salon') || cat.includes('spa') || cat.includes('beauty') || name.toLowerCase().includes('salon');
-    const isRestaurant = cat.includes('restaurant') || cat.includes('cafe') || cat.includes('food') || cat.includes('dine') || cat.includes('bar') || name.toLowerCase().includes('cafe') || name.toLowerCase().includes('dining');
-    const isRealEstate = cat.includes('real_estate') || cat.includes('realty') || cat.includes('builder') || cat.includes('property');
-    const isTuition = cat.includes('tuition') || cat.includes('coach') || cat.includes('academy') || cat.includes('class') || cat.includes('institute');
-    const isRetail = cat.includes('retail') || cat.includes('boutique') || cat.includes('store') || cat.includes('shop') || cat.includes('jewel');
-
-    if (type === 'whatsapp_ai') {
-      if (isRestaurant) {
-        return `Hello Team *${name}*! 🍽️\n\nStop missing table inquiries and party bookings during rush hours.\n\nWe build *24/7 WhatsApp AI Food & Table Booking Agents* in ${city} that:\n\n✅ *Instant Table & Party Reservations*: Confirms bookings automatically 24/7 on WhatsApp\n✅ *Interactive WhatsApp Food Menu*: Customers browse dishes and place delivery orders directly\n✅ *Weekend Re-engagement*: Proactively sends special weekend offers to your past diners\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to test it!\n\nBest regards,\n${sender}`;
-      } else if (isCA) {
-        return `Namaste Team *${name}* (Chartered Accountants)! 💼\n\nStop spending hours manually chasing clients for GST invoices and ITR documents.\n\nWe build *24/7 WhatsApp AI Agents for CA & Tax Firms* in ${city} that:\n\n✅ *Auto-Collect Tax Docs*: Clients upload PAN, Form 16 & GST bills directly on WhatsApp\n✅ *Automated Deadline Reminders*: Smart proactive alerts before 20th GST & Advance Tax dates\n✅ *24/7 Tax Query Bot*: Answers client compliance & filing status queries instantly\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${sender}`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🏥\n\nEliminate front-desk phone bottlenecks and patient wait times.\n\nWe build *24/7 WhatsApp AI Receptionists for Hospitals* in ${city} that:\n\n✅ *Instant OPD Token & Bed Inquiries*: Automated token issuance 24/7 on WhatsApp\n✅ *Doctor Scheduling*: Real-time OPD slot booking across all specialties\n✅ *Automated Lab Report Delivery*: Dispatches PDF lab reports directly to patient WhatsApp\n\nWould you like a quick 2-minute live demo on WhatsApp? Reply *YES* to test it!\n\nBest regards,\n${sender}`;
-      } else if (isSalon) {
-        return `Hello Team *${name}*! ✂️\n\nStop losing appointments during busy styling hours when your staff is occupied.\n\nWe build *24/7 WhatsApp AI Booking Agents for Luxury Salons* in ${city} that:\n\n✅ *Instant Slot Booking*: Shows stylist availability & service menu 24/7\n✅ *Automated Client Re-engagement*: Proactively invites clients back for grooming every 3-4 weeks\n✅ *5-Star Review Engine*: Collects 5-star Google ratings after every visit\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${sender}`;
-      } else {
-        return `Namaste Dr. / Team *${name}*! 🩺\n\nI noticed your practice on Google Maps. We build *24/7 AI WhatsApp Assistants* for top professionals in ${city}.\n\n✅ *Auto-Book Consultations*: Clients book appointments 24/7 on WhatsApp\n✅ *Instant Inquiry Answers*: Resolves common questions automatically\n✅ *Follow-up Reminders*: Proactively reminds clients about next steps\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${sender}`;
-      }
+    if (type === 'custom') {
+      if (!custom.trim()) return '(Write your custom message above to see the preview.)';
+      return renderCustomMessage(custom, { businessName, city: leadCity, category, senderName: sender });
     }
 
-    if (type === 'web_mobile') {
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 🌐\n\nTake direct orders without giving away 30% commission. We build custom *Online Ordering Web Apps & Android Apps* for restaurants in ${city}:\n\n🍔 *Direct Digital QR Menu & Mobile Ordering*\n⚡ *Ultra-Fast Customer Web App* with UPI payment\n📱 *Play Store Native App* for your brand\n\nCan I send you a custom mockup for *${name}*? Reply *YES* to review!\n\nCheers,\n${sender}`;
-      } else if (isCA) {
-        return `Namaste Team *${name}*! 🌐\n\nLegacy CA websites look outdated. We build high-authority *Client Portals & Mobile Apps* for Chartered Accountants in ${city}:\n\n🔒 *Secure Client Document Vault & ITR Tracker*\n⚡ *Ultra-Fast Next.js Firm Website* (< 1s load speed)\n📱 *Native Android Client App* on Google Play Store\n💳 *Integrated Online Invoicing & UPI Payments*\n\nCan I send you a custom design mockup for *${name}*? Reply *YES* to review!\n\nBest regards,\n${sender}`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🌐\n\nWe build lightning-fast *Patient Portals & Android Mobile Apps* for hospitals in ${city}:\n\n🚀 *Ultra-Fast Hospital Website* with instant WhatsApp appointment booking\n📱 *Native Android Patient App* (Doctor profiles, OPD booking & health records)\n💳 *Integrated Online Consultation & UPI Payment Gateway*\n\nCan I share a custom design mockup for *${name}*? Reply *YES* to see it!\n\nBest regards,\n${sender}`;
-      } else {
-        return `Hello Team *${name}*! 👋\n\nWe build *Lightning-Fast Modern Websites & Android Apps* for growing businesses in ${city}:\n\n🚀 *Ultra-Fast Next.js High-Performance Website*\n📱 *Play Store Ready Native Android App*\n💳 *Integrated UPI & Online Payment Gateway*\n\nCan I send you a custom mockup for *${name}*? Reply *YES* to review!\n\nCheers,\n${sender}`;
-      }
-    }
-
-    if (type === 'local_seo') {
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 📍\n\nWe help restaurants and cafes in ${city} rank *Top #1 on Google Maps* when hungry diners search for "Best restaurants near me":\n\n⭐ *Automated 5-Star Google Reviews via WhatsApp*\n📍 *Google Maps Menu & Photos Optimization*\n🔍 *Dominate Local Food Searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${sender}`;
-      } else if (isCA) {
-        return `Namaste Team *${name}*! 📍\n\nWe help Chartered Accountant & Tax consulting firms in ${city} rank *Top #1 on Google Maps* when corporate companies and HNIs search for "Best CA near me":\n\n⭐ *Automated 5-Star Google Reviews via WhatsApp*\n📍 *Google Business Profile Optimization & Audit*\n🔍 *Dominate Local Corporate Searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${sender}`;
-      } else {
-        return `Namaste Team *${name}*! 📍\n\nWe help businesses in ${city} rank *Top 3 on Google Maps* to generate 50+ new client inquiries every month:\n\n⭐ *5-Star Review Automation via WhatsApp*\n📍 *Google Business Profile Optimization*\n🔍 *Dominate local neighborhood searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${sender}`;
-      }
-    }
-
-    // Default: All In One Tech Suite
-    if (isRestaurant) {
-      return `Namaste Team *${name}*! 🍽️\n\nI am Satish from *WebCore Studios*. We build direct ordering & WhatsApp AI booking suites for top restaurants in ${city}:\n\n1️⃣ *Direct QR & WhatsApp Food Ordering* (Zero 30% Swiggy/Zomato commission fees)\n2️⃣ *24/7 WhatsApp AI Table & Party Booking* (Instant reservation confirmation)\n3️⃣ *Automated Weekend Foodie Re-engagement* (Brings repeat diners back)\n4️⃣ *Google Maps Top #1 Food Ranking & 5-Star Reviews Booster*\n\n🎁 We offer a *Free 3-Day Live Pilot* with zero setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    } else if (isCA) {
-      return `Namaste Team *${name}* (Chartered Accountants)! 📊\n\nI am Satish from *WebCore Studios*. We build custom client automation & secure tech suites for top CA firms in ${city}:\n\n1️⃣ *Modern CA Firm Portal & Mobile App* (Secure client login & ITR tracker)\n2️⃣ *24/7 WhatsApp AI Tax Assistant* (Instant answers to client compliance queries)\n3️⃣ *Automated Document Collection Vault* (Auto-collects GST bills on WhatsApp)\n4️⃣ *Proactive GST/ITR Deadline Reminders* (Zero manual client follow-ups)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    } else if (isHospital) {
-      return `Namaste Team *${name}*! 🏥\n\nI am Satish from *WebCore Studios*. We deliver full-stack hospital digitization & AI reception suites in ${city}:\n\n1️⃣ *Modern Hospital Web Portal & Android App* (Multi-specialty doctor schedule)\n2️⃣ *24/7 WhatsApp AI OPD Reception* (Auto token issue & bed inquiries)\n3️⃣ *Automated Lab Report Delivery on WhatsApp* (PDF dispatch to patients)\n4️⃣ *Google Maps Top #1 Healthcare Ranking* (5-star reviews engine)\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    } else if (isSalon) {
-      return `Hello Team *${name}*! ✂️\n\nI am Satish from *WebCore Studios*. We provide complete technology and AI booking solutions for luxury salons in ${city}:\n\n1️⃣ *Modern Salon Web App & Android App* (Interactive style gallery & rates)\n2️⃣ *24/7 WhatsApp AI Appointment Booking* (Stylist slot allocation)\n3️⃣ *Automated 3-Week Re-engagement Campaigns* (Boosts repeat client visits)\n4️⃣ *Google Maps Top #1 Ranking & 5-Star Reviews Engine*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a live demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    } else if (isRealEstate) {
-      return `Namaste Team *${name}*! 🏢\n\nI am Satish from *WebCore Studios*. We build automated lead qualification & digital sales suites for real estate leaders in ${city}:\n\n1️⃣ *Interactive Project Showcase Website & Buyer App* (3D floor plans & brochures)\n2️⃣ *24/7 WhatsApp AI Property Qualifier* (Auto-answers pricing & books site visits)\n3️⃣ *Automated Investor Re-engagement Broadcasts*\n4️⃣ *Google Maps SEO & Verified Local Dominance*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a custom demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    } else if (isTuition) {
-      return `Namaste Team *${name}*! 🎓\n\nI am Satish from *WebCore Studios*. We build student admissions & parent automation suites for premier academies in ${city}:\n\n1️⃣ *Modern Academy Web Portal & Student Mobile App* (Timetables & test series)\n2️⃣ *24/7 WhatsApp AI Admissions & Demo Class Bot*\n3️⃣ *Automated Fee Reminders & Attendance WhatsApp Alerts*\n4️⃣ *Google Maps Top #1 Education Ranking & 5-Star Reviews*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* for a live preview!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    } else if (isRetail) {
-      return `Hello Team *${name}*! 🛍️\n\nI am Satish from *WebCore Studios*. We build digital catalog & WhatsApp commerce suites for premier retail stores in ${city}:\n\n1️⃣ *Interactive Mobile Catalog & E-Commerce Web App*\n2️⃣ *24/7 WhatsApp AI Product Inquiries & Order Taking*\n3️⃣ *Automated Festival & VIP Customer Broadcasts*\n4️⃣ *Google Maps Top Local Shopping Dominance*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a live demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    } else {
-      return `Namaste Dr. / Team *${name}*! 🩺\n\nI am Satish from *WebCore Studios*. We provide complete modern technology solutions for healthcare centers in ${city}:\n\n1️⃣ *Modern Responsive Website* (Ultra-fast Next.js)\n2️⃣ *Native Android App* (Play Store ready patient portal)\n3️⃣ *24/7 AI WhatsApp Assistant* (Auto OPD & Booking tokens)\n4️⃣ *Google Maps SEO* (Top Local Rankings & 5-Star Reviews)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!\n\nWarm regards,\n${sender}\nWebCore Studios`;
-    }
+    return buildPersonalizedPitch(businessName, category, leadCity, type as PitchType, sender);
   };
 
   // Lockscreen Gate
@@ -772,6 +987,18 @@ export default function LeadHunterPage() {
 
   const sentCount = leads.filter((l) => l.status === 'sent').length;
   const pendingCount = leads.filter((l) => l.status === 'pending').length;
+
+  // Consent breakdown of the current selection. The campaign worker skips
+  // anything without a lawful basis, so the operator needs these two numbers in
+  // front of them before pressing Start — otherwise a "50 lead" campaign quietly
+  // becomes 50 skips.
+  const selectedLeads = leads.filter((l) => selectedLeadIds.includes(l.id));
+  const sendableSelected = selectedLeads.filter((l) => SENDABLE_CONSENT.includes(String(l.consent_status)));
+  const blockedSelected = selectedLeads.filter(
+    (l) => !SENDABLE_CONSENT.includes(String(l.consent_status)) && l.consent_status !== 'opted_out'
+  );
+  const optedOutSelected = selectedLeads.filter((l) => l.consent_status === 'opted_out');
+  const noConsentTotal = leads.filter((l) => String(l.consent_status || 'none') === 'none').length;
 
   const getThreadDisplayName = (thread: any) => {
     if (!thread) return 'Prospect';
@@ -1049,17 +1276,24 @@ export default function LeadHunterPage() {
                               type="button"
                               onClick={() => {
                                 const leadObj: ScrapedLead = leads.find((l) => l.phone_number === currentThread.phone) || {
-                                  id: `lead_${Date.now()}`,
+                                  // No id, so the server resolves this thread to its real
+                                  // lead row by phone number and reads that row's consent
+                                  // status. The old literal made one up (`lead_${Date.now()}`,
+                                  // `rating: 5.0, reviews_count: 50`), which matched nothing
+                                  // and showed the operator numbers nobody had recorded.
+                                  id: '',
                                   business_name: currentDisplayName,
                                   category: currentThread.category || 'clinic',
                                   city: city || 'Thane',
                                   phone_number: currentThread.phone,
-                                  rating: 5.0,
-                                  reviews_count: 50,
-                                  address: `${city || 'Thane'}`,
+                                  rating: null,
+                                  reviews_count: null,
+                                  address: '',
                                   has_website: false,
                                   maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentDisplayName)}`,
                                   status: 'pending',
+                                  source: 'inbound',
+                                  consent_status: 'none',
                                 };
                                 sendSinglePitch(leadObj);
                               }}
@@ -1251,9 +1485,31 @@ export default function LeadHunterPage() {
                   ) : (
                     <Search className="w-4 h-4" />
                   )}
-                  <span>{isSearching ? 'Extracting Directory...' : 'Extract High-Value Leads'}</span>
+                  <span>{isSearching ? 'Searching Google Places...' : 'Find Real Businesses'}</span>
                 </button>
               </div>
+
+              {/* Sourcing state. A 503 has to look like a 503 — it used to be
+                  rendered as an empty table, which reads as "no businesses found". */}
+              {searchError && (
+                <div className="flex items-start space-x-2.5 p-3.5 bg-rose-500/10 border border-rose-500/25 rounded-2xl text-rose-300">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div className="text-[11px] leading-relaxed">
+                    <strong className="block text-rose-200 text-xs mb-0.5">Lead sourcing unavailable</strong>
+                    {searchError}
+                  </div>
+                </div>
+              )}
+
+              {searchNotice && !searchError && (
+                <div className="flex items-start space-x-2.5 p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-amber-300">
+                  <ShieldAlert className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div className="text-[11px] leading-relaxed">
+                    <strong className="block text-amber-200 text-xs mb-0.5">Sourced, but not yet contactable</strong>
+                    {searchNotice}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Section 2: Multi-Service Pitch Arsenal */}
@@ -1381,17 +1637,23 @@ export default function LeadHunterPage() {
                         leads.length > 0
                           ? leads[0]
                           : {
+                              // Clearly labelled sample copy, not a business. The
+                              // previous placeholder was a real-sounding clinic name
+                              // with `rating: 4.8, reviews_count: 140` and a live-looking
+                              // Mumbai mobile number, which read as a sourced lead.
                               id: 'sample_preview',
-                              business_name: 'Dr. Godbole Polyclinic',
+                              business_name: '[Sample Business Name]',
                               category: selectedCategory,
-                              city: city || 'Thane',
-                              phone_number: '+919820123456',
-                              rating: 4.8,
-                              reviews_count: 140,
-                              address: 'Naupada, Thane West',
+                              city: city || 'your city',
+                              phone_number: '+91XXXXXXXXXX',
+                              rating: null,
+                              reviews_count: null,
+                              address: 'Preview only — not a real listing',
                               has_website: false,
-                              maps_url: 'https://maps.google.com',
+                              maps_url: '',
                               status: 'pending',
+                              source: 'manual',
+                              consent_status: 'none',
                             }
                       );
                       setShowPitchPreview(!showPitchPreview);
@@ -1434,8 +1696,9 @@ export default function LeadHunterPage() {
                   <button
                     type="button"
                     onClick={handleAddMyNumberTestLead}
-                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center space-x-1.5 transition"
-                    title="Add Satish's phone number as a test lead"
+                    disabled={isImporting}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center space-x-1.5 transition disabled:opacity-50"
+                    title="Save your own number as an opted-in test lead"
                   >
                     <Smartphone className="w-3.5 h-3.5" />
                     <span>+ Add My Number (+918779841346)</span>
@@ -1444,7 +1707,8 @@ export default function LeadHunterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPasteModal(true)}
-                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center space-x-1.5 transition"
+                    disabled={isImporting}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center space-x-1.5 transition disabled:opacity-50"
                   >
                     <span>📥 Paste Phone List</span>
                   </button>
@@ -1485,46 +1749,77 @@ export default function LeadHunterPage() {
                 <div>
                   <div className="text-xs text-slate-400 font-medium">Campaign Progress:</div>
                   <div className="text-xs font-bold text-white mt-1">
-                    {campaignCurrentIdx} of {campaignTotal} sent
+                    {campaignCurrentIdx} of {campaignTotal} processed
                     {countdown > 0 && (
                       <span className="text-emerald-400 font-mono ml-2">
                         (Next in {countdown}s...)
                       </span>
                     )}
                   </div>
+                  {/* Sent / failed / skipped, straight from the server campaign row.
+                      The panel used to say "N of M sent" for every processed target,
+                      including the ones the worker refused to contact. */}
+                  <div className="flex items-center gap-2 mt-1.5 text-[10px] font-bold">
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {campaignSent} sent
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                      {campaignFailed} failed
+                    </span>
+                    <span
+                      className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                      title="Refused by the consent gate — no lawful basis on file, or the contact replied STOP."
+                    >
+                      {campaignSkipped} skipped
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2 sm:justify-end">
-                  {!isCampaignRunning ? (
-                    <button
-                      type="button"
-                      onClick={handleStartPacedCampaign}
-                      disabled={selectedLeadIds.length === 0}
-                      className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center space-x-1.5 disabled:opacity-50"
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>Start Campaign ({selectedLeadIds.length} Leads)</span>
-                    </button>
-                  ) : (
-                    <>
+                <div className="flex flex-col items-stretch sm:items-end gap-2">
+                  <div className="flex items-center space-x-2 sm:justify-end">
+                    {!isCampaignRunning ? (
                       <button
                         type="button"
-                        onClick={handlePauseResumeCampaign}
-                        className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
+                        onClick={handleStartPacedCampaign}
+                        disabled={sendableSelected.length === 0}
+                        className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center space-x-1.5 disabled:opacity-50"
+                        title={
+                          sendableSelected.length === 0
+                            ? 'Every selected lead is missing a recorded lawful basis. Record consent first.'
+                            : `Queue ${sendableSelected.length} message(s) on the server`
+                        }
                       >
-                        {isCampaignPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                        <span>{isCampaignPaused ? 'Resume' : 'Pause'}</span>
+                        <Play className="w-4 h-4" />
+                        <span>Start Campaign ({sendableSelected.length} contactable)</span>
                       </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handlePauseResumeCampaign}
+                          className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
+                        >
+                          {isCampaignPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                          <span>{isCampaignPaused ? 'Resume' : 'Pause'}</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={handleStopCampaign}
-                        className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
-                      >
-                        <Square className="w-3.5 h-3.5" />
-                        <span>Stop</span>
-                      </button>
-                    </>
+                        <button
+                          type="button"
+                          onClick={handleStopCampaign}
+                          className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1"
+                        >
+                          <Square className="w-3.5 h-3.5" />
+                          <span>Stop</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {!isCampaignRunning && (blockedSelected.length > 0 || optedOutSelected.length > 0) && (
+                    <p className="text-[10px] text-amber-400 font-semibold text-left sm:text-right leading-snug max-w-[16rem]">
+                      {blockedSelected.length > 0 && <>{blockedSelected.length} selected lead(s) have no recorded basis and will be left out. </>}
+                      {optedOutSelected.length > 0 && <>{optedOutSelected.length} opted out and can never be contacted.</>}
+                    </p>
                   )}
                 </div>
               </div>
@@ -1538,10 +1833,24 @@ export default function LeadHunterPage() {
                   <div className="flex items-center space-x-2">
                     <Building2 className="w-4 h-4 text-indigo-400" />
                     <h3 className="font-bold text-sm text-white">Target Businesses Queue ({leads.length})</h3>
+                    {noConsentTotal > 0 && (
+                      <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-[10px] font-bold">
+                        {noConsentTotal} awaiting consent
+                      </span>
+                    )}
                   </div>
 
                   {leads.length > 0 && (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
+                      <button
+                        type="button"
+                        onClick={reloadSavedLeads}
+                        className="text-xs text-slate-400 hover:text-slate-200 font-bold flex items-center space-x-1"
+                        title="Re-read the saved leads, including any consent changes"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Refresh</span>
+                      </button>
                       <button
                         type="button"
                         onClick={handleSelectAll}
@@ -1552,6 +1861,60 @@ export default function LeadHunterPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Consent recorder.
+                    The send gate is enforced on the server, and until this existed
+                    there was no way to satisfy it — every campaign skipped every
+                    lead. Recording a basis is a deliberate, written act. */}
+                {selectedLeadIds.length > 0 && (
+                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl space-y-2.5">
+                    <div className="flex items-center space-x-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                      <span className="text-xs font-bold text-white">
+                        Record a lawful basis for {blockedSelected.length || sendableSelected.length} selected lead(s)
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Appearing in a public directory is not consent. State why you may message these numbers —
+                      the note is stored against every lead and is what you would produce if a recipient complains
+                      to TRAI. Leads that replied STOP stay suppressed and are never affected by this.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select
+                        value={consentBasis}
+                        onChange={(e) => setConsentBasis(e.target.value as 'opt_in' | 'legitimate_b2b')}
+                        className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="legitimate_b2b">Documented B2B relationship</option>
+                        <option value="opt_in">Explicit opt-in</option>
+                      </select>
+
+                      <input
+                        type="text"
+                        value={consentNote}
+                        onChange={(e) => setConsentNote(e.target.value)}
+                        placeholder="Where did this basis come from? e.g. 'Signed enquiry form at Thane Traders Expo, 12 Aug 2026'"
+                        className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-[11px] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleRecordConsent}
+                        disabled={isRecordingConsent || consentNote.trim().length < 10}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-bold rounded-xl transition disabled:opacity-40 whitespace-nowrap"
+                        title={
+                          consentNote.trim().length < 10
+                            ? 'Write at least 10 characters describing the basis.'
+                            : 'Record this basis against the selected leads'
+                        }
+                      >
+                        {isRecordingConsent ? 'Recording...' : 'Record consent basis'}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {leads.length === 0 ? (
                   <div className="p-12 text-center text-slate-500 border border-dashed border-slate-800 rounded-2xl space-y-2">

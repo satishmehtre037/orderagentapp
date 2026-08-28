@@ -1,91 +1,131 @@
 import { NextResponse } from 'next/server';
-import { sendWhatsAppTextMessage, sendWhatsAppInteractiveButtons } from '@/lib/whatsapp';
-import { supabaseAdmin } from '@/lib/supabase';
+import { sendWhatsAppInteractiveButtons } from '@/lib/whatsapp';
+import { supabase } from '@/config/supabase';
+import { resolveOperatorBusinessId } from '@/services/businessService';
+import { checkOutreachAllowed, normalizeIndianPhone } from '@/services/optOutService';
+import {
+  buildPersonalizedPitch,
+  renderCustomMessage,
+  PITCH_BUTTONS,
+  OPT_OUT_FOOTER,
+} from '@/services/pitchTemplates';
 
+export const dynamic = 'force-dynamic';
+
+/**
+ * Dispatches a single cold pitch.
+ *
+ * Two things changed here. The pitch templates now live in one place
+ * (services/pitchTemplates) instead of being duplicated verbatim from
+ * campaignService, and nothing is dispatched until checkOutreachAllowed()
+ * passes — previously any phone number in the request body was messaged
+ * immediately, with no opt-out check and no recorded basis for contact.
+ */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const {
-      lead,
-      pitchType = 'all_in_one',
-      customMessage,
-      senderName = 'Satish (WebCore Studios)',
-    } = body;
+    const { lead, pitchType = 'all_in_one', customMessage, senderName = 'Satish (WebCore Studios)' } = body;
 
     if (!lead || !lead.phone_number) {
-      return NextResponse.json({ success: false, error: 'Target lead with valid phone number is required.' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Target lead with a valid phone number is required.' },
+        { status: 400 }
+      );
     }
 
-    const businessName = lead.business_name || 'Business Owner';
-    const city = lead.city || 'your city';
-    const category = lead.category || 'business';
+    const cleanPhone = normalizeIndianPhone(lead.phone_number);
+    if (!cleanPhone) {
+      return NextResponse.json(
+        { success: false, error: `"${lead.phone_number}" is not a valid Indian mobile number.` },
+        { status: 400 }
+      );
+    }
 
-    // Generate personalized pitch based on selected service package
-    let pitchText = '';
+    // Read consent from the stored record, not from the request body — the
+    // client cannot assert its own permission to send.
+    let consentStatus: string | null = null;
+    let leadRow: any = null;
 
-    if (customMessage && customMessage.trim().length > 0) {
-      pitchText = customMessage
-        .replace(/{Business_Name}/gi, businessName)
-        .replace(/{City}/gi, city)
-        .replace(/{Category}/gi, category);
+    if (lead.id) {
+      const { data } = await supabase
+        .from('lead_hunter_leads')
+        .select('id, consent_status, business_name, category, city, contact_attempts, first_contacted_at')
+        .eq('id', lead.id)
+        .maybeSingle();
+      leadRow = data;
+      consentStatus = data?.consent_status ?? null;
     } else {
-      pitchText = buildPersonalizedPitch(businessName, category, city, pitchType, senderName);
+      const digits = cleanPhone.replace(/\D/g, '').slice(-10);
+      const { data } = await supabase
+        .from('lead_hunter_leads')
+        .select('id, consent_status, business_name, category, city, contact_attempts, first_contacted_at')
+        .like('phone_number', `%${digits}`)
+        .limit(1)
+        .maybeSingle();
+      leadRow = data;
+      consentStatus = data?.consent_status ?? null;
     }
 
-    // Format clean recipient phone
-    let cleanPhone = lead.phone_number.replace(/[^\d+]/g, '');
-    if (!cleanPhone.startsWith('+')) {
-      const digits = cleanPhone.replace(/\D/g, '');
-      cleanPhone = digits.length === 10 ? `+91${digits}` : `+${digits}`;
+    const gate = await checkOutreachAllowed({ phone: cleanPhone, consentStatus });
+    if (!gate.allowed) {
+      console.warn(`[Lead Hunter] 🚫 Blocked dispatch to ${cleanPhone}: ${gate.reason} — ${gate.detail}`);
+      return NextResponse.json(
+        { success: false, blocked: true, reason: gate.reason, error: gate.detail },
+        { status: 403 }
+      );
     }
+
+    const businessName = leadRow?.business_name || lead.business_name || 'Business Owner';
+    const city = leadRow?.city || lead.city || 'your city';
+    const category = leadRow?.category || lead.category || 'business';
+
+    const pitchText =
+      customMessage && customMessage.trim().length > 0
+        ? renderCustomMessage(customMessage, { businessName, city, category, senderName }) + OPT_OUT_FOOTER
+        : buildPersonalizedPitch(businessName, category, city, pitchType, senderName);
 
     console.log(`[Lead Hunter Outreach] 📤 Dispatching pitch to ${businessName} (${cleanPhone})...`);
 
-    // Dispatch via live WhatsApp Cloud API with interactive quick reply buttons
-    const waResult = await sendWhatsAppInteractiveButtons(
-      cleanPhone,
-      pitchText,
-      [
-        { id: 'btn_show_demo', title: '✅ Yes, Show Demo' },
-        { id: 'btn_pricing', title: '💰 Pricing & Cost?' },
-        { id: 'btn_not_now', title: '❌ Not Now' },
-      ]
-    );
+    const waResult = await sendWhatsAppInteractiveButtons(cleanPhone, pitchText, [...PITCH_BUTTONS]);
 
-    // Record outbound pitch in conversations ledger
-    try {
-      let bizId: string | null = null;
-      const { data: bizList } = await supabaseAdmin.from('businesses').select('id').limit(1);
-      if (bizList && bizList.length > 0) {
-        bizId = bizList[0].id;
+    if (!waResult?.success) {
+      // Record the failure rather than reporting a send that did not happen.
+      if (leadRow?.id) {
+        await supabase
+          .from('lead_hunter_leads')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .eq('id', leadRow.id);
       }
-
-      if (bizId) {
-        await supabaseAdmin.from('conversations').insert({
-          business_id: bizId,
-          customer_number: cleanPhone,
-          message_text: pitchText,
-          message_direction: 'outbound',
-        });
-      }
-    } catch (convoErr) {
-      console.warn('[Lead Hunter Convo Save Notice]:', convoErr);
+      return NextResponse.json(
+        { success: false, error: waResult?.error || 'WhatsApp dispatch failed.', waResponse: waResult },
+        { status: 502 }
+      );
     }
 
-    // Update status in Supabase if lead has an ID
-    if (lead.id) {
-      try {
-        await supabaseAdmin
-          .from('lead_hunter_leads')
-          .update({
-            status: 'sent',
-            pitch_type: pitchType,
-            last_contacted_at: new Date().toISOString(),
-          })
-          .eq('id', lead.id);
-      } catch (dbErr) {
-        // Table might not exist yet
-      }
+    const businessId = await resolveOperatorBusinessId();
+
+    if (businessId) {
+      await supabase.from('conversations').insert({
+        business_id: businessId,
+        customer_number: cleanPhone,
+        message_text: pitchText,
+        message_direction: 'outbound',
+      });
+    }
+
+    if (leadRow?.id) {
+      const now = new Date().toISOString();
+      await supabase
+        .from('lead_hunter_leads')
+        .update({
+          status: 'sent',
+          pitch_type: pitchType,
+          first_contacted_at: leadRow.first_contacted_at || now,
+          last_contacted_at: now,
+          contact_attempts: (leadRow.contact_attempts || 0) + 1,
+          updated_at: now,
+        })
+        .eq('id', leadRow.id);
     }
 
     return NextResponse.json({
@@ -98,93 +138,5 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('[Lead Hunter Pitch Error]:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
-}
-
-/**
- * Builds high-converting multi-service pitches tailored for WebCore Studios
- */
-/**
- * Builds high-converting multi-service pitches tailored for WebCore Studios
- */
-function buildPersonalizedPitch(
-  businessName: string,
-  category: string,
-  city: string,
-  pitchType: string,
-  senderName: string
-): string {
-  const cat = (category || '').toLowerCase();
-  const name = businessName;
-  const isCA =
-    cat.includes('ca') ||
-    cat.includes('tax') ||
-    cat.includes('audit') ||
-    cat.includes('accountant') ||
-    name.toLowerCase().includes('ca ') ||
-    name.toLowerCase().includes('accountant') ||
-    name.toLowerCase().includes('gst');
-  const isHospital = cat.includes('hospital') || name.toLowerCase().includes('hospital');
-  const isSalon = cat.includes('salon') || cat.includes('spa') || cat.includes('beauty') || name.toLowerCase().includes('salon');
-  const isRestaurant = cat.includes('restaurant') || cat.includes('cafe') || cat.includes('food') || cat.includes('dine') || cat.includes('bar') || name.toLowerCase().includes('cafe') || name.toLowerCase().includes('dining');
-  const isRealEstate = cat.includes('real_estate') || cat.includes('realty') || cat.includes('builder') || cat.includes('property');
-  const isTuition = cat.includes('tuition') || cat.includes('coach') || cat.includes('academy') || cat.includes('class') || cat.includes('institute');
-  const isRetail = cat.includes('retail') || cat.includes('boutique') || cat.includes('store') || cat.includes('shop') || cat.includes('jewel');
-
-  switch (pitchType) {
-    case 'all_in_one':
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 🍽️\n\nI am ${senderName}. We build direct ordering & WhatsApp AI booking suites for top restaurants in ${city}:\n\n1️⃣ *Direct QR & WhatsApp Food Ordering* (Zero 30% Swiggy/Zomato commission fees)\n2️⃣ *24/7 WhatsApp AI Table & Party Booking* (Instant reservation confirmation)\n3️⃣ *Automated Weekend Foodie Re-engagement* (Brings repeat diners back)\n4️⃣ *Google Maps Top #1 Food Ranking & 5-Star Reviews Booster*\n\n🎁 We offer a *Free 3-Day Live Pilot* with zero setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      } else if (isCA) {
-        return `Namaste Team *${name}* (Chartered Accountants)! 📊\n\nI am ${senderName}. We build custom client automation & secure tech suites for top CA firms in ${city}:\n\n1️⃣ *Modern CA Firm Portal & Mobile App* (Secure client login & ITR tracker)\n2️⃣ *24/7 WhatsApp AI Tax Assistant* (Instant answers to client compliance queries)\n3️⃣ *Automated Document Collection Vault* (Auto-collects GST bills on WhatsApp)\n4️⃣ *Proactive GST/ITR Deadline Reminders* (Zero manual client follow-ups)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🏥\n\nI am ${senderName}. We deliver full-stack hospital digitization & AI reception suites in ${city}:\n\n1️⃣ *Modern Hospital Web Portal & Android App* (Multi-specialty doctor schedule)\n2️⃣ *24/7 WhatsApp AI OPD Reception* (Auto token issue & bed inquiries)\n3️⃣ *Automated Lab Report Delivery on WhatsApp* (PDF dispatch to patients)\n4️⃣ *Google Maps Top #1 Healthcare Ranking* (5-star reviews engine)\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      } else if (isSalon) {
-        return `Hello Team *${name}*! ✂️\n\nI am ${senderName}. We provide complete technology and AI booking solutions for luxury salons in ${city}:\n\n1️⃣ *Modern Salon Web App & Android App* (Interactive style gallery & rates)\n2️⃣ *24/7 WhatsApp AI Appointment Booking* (Stylist slot allocation)\n3️⃣ *Automated 3-Week Re-engagement Campaigns* (Boosts repeat client visits)\n4️⃣ *Google Maps Top #1 Ranking & 5-Star Reviews Engine*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a live demo!`;
-      } else if (isRealEstate) {
-        return `Namaste Team *${name}*! 🏢\n\nI am ${senderName}. We build automated lead qualification & digital sales suites for real estate leaders in ${city}:\n\n1️⃣ *Interactive Project Showcase Website & Buyer App* (3D floor plans & brochures)\n2️⃣ *24/7 WhatsApp AI Property Qualifier* (Auto-answers pricing & books site visits)\n3️⃣ *Automated Investor Re-engagement Broadcasts*\n4️⃣ *Google Maps SEO & Verified Local Dominance*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a custom demo!`;
-      } else if (isTuition) {
-        return `Namaste Team *${name}*! 🎓\n\nI am ${senderName}. We build student admissions & parent automation suites for premier academies in ${city}:\n\n1️⃣ *Modern Academy Web Portal & Student Mobile App* (Timetables & test series)\n2️⃣ *24/7 WhatsApp AI Admissions & Demo Class Bot*\n3️⃣ *Automated Fee Reminders & Attendance WhatsApp Alerts*\n4️⃣ *Google Maps Top #1 Education Ranking & 5-Star Reviews*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* for a live preview!`;
-      } else if (isRetail) {
-        return `Hello Team *${name}*! 🛍️\n\nI am ${senderName}. We build digital catalog & WhatsApp commerce suites for premier retail stores in ${city}:\n\n1️⃣ *Interactive Mobile Catalog & E-Commerce Web App*\n2️⃣ *24/7 WhatsApp AI Product Inquiries & Order Taking*\n3️⃣ *Automated Festival & VIP Customer Broadcasts*\n4️⃣ *Google Maps Top Local Shopping Dominance*\n\n🎁 We offer a *Free 3-Day Live Pilot* for *${name}*.\n\nReply *YES* to see a live demo!`;
-      } else {
-        return `Namaste Dr. / Team *${name}*! 🩺\n\nI am ${senderName}. We provide complete modern technology solutions for healthcare centers in ${city}:\n\n1️⃣ *Modern Responsive Website* (Ultra-fast Next.js)\n2️⃣ *Native Android App* (Play Store ready patient portal)\n3️⃣ *24/7 AI WhatsApp Assistant* (Auto OPD & Booking tokens)\n4️⃣ *Google Maps SEO* (Top Local Rankings & 5-Star Reviews)\n\n🎁 We are offering a *Free 3-Day Live Pilot* with zero upfront setup cost for *${name}*.\n\nReply *YES* if you'd like to see a custom live demo!`;
-      }
-
-    case 'web_mobile':
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 🌐\n\nTake direct orders without giving away 30% commission. We build custom *Online Ordering Web Apps & Android Apps* for restaurants in ${city}:\n\n🍔 *Direct Digital QR Menu & Mobile Ordering*\n⚡ *Ultra-Fast Customer Web App* with UPI payment\n📱 *Play Store Native App* for your brand\n\nCan I send you a custom mockup for *${name}*? Reply *YES* to review!`;
-      } else if (isCA) {
-        return `Namaste Team *${name}*! 🌐\n\nLegacy CA websites look outdated. We build high-authority *Client Portals & Mobile Apps* for Chartered Accountants in ${city}:\n\n🔒 *Secure Client Document Vault & ITR Tracker*\n⚡ *Ultra-Fast Next.js Firm Website* (< 1s load speed)\n📱 *Native Android Client App* on Google Play Store\n💳 *Integrated Online Invoicing & UPI Payments*\n\nCan I send you a custom design mockup for *${name}*? Reply *YES* to review!`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🌐\n\nWe build lightning-fast *Patient Portals & Android Mobile Apps* for hospitals in ${city}:\n\n🚀 *Ultra-Fast Hospital Website* with instant WhatsApp appointment booking\n📱 *Native Android Patient App* (Doctor profiles, OPD booking & health records)\n💳 *Integrated Online Consultation & UPI Payment Gateway*\n\nCan I share a custom design mockup for *${name}*? Reply *YES* to see it!`;
-      } else {
-        return `Hello Team *${name}*! 👋\n\nWe build *Lightning-Fast Modern Websites & Android Apps* for businesses in ${city}:\n\n🚀 *Ultra-Fast Next.js High-Performance Website*\n📱 *Play Store Ready Native Android App*\n💳 *Integrated UPI & Online Payment Gateway*\n\nCan I send you a custom mockup for *${name}*? Reply *YES* to review!`;
-      }
-
-    case 'whatsapp_ai':
-      if (isRestaurant) {
-        return `Hello Team *${name}*! 🍽️\n\nStop missing table inquiries and party bookings during rush hours.\n\nWe build *24/7 WhatsApp AI Food & Table Booking Agents* in ${city} that:\n\n✅ *Instant Table & Party Reservations*: Confirms bookings automatically 24/7 on WhatsApp\n✅ *Interactive WhatsApp Food Menu*: Customers browse dishes and place delivery orders directly\n✅ *Weekend Re-engagement*: Proactively sends special weekend offers to your past diners\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to test it!\n\nBest regards,\n${senderName}`;
-      } else if (isCA) {
-        return `Namaste Team *${name}* (Chartered Accountants)! 💼\n\nStop spending hours manually chasing clients for GST invoices and ITR documents.\n\nWe build *24/7 WhatsApp AI Agents for CA & Tax Firms* in ${city} that:\n\n✅ *Auto-Collect Tax Docs*: Clients upload PAN, Form 16 & GST bills directly on WhatsApp\n✅ *Automated Deadline Reminders*: Smart proactive alerts before 20th GST & Advance Tax dates\n✅ *24/7 Tax Query Bot*: Answers client compliance & filing status queries instantly\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
-      } else if (isHospital) {
-        return `Namaste Team *${name}*! 🏥\n\nEliminate front-desk phone bottlenecks and patient wait times.\n\nWe build *24/7 WhatsApp AI Receptionists for Hospitals* in ${city} that:\n\n✅ *Instant OPD Token & Bed Inquiries*: Automated token issuance 24/7 on WhatsApp\n✅ *Doctor Scheduling*: Real-time OPD slot booking across all specialties\n✅ *Automated Lab Report Delivery*: Dispatches PDF lab reports directly to patient WhatsApp\n\nWould you like a quick 2-minute live demo on WhatsApp? Reply *YES* to test it!\n\nBest regards,\n${senderName}`;
-      } else if (isSalon) {
-        return `Hello Team *${name}*! ✂️\n\nStop losing appointments during busy styling hours when your staff is occupied.\n\nWe build *24/7 WhatsApp AI Booking Agents for Luxury Salons* in ${city} that:\n\n✅ *Instant Slot Booking*: Shows stylist availability & service menu 24/7\n✅ *Automated Client Re-engagement*: Proactively invites clients back for grooming every 3-4 weeks\n✅ *5-Star Review Engine*: Collects 5-star Google ratings after every visit\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
-      } else {
-        return `Namaste Dr. / Team *${name}*! 🩺\n\nI noticed your practice on Google Maps. We build *24/7 AI WhatsApp Assistants* for top professionals in ${city}.\n\n✅ *Auto-Book Consultations*: Clients book appointments 24/7 on WhatsApp\n✅ *Instant Inquiry Answers*: Resolves common questions automatically\n✅ *Follow-up Reminders*: Proactively reminds clients about next steps\n\nWould you like a quick 2-minute live demo on your WhatsApp? Reply *YES* to see it live!\n\nBest regards,\n${senderName}`;
-      }
-
-    case 'local_seo':
-      if (isRestaurant) {
-        return `Namaste Team *${name}*! 📍\n\nWe help restaurants and cafes in ${city} rank *Top #1 on Google Maps* when hungry diners search for "Best restaurants near me":\n\n⭐ *Automated 5-Star Google Reviews via WhatsApp*\n📍 *Google Maps Menu & Photos Optimization*\n🔍 *Dominate Local Food Searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
-      } else if (isCA) {
-        return `Namaste Team *${name}*! 📍\n\nWe help Chartered Accountant & Tax consulting firms in ${city} rank *Top #1 on Google Maps* when corporate companies and HNIs search for "Best CA near me":\n\n⭐ *Automated 5-Star Google Reviews via WhatsApp*\n📍 *Google Business Profile Optimization & Audit*\n🔍 *Dominate Local Corporate Searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
-      } else {
-        return `Namaste Team *${name}*! 📍\n\nWe help businesses in ${city} rank *Top 3 on Google Maps* to generate 50+ new client inquiries every month:\n\n⭐ *5-Star Review Automation via WhatsApp*\n📍 *Google Business Profile Optimization*\n🔍 *Dominate local neighborhood searches in ${city}*\n\nWould you like a free Local SEO Audit Report for *${name}*? Reply *AUDIT* to receive it today!\n\nRegards,\n${senderName}`;
-      }
-
-    default:
-      return `Namaste Team *${name}* 🙏\n\nI am ${senderName}. We build high-speed websites, Android apps, and 24/7 WhatsApp AI automation suites for businesses in ${city}.\n\nWould you be open to a quick 2-minute preview?`;
   }
 }

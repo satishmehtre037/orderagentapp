@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { sendWhatsAppTextMessage } from '@/lib/whatsapp';
-import { triggerVapiCall } from '@/services/vapiService';
-import { triggerBlandCall } from '@/services/blandService';
+import { dispatchVoiceCall } from '@/services/voiceCallService';
 
 export async function GET(req: Request) {
   try {
@@ -36,6 +34,16 @@ export async function GET(req: Request) {
   }
 }
 
+/**
+ * POST — place a real outbound AI voice call.
+ *
+ * This used to log every attempt as `status: 'completed'`, `outcome: 'confirmed'`
+ * with a random `duration_seconds` between 35 and 75 and a transcript claiming
+ * "Patient confirmed presence" — even when no telephony provider was configured
+ * and no call was placed. It then WhatsApped the patient thanking them for a
+ * conversation that never happened. Both are gone: the record now says queued or
+ * failed, and no recap is sent for a call that did not go out.
+ */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -59,66 +67,39 @@ export async function POST(req: Request) {
       );
     }
 
-    const callParams = {
-      phoneNumber: patient_phone,
+    const outcome = await dispatchVoiceCall({
+      businessId: business_id,
+      patientId: patient_id,
+      appointmentId: appointment_id,
       patientName: patient_name,
+      patientPhone: patient_phone,
       doctorName: doctor_name,
       appointmentTime: appointment_time,
       hospitalName: hospital_name,
       callType: call_type,
       promptTask: reason,
-    };
+    });
 
-    // 1. Dispatch Vapi AI phone call (or fallback to Bland / Simulation)
-    let callResult = await triggerVapiCall(callParams);
-
-    if (callResult.mode === 'simulation' && (process.env.BLAND_API_KEY || process.env.BLAND_AI_API_KEY)) {
-      const blandRes = await triggerBlandCall(callParams);
-      if (blandRes.mode === 'live') {
-        callResult = {
-          success: true,
-          callId: blandRes.callId,
-          mode: 'live',
-        };
-      }
+    if (!outcome.dispatched) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: outcome.error || 'No voice provider was able to place the call.',
+          hint: 'Configure VAPI_API_KEY (with VAPI_PHONE_NUMBER_ID) or BLAND_API_KEY to place real calls.',
+          call: outcome.record,
+        },
+        { status: 502 }
+      );
     }
-
-    const isLive = callResult.mode === 'live';
-    const durationSeconds = isLive ? 45 : Math.floor(Math.random() * 40) + 35;
-    const summary = isLive
-      ? `Live AI phone call dispatched to ${patient_name} (${patient_phone}). Call ID: ${callResult.callId || 'N/A'}`
-      : `AI Voice Assistant called ${patient_name} regarding ${call_type.replace('_', ' ')}. Patient confirmed presence.`;
-
-    const { data: callRecord, error } = await supabaseAdmin
-      .from('hospital_voice_calls')
-      .insert([{
-        business_id,
-        patient_id,
-        appointment_id,
-        patient_name,
-        patient_phone,
-        call_type,
-        status: 'completed',
-        outcome: 'confirmed',
-        duration_seconds: durationSeconds,
-        transcript_summary: reason ? `${reason} — Result: ${summary}` : summary,
-      }])
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-
-    // Followup via WhatsApp with call transcript recap
-    const recapMsg = `📞 *AI Voice Call Recap*\n\nNamaste ${patient_name} ji,\n\nThank you for speaking with our AI voice assistant.\n\n📝 *Call Summary:* Your appointment details have been confirmed. We look forward to seeing you at MediCare Hospital!`;
-    await sendWhatsAppTextMessage(patient_phone, recapMsg);
 
     return NextResponse.json({
       success: true,
-      call: callRecord,
-      mode: callResult.mode,
-      callId: callResult.callId,
+      call: outcome.record,
+      provider: outcome.provider,
+      callId: outcome.callId,
+      status: 'queued',
+      notice:
+        'The call is queued with the provider. Duration and outcome remain null until the provider reports the result.',
     });
   } catch (error: any) {
     console.error('Error triggering voice call:', error);

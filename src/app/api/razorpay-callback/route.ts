@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { verifyAndActivate } from '@/services/subscriptionService';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// Razorpay redirects here after payment with POST body containing:
-// razorpay_payment_id, razorpay_order_id, razorpay_signature
+/**
+ * Razorpay's post-payment redirect. Razorpay POSTs a form body containing
+ * razorpay_payment_id, razorpay_order_id and razorpay_signature.
+ *
+ * This route used to keep its own third copy of the verification logic, with
+ * `amount: 0` written into the ledger ("Will be filled from order" — it never
+ * was) and a plain `===` signature comparison. It now shares one implementation
+ * with /api/verify-payment and /api/billing/verify, which reads the real amount
+ * and plan back from the order.
+ */
 export async function POST(req: NextRequest) {
+  const baseUrl = req.nextUrl.origin;
+
   try {
     const formData = await req.formData();
     const razorpay_payment_id = formData.get('razorpay_payment_id') as string;
@@ -17,86 +21,45 @@ export async function POST(req: NextRequest) {
     const razorpay_signature = formData.get('razorpay_signature') as string;
 
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
-      // Payment was cancelled or failed — redirect back to dashboard
-      const baseUrl = req.nextUrl.origin;
+      // Payment was cancelled or failed — send them back to the dashboard.
       return NextResponse.redirect(`${baseUrl}/dashboard?payment=cancelled`, { status: 303 });
     }
 
-    // Verify HMAC SHA256 signature
-    const secret = process.env.RAZORPAY_KEY_SECRET!;
-    const body = razorpay_order_id + '|' + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(body)
-      .digest('hex');
-
-    const isValid = expectedSignature === razorpay_signature;
-
-    if (!isValid) {
-      console.error('[Razorpay Callback] Signature verification FAILED');
-      const baseUrl = req.nextUrl.origin;
-      return NextResponse.redirect(`${baseUrl}/dashboard?payment=failed&reason=signature`, { status: 303 });
-    }
-
-    console.log('[Razorpay Callback] ✅ Signature verified for payment:', razorpay_payment_id);
-
-    // Find the business from order notes (fetch from Razorpay API)
-    const razorpayKeyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const authHeader = Buffer.from(`${razorpayKeyId}:${secret}`).toString('base64');
-
-    const orderRes = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
-      headers: { Authorization: `Basic ${authHeader}` },
+    const result = await verifyAndActivate({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
     });
 
-    let businessId = '';
-    let planCycle = 'monthly_1';
-
-    if (orderRes.ok) {
-      const orderData = await orderRes.json();
-      businessId = orderData.notes?.business_id || '';
-      planCycle = orderData.notes?.plan_cycle === 'annual' ? 'annual_10' : 'monthly_1';
+    if (!result.success) {
+      console.error('[Razorpay Callback] Verification failed:', result.error);
+      const reason = result.status === 400 ? 'signature' : 'activation';
+      return NextResponse.redirect(`${baseUrl}/dashboard?payment=failed&reason=${reason}`, { status: 303 });
     }
 
-    if (businessId) {
-      // Record payment event
-      await supabase.from('payment_events').insert({
-        business_id: businessId,
-        event_type: 'payment.captured',
-        razorpay_payment_id,
-        razorpay_order_id,
-        amount: 0, // Will be filled from order
-        currency: 'INR',
-        status: 'captured',
-      });
-
-      // Update business subscription
-      const now = new Date();
-      const endDate = planCycle === 'annual_10'
-        ? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000)
-        : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-      await supabase
-        .from('businesses')
-        .update({
-          subscription_status: 'active',
-          plan: planCycle,
-          trial_end_date: endDate.toISOString(),
-        })
-        .eq('id', businessId);
-
-      console.log('[Razorpay Callback] ✅ Business subscription activated:', businessId);
+    if (!result.activated) {
+      // The money was taken but we could not tell which business it belongs to.
+      console.error(
+        `[Razorpay Callback] Payment ${razorpay_payment_id} verified but not linked to a business — needs manual reconciliation.`
+      );
+      return NextResponse.redirect(
+        `${baseUrl}/dashboard?payment=unlinked&payment_id=${razorpay_payment_id}`,
+        { status: 303 }
+      );
     }
 
-    const baseUrl = req.nextUrl.origin;
-    return NextResponse.redirect(`${baseUrl}/dashboard?payment=success&payment_id=${razorpay_payment_id}`, { status: 303 });
+    console.log(`[Razorpay Callback] ✅ Subscription activated for ${result.businessId} (${result.plan}).`);
+    return NextResponse.redirect(
+      `${baseUrl}/dashboard?payment=success&payment_id=${razorpay_payment_id}`,
+      { status: 303 }
+    );
   } catch (error: any) {
     console.error('[Razorpay Callback] Error:', error);
-    const baseUrl = req.nextUrl.origin;
     return NextResponse.redirect(`${baseUrl}/dashboard?payment=error`, { status: 303 });
   }
 }
 
-// Also handle GET in case of cancellation redirect
+// Razorpay uses GET for the cancellation redirect.
 export async function GET(req: NextRequest) {
   const baseUrl = req.nextUrl.origin;
   return NextResponse.redirect(`${baseUrl}/dashboard?payment=cancelled`, { status: 303 });

@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { TRIAL_DAYS } from '@/config/plans';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const adminSupabase = createClient(supabaseUrl, serviceKey);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(req: Request) {
   try {
@@ -15,6 +18,9 @@ export async function GET(req: Request) {
     let query = adminSupabase.from('businesses').select('*');
 
     if (id) {
+      if (!UUID_RE.test(id)) {
+        return NextResponse.json({ error: 'id must be a UUID.' }, { status: 400 });
+      }
       query = query.eq('id', id);
     } else if (email) {
       query = query.ilike('owner_email', email.trim());
@@ -23,36 +29,31 @@ export async function GET(req: Request) {
       return NextResponse.json({ business: null, configs: {} });
     }
 
-    let { data: business, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+    const { data: business, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (error) {
       console.error('[API Business] Error fetching business:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // No match means no match. This used to fall back to "the most recent
+    // business in the system" and return it with every business_config row —
+    // so any unrecognised email was answered with another tenant's UPI id, GST
+    // number, store address and price list.
     if (!business) {
-      // Fallback: fetch the most recent active business in the system
-      const { data: fallbackBiz } = await adminSupabase
-        .from('businesses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (fallbackBiz) {
-        business = fallbackBiz;
-      } else {
-        return NextResponse.json({ business: null, configs: {} });
-      }
+      return NextResponse.json({ business: null, configs: {} });
     }
 
-    // Set 1-day (24-hour) trial window if missing
+    // Backfill a missing trial end date. Was 24 hours; the trial is 30 days and
+    // the businesses.trial_end_date column default says so too.
     if (business.subscription_status === 'trial') {
       const trialEndMs = business.trial_end_date ? new Date(business.trial_end_date).getTime() : 0;
       if (!trialEndMs) {
-        const normalizedTrialEnd = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const normalizedTrialEnd = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
         business.trial_end_date = normalizedTrialEnd;
-        // Persist update in DB
         await adminSupabase.from('businesses').update({ trial_end_date: normalizedTrialEnd }).eq('id', business.id);
       }
     }
@@ -79,28 +80,41 @@ export async function GET(req: Request) {
   }
 }
 
+/**
+ * PUT — update a business and its config rows.
+ *
+ * An unusable businessId used to be replaced with "the most recent business in
+ * the system", so a request carrying a stale or placeholder id rewrote another
+ * tenant's name, WhatsApp number, category and settings. The id is now required
+ * to identify a real row.
+ */
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
     const { businessId, name, whatsapp_number, category, configs } = body;
 
-    let targetBizId = businessId;
-    if (!targetBizId || targetBizId === 'demo-business-id' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetBizId)) {
-      const { data: latestBiz } = await adminSupabase
-        .from('businesses')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (latestBiz) {
-        targetBizId = latestBiz.id;
-      }
+    if (!businessId || !UUID_RE.test(String(businessId))) {
+      return NextResponse.json(
+        { error: 'A valid businessId (UUID) is required to update a business.' },
+        { status: 400 }
+      );
     }
 
-    if (!targetBizId) {
-      return NextResponse.json({ error: 'No business found to update' }, { status: 400 });
+    const { data: target, error: lookupErr } = await adminSupabase
+      .from('businesses')
+      .select('id')
+      .eq('id', businessId)
+      .maybeSingle();
+
+    if (lookupErr) {
+      console.error('[API Business PUT] Lookup failed:', lookupErr);
+      return NextResponse.json({ error: lookupErr.message }, { status: 500 });
+    }
+    if (!target) {
+      return NextResponse.json({ error: `No business found with id ${businessId}.` }, { status: 404 });
     }
 
+    const targetBizId = target.id;
     console.log(`[API Business PUT] Updating business ID: ${targetBizId}`);
 
     // 1. Update business table only if there are fields to update
@@ -121,69 +135,43 @@ export async function PUT(req: Request) {
         .maybeSingle();
 
       if (bizErr) {
+        // The category CHECK constraint covers all 11 BusinessCategory values as
+        // of migration 20260828000000. It used to be narrower, and this handler
+        // responded by dropping the category from the update and reporting
+        // success — so the owner's choice silently never applied.
         console.error('[API Business Update Error]:', bizErr);
-        // If Postgres check constraint fails (e.g. category not in enum), retry without category in businesses column
-        if (bizErr.code === '23514' && updatePayload.category) {
-          console.warn('[API Business] Category constraint hit, retrying update without category column');
-          delete updatePayload.category;
-          if (Object.keys(updatePayload).length > 0) {
-            const { data: retryData } = await adminSupabase
-              .from('businesses')
-              .update(updatePayload)
-              .eq('id', targetBizId)
-              .select()
-              .maybeSingle();
-            updatedBiz = retryData;
-          }
-        } else {
-          return NextResponse.json({ error: bizErr.message }, { status: 500 });
-        }
-      } else {
-        updatedBiz = data;
+        const message =
+          bizErr.code === '23505'
+            ? `The WhatsApp number ${whatsapp_number} is already registered to another business.`
+            : bizErr.message;
+        return NextResponse.json({ error: message }, { status: bizErr.code === '23505' ? 409 : 500 });
       }
-    }
-
-    // Always store category in business_config if provided
-    if (category) {
-      if (!configs || !Array.isArray(configs)) {
-        // Ensure configs array exists
-      }
+      updatedBiz = data;
     }
 
     // 2. Save config entries
     if (configs && Array.isArray(configs)) {
-      for (const item of configs) {
-        console.log(`[API Business PUT] Updating config "${item.config_key}" for business ${targetBizId}`);
-        const { data: existing } = await adminSupabase
+      const rows = configs
+        .filter((item: any) => item && item.config_key)
+        .map((item: any) => ({
+          business_id: targetBizId,
+          config_key: item.config_key,
+          config_value: item.config_value,
+          updated_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        // One upsert instead of a select-then-update/insert per key.
+        const { error: configErr } = await adminSupabase
           .from('business_config')
-          .select('id')
-          .eq('business_id', targetBizId)
-          .eq('config_key', item.config_key)
-          .maybeSingle();
-        if (existing) {
-          const { error: updateErr } = await adminSupabase
-            .from('business_config')
-            .update({
-              config_value: item.config_value,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existing.id);
+          .upsert(rows, { onConflict: 'business_id,config_key' });
 
-          if (updateErr) {
-            console.error(`[API Config Update Error for ${item.config_key}]:`, updateErr);
-          }
-        } else {
-          const { error: insertErr } = await adminSupabase
-            .from('business_config')
-            .insert({
-              business_id: targetBizId,
-              config_key: item.config_key,
-              config_value: item.config_value,
-            });
-
-          if (insertErr) {
-            console.error(`[API Config Insert Error for ${item.config_key}]:`, insertErr);
-          }
+        if (configErr) {
+          console.error('[API Business PUT] Config upsert failed:', configErr);
+          return NextResponse.json(
+            { error: `Business saved, but settings could not be stored: ${configErr.message}` },
+            { status: 500 }
+          );
         }
       }
     }
@@ -195,56 +183,102 @@ export async function PUT(req: Request) {
   }
 }
 
+/** Child tables cleared before the business row itself. */
+const OWNED_TABLES = [
+  'hospital_escalations',
+  'hospital_feedback',
+  'hospital_voice_calls',
+  'hospital_reports',
+  'hospital_appointments',
+  'hospital_doctors',
+  'hospital_patients',
+  'ca_compliance_calendar',
+  'ca_documents_tracker',
+  'ca_leads',
+  'ca_clients',
+  'ca_query_logs',
+  'campaign_targets',
+  'campaigns',
+  'lead_hunter_leads',
+  'conversations',
+  'orders_bookings_leads',
+  'invoices',
+  'payment_events',
+  'business_config',
+] as const;
+
+/**
+ * DELETE — permanently remove one business and everything belonging to it.
+ *
+ * This route used to treat a missing businessId — or the literal values 'all'
+ * and 'demo-business-id' — as an instruction to "clean everything from
+ * database": an unauthenticated DELETE with no query string ran
+ * `.delete().neq('id', '000...')` against all 16 tables and wiped every
+ * tenant's data. There is no longer an all-tenants branch: the id is required
+ * and must name one real business.
+ */
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId') || searchParams.get('id');
 
-    console.log('[API Business DELETE] Deleting business and associated records for ID:', businessId);
+    if (!businessId || !UUID_RE.test(businessId)) {
+      return NextResponse.json(
+        { error: 'A valid businessId (UUID) is required. This endpoint deletes exactly one business.' },
+        { status: 400 }
+      );
+    }
 
-    if (businessId && businessId !== 'all' && businessId !== 'demo-business-id') {
-      // 1. Delete associated data for this specific business
-      await adminSupabase.from('hospital_escalations').delete().eq('business_id', businessId);
-      await adminSupabase.from('hospital_feedback').delete().eq('business_id', businessId);
-      await adminSupabase.from('hospital_voice_calls').delete().eq('business_id', businessId);
-      await adminSupabase.from('hospital_reports').delete().eq('business_id', businessId);
-      await adminSupabase.from('hospital_appointments').delete().eq('business_id', businessId);
-      await adminSupabase.from('hospital_doctors').delete().eq('business_id', businessId);
-      await adminSupabase.from('hospital_patients').delete().eq('business_id', businessId);
-      await adminSupabase.from('ca_compliance_calendar').delete().eq('business_id', businessId);
-      await adminSupabase.from('ca_documents_tracker').delete().eq('business_id', businessId);
-      await adminSupabase.from('ca_leads').delete().eq('business_id', businessId);
-      await adminSupabase.from('ca_clients').delete().eq('business_id', businessId);
-      await adminSupabase.from('ca_query_logs').delete().eq('business_id', businessId);
-      await adminSupabase.from('conversations').delete().eq('business_id', businessId);
-      await adminSupabase.from('orders_bookings_leads').delete().eq('business_id', businessId);
-      await adminSupabase.from('payment_events').delete().eq('business_id', businessId);
-      await adminSupabase.from('business_config').delete().eq('business_id', businessId);
-      await adminSupabase.from('businesses').delete().eq('id', businessId);
-    } else {
-      // Clean everything from database
-      await adminSupabase.from('hospital_escalations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('hospital_feedback').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('hospital_voice_calls').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('hospital_reports').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('hospital_appointments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('hospital_doctors').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('hospital_patients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('ca_compliance_calendar').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('ca_documents_tracker').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('ca_leads').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('ca_clients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('ca_query_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('conversations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('orders_bookings_leads').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('payment_events').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('business_config').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await adminSupabase.from('businesses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const { data: target, error: lookupErr } = await adminSupabase
+      .from('businesses')
+      .select('id, name')
+      .eq('id', businessId)
+      .maybeSingle();
+
+    if (lookupErr) {
+      console.error('[API Business DELETE] Lookup failed:', lookupErr);
+      return NextResponse.json({ error: lookupErr.message }, { status: 500 });
+    }
+    if (!target) {
+      return NextResponse.json({ error: `No business found with id ${businessId}.` }, { status: 404 });
+    }
+
+    console.log(`[API Business DELETE] Deleting "${target.name}" (${businessId}) and all associated records.`);
+
+    const failures: string[] = [];
+
+    for (const table of OWNED_TABLES) {
+      const { error } = await adminSupabase.from(table).delete().eq('business_id', businessId);
+      if (error) {
+        // A table that does not exist in this deployment is not a failure.
+        if (error.code === '42P01') continue;
+        console.error(`[API Business DELETE] Could not clear ${table}:`, error.message);
+        failures.push(`${table}: ${error.message}`);
+      }
+    }
+
+    if (failures.length > 0) {
+      // Stop before deleting the parent row so nothing is left orphaned.
+      return NextResponse.json(
+        {
+          error: 'Some associated records could not be deleted, so the business was kept.',
+          details: failures,
+        },
+        { status: 500 }
+      );
+    }
+
+    const { error: deleteErr } = await adminSupabase.from('businesses').delete().eq('id', businessId);
+
+    if (deleteErr) {
+      console.error('[API Business DELETE] Could not delete the business row:', deleteErr.message);
+      return NextResponse.json({ error: deleteErr.message }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Business account and all associated data permanently deleted from database.',
+      businessId,
+      message: `"${target.name}" and all of its associated data were permanently deleted.`,
     });
   } catch (err: any) {
     console.error('[API Business DELETE Exception]:', err);

@@ -49,7 +49,7 @@ export async function triggerVapiCall(
     cleanNumber = digits.length === 10 ? `+91${digits}` : `+${digits}`;
   }
 
-  const hospitalName = options.hospitalName || "MediCare Hospital";
+  const hospitalName = options.hospitalName || "the hospital";
   const doctorName = options.doctorName || "Attending Specialist";
   const appointmentTime = options.appointmentTime || "upcoming scheduled time";
 

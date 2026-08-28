@@ -8,12 +8,24 @@ import invoiceRouter from './routes/invoice';
 import paymentRouter from './routes/payment';
 import { caRouter } from './routes/caRoutes';
 import { initCACronScheduler } from './services/caCronService';
+import { initHospitalCronScheduler } from './services/hospitalCronService';
+import { startCampaignWorker } from './services/campaignService';
 
 const app = express();
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
+
+// Capture the raw request body alongside the parsed one. Meta signs the exact
+// bytes it sent, so verifying x-hub-signature-256 against a re-serialised
+// JSON.stringify(req.body) fails on any key-order or whitespace difference.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as any).rawBody = buf.toString('utf8');
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 
 // Request Logger
@@ -30,8 +42,16 @@ app.use('/billing', billingRouter);
 app.use('/', paymentRouter);
 app.use('/api/ca', caRouter);
 
-// Initialize CA Firm 4-Daily Automated Cron Schedulers
+// Schedulers. initCACronScheduler was previously the only one registered — the
+// hospital reminder/feedback/follow-up jobs were fully implemented but never
+// scheduled anywhere, so none of them had ever run.
 initCACronScheduler();
+initHospitalCronScheduler();
+
+// Campaign worker: sends at most one queued pitch per tick, paced by each
+// campaign's next_send_at. Serverless deployments use the equivalent route at
+// /api/admin/lead-hunter/campaign/tick instead; running both is safe.
+startCampaignWorker(5000);
 
 // Start periodic trial expiration checker (every 1 hour)
 setInterval(async () => {
@@ -59,8 +79,9 @@ process.on('unhandledRejection', (reason, promise) => {
 // Start Server
 app.listen(ENV.PORT, () => {
   console.log(`\n======================================================`);
-  console.log(`🚀 Agento AI Backend Engine (Razorpay Checkout) Live!`);
+  console.log(`🚀 Agento AI Backend Engine Live!`);
   console.log(`📡 Listening on Port        : http://localhost:${ENV.PORT}`);
+  console.log(`📥 WhatsApp Webhook         : http://localhost:${ENV.PORT}/webhook`);
   console.log(`💳 Create Order Endpoint    : http://localhost:${ENV.PORT}/api/create-order`);
   console.log(`🔐 Verify Payment Endpoint  : http://localhost:${ENV.PORT}/api/verify-payment`);
   console.log(`======================================================\n`);

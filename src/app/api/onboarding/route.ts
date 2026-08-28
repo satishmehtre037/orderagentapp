@@ -7,19 +7,72 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUB
 // Admin client using service role key to safely bypass RLS
 const adminSupabase = createClient(supabaseUrl, serviceKey);
 
+/** Trial length. The businesses.trial_end_date default matches this. */
+const TRIAL_DAYS = 30;
+
+/**
+ * Must stay in step with the businesses_category_check constraint
+ * (supabase/migrations/20260828000000_correctness_fixes.sql) and the
+ * BusinessCategory type.
+ */
+const ALLOWED_CATEGORIES = [
+  'bakery',
+  'cafe',
+  'salon',
+  'gym',
+  'tuition',
+  'clinic',
+  'hospital',
+  'retail',
+  'real_estate',
+  'ca_firm',
+  'custom',
+] as const;
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const formData = body.formData || body.data || body;
-    const resolvedEmail = (body.ownerEmail || body.email || formData.ownerEmail || formData.email || 'owner@bizbotos.in').trim();
+    const resolvedEmail = String(
+      body.ownerEmail || body.email || formData.ownerEmail || formData.email || ''
+    ).trim();
+
+    // No shared placeholder email. This used to default to 'owner@bizbotos.in',
+    // and since the row is looked up by owner_email, every signup that arrived
+    // without an email edited the same business record.
+    if (!resolvedEmail || !resolvedEmail.includes('@')) {
+      return NextResponse.json(
+        { error: 'An owner email address is required to create or update a business.' },
+        { status: 400 }
+      );
+    }
 
     const businessName = formData.business_name || formData.businessName || body.businessName || 'My Business';
     const category = formData.category || body.category || 'bakery';
-    
+
+    // Validated up front, with the real reason. The old code let the insert fail
+    // on the CHECK constraint and then silently retried as category 'bakery' —
+    // so a hospital signing up was configured as a bakery and told it worked.
+    if (!(ALLOWED_CATEGORIES as readonly string[]).includes(String(category))) {
+      return NextResponse.json(
+        {
+          error: `Unsupported category "${category}". Allowed categories: ${ALLOWED_CATEGORIES.join(', ')}.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Ensure clean phone number
     const rawNumber = formData.whatsapp_number || formData.whatsappNumber || body.whatsappNumber || '';
-    const cleanDigits = rawNumber.replace(/\D/g, '').replace(/^91/, '');
+    const cleanDigits = String(rawNumber).replace(/\D/g, '').replace(/^91/, '');
     const whatsappNumber = cleanDigits ? `+91${cleanDigits}` : rawNumber;
+
+    if (cleanDigits && !/^[6-9]\d{9}$/.test(cleanDigits)) {
+      return NextResponse.json(
+        { error: `"${rawNumber}" is not a valid 10-digit Indian mobile number.` },
+        { status: 400 }
+      );
+    }
 
     console.log('[API Onboarding] Processing business for owner:', resolvedEmail, {
       businessName,
@@ -36,96 +89,63 @@ export async function POST(req: Request) {
 
     let businessId: string;
 
-    // 1-day (24-hour) free trial window
-    const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const trialEndDate = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    /** businesses.whatsapp_number is unique — the number routes inbound messages to one tenant. */
+    function duplicateNumberResponse() {
+      return NextResponse.json(
+        {
+          error: `The WhatsApp number ${whatsappNumber} is already registered to another business. Each business needs its own number, because inbound messages are routed by it.`,
+        },
+        { status: 409 }
+      );
+    }
 
     if (existingBusiness) {
       // Owner already has a business — UPDATE it
       console.log('[API Onboarding] Existing business found, updating:', existingBusiness.id);
-      let { data: updatedBiz, error: updateErr } = await adminSupabase
+      const { data: updatedBiz, error: updateErr } = await adminSupabase
         .from('businesses')
         .update({
           name: businessName,
           category: category,
           whatsapp_number: whatsappNumber,
           subscription_status: 'trial',
-          trial_end_date: oneDayFromNow,
+          trial_end_date: trialEndDate,
         })
         .eq('id', existingBusiness.id)
         .select('id')
         .single();
 
       if (updateErr) {
-        console.warn('[API Onboarding] Initial update error:', updateErr);
-        // If Postgres check constraint fails (e.g. category not in enum), retry with category: 'bakery'
-        if (updateErr.code === '23514') {
-          console.warn('[API Onboarding] Category constraint hit, retrying update with category fallback');
-          const { data: retryBiz, error: retryErr } = await adminSupabase
-            .from('businesses')
-            .update({
-              name: businessName,
-              category: 'bakery',
-              whatsapp_number: whatsappNumber,
-              subscription_status: 'trial',
-              trial_end_date: oneDayFromNow,
-            })
-            .eq('id', existingBusiness.id)
-            .select('id')
-            .single();
-
-          if (retryErr) {
-            console.error('[API Onboarding Error] Retry update failed:', retryErr);
-            return NextResponse.json({ error: retryErr.message }, { status: 400 });
-          }
-          updatedBiz = retryBiz;
-        } else {
-          return NextResponse.json({ error: updateErr.message }, { status: 400 });
-        }
+        console.error('[API Onboarding Error] Update failed:', updateErr);
+        if (updateErr.code === '23505') return duplicateNumberResponse();
+        return NextResponse.json({ error: updateErr.message }, { status: 400 });
       }
       businessId = updatedBiz!.id;
       console.log('[API Onboarding] Business updated successfully. ID:', businessId);
     } else {
       // New owner — INSERT fresh business row
       console.log('[API Onboarding] No existing business found, inserting new...');
-      let { data: newBiz, error: insertErr } = await adminSupabase
+      const { data: newBiz, error: insertErr } = await adminSupabase
         .from('businesses')
-        .insert([{
-          name: businessName,
-          category: category,
-          whatsapp_number: whatsappNumber,
-          owner_email: resolvedEmail,
-          subscription_status: 'trial',
-          trial_end_date: oneDayFromNow,
-        }])
+        .insert([
+          {
+            name: businessName,
+            category: category,
+            whatsapp_number: whatsappNumber,
+            owner_email: resolvedEmail,
+            subscription_status: 'trial',
+            trial_end_date: trialEndDate,
+          },
+        ])
         .select('id')
         .single();
 
       if (insertErr) {
-        console.warn('[API Onboarding] Initial insert error:', insertErr);
-        // If Postgres check constraint fails (e.g. category not in enum), retry with fallback category
-        if (insertErr.code === '23514') {
-          console.warn('[API Onboarding] Category constraint hit on insert, retrying with fallback category');
-          const { data: retryNewBiz, error: retryInsertErr } = await adminSupabase
-            .from('businesses')
-            .insert([{
-              name: businessName,
-              category: 'bakery',
-              whatsapp_number: whatsappNumber,
-              owner_email: resolvedEmail,
-              subscription_status: 'trial',
-              trial_end_date: oneDayFromNow,
-            }])
-            .select('id')
-            .single();
-
-          if (retryInsertErr) {
-            console.error('[API Onboarding Error] Retry insert failed:', retryInsertErr);
-            return NextResponse.json({ error: retryInsertErr.message }, { status: 400 });
-          }
-          newBiz = retryNewBiz;
-        } else {
-          return NextResponse.json({ error: insertErr.message }, { status: 400 });
-        }
+        console.error('[API Onboarding Error] Insert failed:', insertErr);
+        if (insertErr.code === '23505') return duplicateNumberResponse();
+        return NextResponse.json({ error: insertErr.message }, { status: 400 });
       }
       businessId = newBiz!.id;
       console.log('[API Onboarding] Business inserted. ID:', businessId);

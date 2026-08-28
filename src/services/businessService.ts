@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { ENV } from '../config/env';
 import {
   Business,
   BusinessCategory,
@@ -11,40 +12,103 @@ import {
 } from '../types/index';
 
 /**
- * Fetch business tenant by registered WhatsApp number
+ * Every spelling a whatsapp_number may have been stored as.
+ * Onboarding has accepted '9876543210', '919876543210' and '+919876543210'
+ * at various points, so the lookup normalises rather than assuming one form.
+ */
+function numberVariants(whatsappNumber: string): string[] {
+  const digits = (whatsappNumber || '').replace(/\D/g, '');
+  const last10 = digits.slice(-10);
+
+  const variants = new Set<string>([whatsappNumber, digits, `+${digits}`]);
+  if (last10.length === 10) {
+    variants.add(last10);
+    variants.add(`91${last10}`);
+    variants.add(`+91${last10}`);
+  }
+  return [...variants].filter(Boolean);
+}
+
+/**
+ * Resolves the tenant that owns a WhatsApp number.
+ *
+ * Returns null when there is no match. It previously fell back to
+ * `.order('created_at', {ascending: false}).limit(1)` — the newest business in
+ * the table — so an inbound message to an unregistered number was answered
+ * with some *other* tenant's prompt, menu, prices and hours, and the resulting
+ * order was written under their business_id. That fallback is gone: an
+ * unresolvable number is an error, not somebody else's customer.
  */
 export async function getBusinessByWhatsappNumber(whatsappNumber: string): Promise<Business | null> {
-  console.log(`[DB Service] Looking up business with whatsapp_number: ${whatsappNumber}`);
-  const cleanNumber = whatsappNumber.replace(/\D/g, ''); // strip non-digits if needed
+  if (!whatsappNumber) {
+    console.warn('[DB Service] getBusinessByWhatsappNumber called with an empty number.');
+    return null;
+  }
+
+  const variants = numberVariants(whatsappNumber);
 
   const { data, error } = await supabase
     .from('businesses')
     .select('*')
-    .or(`whatsapp_number.eq.${whatsappNumber},whatsapp_number.eq.${cleanNumber}`)
-    .single();
+    .in('whatsapp_number', variants)
+    .limit(1)
+    .maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      console.log(`[DB Service] No exact business match for ${whatsappNumber}. Fetching latest active business...`);
-      const { data: fallbackBiz } = await supabase
-        .from('businesses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      if (fallbackBiz && fallbackBiz.length > 0) {
-        console.log(`[DB Service] Found active business: "${fallbackBiz[0].name}" (${fallbackBiz[0].id})`);
-        return fallbackBiz[0] as Business;
-      }
-      
-      console.log(`[DB Service] ❌ No business registered in database. Returning null.`);
-      return null;
-    }
-    console.error(`[DB Service Error] Error fetching business by number:`, error);
+    console.error(`[DB Service Error] Error fetching business by number ${whatsappNumber}:`, error.message);
+    return null;
+  }
+
+  if (!data) {
+    console.warn(
+      `[DB Service] ❌ No business registered for ${whatsappNumber}. ` +
+        `Refusing to serve another tenant's data. Register the number in onboarding.`
+    );
     return null;
   }
 
   console.log(`[DB Service] Found business: "${data.name}" (${data.id}) | Category: ${data.category}`);
   return data as Business;
+}
+
+/**
+ * The business_id for the operator running this deployment — used by admin-only
+ * surfaces (Lead Hunter, campaigns) that need a business_id to attribute rows to.
+ *
+ * Resolved from WHATSAPP_BUSINESS_NUMBER, the number this deployment actually
+ * sends from. Several routes previously used `.from('businesses').select('id')
+ * .limit(1)` — an unordered read that returns an arbitrary tenant, so admin
+ * activity was filed against whichever business Postgres happened to hand back.
+ */
+export async function resolveOperatorBusinessId(): Promise<string | null> {
+  const configured = ENV.WHATSAPP_BUSINESS_NUMBER;
+
+  if (!configured) {
+    console.warn(
+      '[DB Service] WHATSAPP_BUSINESS_NUMBER is not set — cannot attribute admin activity to a business. ' +
+        'Rows will be written with business_id = null.'
+    );
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('id')
+    .in('whatsapp_number', numberVariants(configured))
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[DB Service Error] Failed to resolve operator business:', error.message);
+    return null;
+  }
+
+  if (!data) {
+    console.warn(`[DB Service] No business row matches WHATSAPP_BUSINESS_NUMBER (${configured}).`);
+    return null;
+  }
+
+  return data.id as string;
 }
 
 /**
