@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/config/supabase';
 import { createSubscriptionOrder } from '@/services/subscriptionService';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-const adminSupabase = createClient(supabaseUrl, serviceKey);
+const adminSupabase = supabase;
 
 // GET: Fetch payment ledger for the business
 export async function GET(req: Request) {

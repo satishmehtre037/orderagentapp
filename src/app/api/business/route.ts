@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/config/supabase';
 import { TRIAL_DAYS } from '@/config/plans';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const adminSupabase = createClient(supabaseUrl, serviceKey);
+const adminSupabase = supabase;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -13,7 +10,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get('email');
-    const id = searchParams.get('id');
+    const id = searchParams.get('id') || searchParams.get('businessId');
 
     let query = adminSupabase.from('businesses').select('*');
 

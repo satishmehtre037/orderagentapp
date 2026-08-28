@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+import { supabase } from '@/config/supabase';
 
 // Admin client using service role key to safely bypass RLS
-const adminSupabase = createClient(supabaseUrl, serviceKey);
+const adminSupabase = supabase;
 
 /** Trial length. The businesses.trial_end_date default matches this. */
 const TRIAL_DAYS = 30;
