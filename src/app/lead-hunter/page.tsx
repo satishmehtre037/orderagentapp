@@ -1930,6 +1930,7 @@ export default function LeadHunterPage() {
                           <th className="py-2.5 px-1 w-8"></th>
                           <th className="py-2.5">Business & Location</th>
                           <th className="py-2.5">Phone Number</th>
+                          <th className="py-2.5">Consent</th>
                           <th className="py-2.5">Rating</th>
                           <th className="py-2.5">Status</th>
                           <th className="py-2.5 text-right">Action</th>
@@ -1938,6 +1939,7 @@ export default function LeadHunterPage() {
                       <tbody className="divide-y divide-slate-800/60 font-medium">
                         {leads.map((lead) => {
                           const isSelected = selectedLeadIds.includes(lead.id);
+                          const consentInfo = CONSENT_LABELS[lead.consent_status || 'none'] || CONSENT_LABELS.none;
                           return (
                             <tr
                               key={lead.id}
@@ -1985,10 +1987,10 @@ export default function LeadHunterPage() {
                                     type="text"
                                     value={lead.phone_number}
                                     onChange={(e) => {
-                                      const val = e.target.value;
-                                      setLeads((prev) =>
-                                        prev.map((l) => (l.id === lead.id ? { ...l, phone_number: val } : l))
-                                      );
+                                       const val = e.target.value;
+                                       setLeads((prev) =>
+                                         prev.map((l) => (l.id === lead.id ? { ...l, phone_number: val } : l))
+                                       );
                                     }}
                                     placeholder="+91..."
                                     className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs text-white w-32 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
@@ -2043,11 +2045,25 @@ export default function LeadHunterPage() {
                                 </div>
                               </td>
                               <td className="py-3">
-                                <span className="inline-flex items-center space-x-1 text-amber-400 font-bold">
-                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                  <span>{lead.rating}</span>
-                                  <span className="text-[10px] text-slate-500 font-normal">({lead.reviews_count})</span>
+                                <span
+                                  className={`px-2 py-0.5 rounded-full border text-[10px] font-bold inline-flex items-center space-x-1 ${consentInfo.className}`}
+                                  title={consentInfo.title}
+                                >
+                                  {consentInfo.text}
                                 </span>
+                              </td>
+                              <td className="py-3">
+                                {lead.rating ? (
+                                  <span className="inline-flex items-center space-x-1 text-amber-400 font-bold">
+                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                    <span>{lead.rating}</span>
+                                    {lead.reviews_count !== null && (
+                                      <span className="text-[10px] text-slate-500 font-normal">({lead.reviews_count})</span>
+                                    )}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-600 font-mono text-xs">—</span>
+                                )}
                               </td>
                               <td className="py-3">
                                 {lead.status === 'sent' ? (
