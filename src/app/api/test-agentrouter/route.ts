@@ -4,64 +4,66 @@ import { ENV } from '@/config/env';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  try {
-    const token = ENV.ANTHROPIC_AUTH_TOKEN || 'sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s';
-    const baseUrl = (ENV.ANTHROPIC_BASE_URL || 'https://agentrouter.org').replace(/\/+$/, '');
-    const model = ENV.ANTHROPIC_MODEL || 'glm-5.3';
+  const token = ENV.ANTHROPIC_AUTH_TOKEN || 'sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s';
+  const baseUrl = (ENV.ANTHROPIC_BASE_URL || 'https://agentrouter.org').replace(/\/+$/, '');
+  const model = ENV.ANTHROPIC_MODEL || 'glm-5.3';
 
-    const testPayload = {
-      model,
-      messages: [
-        { role: 'system', content: 'You are a test assistant.' },
-        { role: 'user', content: 'Say "AgentRouter GLM-5.3 is connected and working!"' },
-      ],
-      temperature: 0.1,
-      max_tokens: 50,
-    };
+  const userAgents = [
+    'OpenAI/NodeJS/4.28.0',
+    'anthropic-typescript/0.26.0',
+    'cursor/0.40.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+    'python-requests/2.31.0',
+    'curl/8.4.0',
+    'claude-dev/1.0.0',
+  ];
 
-    const startTime = Date.now();
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'User-Agent': 'cline/1.0.0',
-      },
-      body: JSON.stringify(testPayload),
-      signal: AbortSignal.timeout(15000),
-    });
+  const results: any[] = [];
 
-    const elapsedMs = Date.now() - startTime;
-    const status = response.status;
-    const headers = Object.fromEntries(response.headers.entries());
-    const rawText = await response.text();
-
-    let jsonBody: any = null;
+  for (const ua of userAgents) {
     try {
-      jsonBody = JSON.parse(rawText);
-    } catch {
-      jsonBody = rawText;
-    }
+      const startTime = Date.now();
+      const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'User-Agent': ua,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Say OK' }],
+          max_tokens: 5,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
 
-    return NextResponse.json({
-      success: response.ok,
-      status,
-      elapsedMs,
-      tokenPrefix: token.slice(0, 10) + '...',
-      baseUrl,
-      model,
-      headers: {
-        'cf-ray': headers['cf-ray'],
-        'content-type': headers['content-type'],
-        'x-request-id': headers['x-request-id'] || headers['request-id'],
-      },
-      body: jsonBody,
-    }, { status: response.ok ? 200 : 502 });
-  } catch (err: any) {
-    return NextResponse.json({
-      success: false,
-      error: err?.message || String(err),
-      stack: err?.stack,
-    }, { status: 500 });
+      const elapsedMs = Date.now() - startTime;
+      const text = await res.text();
+      const isJson = text.startsWith('{');
+      const isCaptcha = text.includes('captcha') || text.includes('aliyun');
+
+      results.push({
+        userAgent: ua,
+        status: res.status,
+        elapsedMs,
+        isJson,
+        isCaptcha,
+        preview: text.slice(0, 100),
+      });
+    } catch (e: any) {
+      results.push({
+        userAgent: ua,
+        error: e?.message || String(e),
+      });
+    }
   }
+
+  return NextResponse.json({
+    tokenPrefix: token.slice(0, 10) + '...',
+    baseUrl,
+    model,
+    results,
+  });
 }
