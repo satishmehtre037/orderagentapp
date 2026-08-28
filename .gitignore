@@ -31,6 +31,7 @@ android/.idea/
 *.aab
 *.tsbuildinfo
 *.pdf
+cloudflared.exe
 
 # Ruflo local secrets and runtime data
 .env.local

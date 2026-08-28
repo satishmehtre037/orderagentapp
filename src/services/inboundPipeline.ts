@@ -570,17 +570,29 @@ async function handleStandardAIReply(inbound: ParsedInbound, business: any, conf
   let replyText = aiResponseText;
   let capturedData: any = null;
 
-  // Method 1: markdown code fence ```json ... ```
-  const codeBlockMatch = replyText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
-  if (codeBlockMatch) {
+  // Method 1: XML tag <order_capture> ... </order_capture> (Highest reliability across all LLMs)
+  const xmlTagMatch = replyText.match(/<order_capture>([\s\S]*?)<\/order_capture>/i);
+  if (xmlTagMatch) {
     try {
-      const parsed = JSON.parse(codeBlockMatch[1]);
+      const parsed = JSON.parse(xmlTagMatch[1].trim());
       capturedData = parsed.capture || parsed;
-      replyText = replyText.replace(codeBlockMatch[0], '').trim();
+      replyText = replyText.replace(xmlTagMatch[0], '').trim();
     } catch (_) {}
   }
 
-  // Method 2: outermost JSON block containing capture/type/details/items
+  // Method 2: markdown code fence ```json ... ```
+  if (!capturedData) {
+    const codeBlockMatch = replyText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+    if (codeBlockMatch) {
+      try {
+        const parsed = JSON.parse(codeBlockMatch[1]);
+        capturedData = parsed.capture || parsed;
+        replyText = replyText.replace(codeBlockMatch[0], '').trim();
+      } catch (_) {}
+    }
+  }
+
+  // Method 3: outermost JSON block containing capture/type/details/items
   if (!capturedData) {
     const firstBrace = replyText.indexOf('{');
     const lastBrace = replyText.lastIndexOf('}');
@@ -608,14 +620,15 @@ async function handleStandardAIReply(inbound: ParsedInbound, business: any, conf
     }
   }
 
-  // Method 3: secondary AI intent analysis
+  // Method 4: secondary AI intent analysis
   if (!capturedData) {
     const fullHistory = [...history, { sender: 'inbound', message: messageText } as any];
     capturedData = await extractStructuredCapture(fullHistory, business.category);
   }
 
-  // 100% clean customer-facing message (remove complete/partial JSON blocks, fences, or capture fragments)
+  // 100% clean customer-facing message (remove complete/partial JSON blocks, XML tags, fences, or capture fragments)
   replyText = replyText
+    .replace(/<order_capture>[\s\S]*?(?:<\/order_capture>|$)/gi, '')
     .replace(/```(?:json)?[\s\S]*?(?:```|$)/gi, '')
     .replace(/\{[\s\S]*?(?:\}|$)/gi, '')
     .replace(/"(?:type|capture|details|items|total|fulfillment|delivery_address|appointment_time)"\s*:[\s\S]*$/gim, '')
