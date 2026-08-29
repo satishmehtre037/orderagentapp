@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { HospitalPatient } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
+import { supabaseClient } from '@/lib/supabase/client';
 
 interface HospitalPatientsTabProps {
   businessId?: string;
@@ -31,9 +32,9 @@ export default function HospitalPatientsTab({
 
   const { showToast } = useToast();
 
-  const fetchPatients = async () => {
+  const fetchPatients = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await fetch(`/api/hospital/patients?${businessId ? `business_id=${businessId}&` : ''}search=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.patients)) {
@@ -42,12 +43,36 @@ export default function HospitalPatientsTab({
     } catch (e) {
       console.error('Error fetching patients:', e);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPatients();
+    fetchPatients(true);
+
+    const pollInterval = setInterval(() => {
+      fetchPatients(false);
+    }, 3000);
+
+    const channel = supabaseClient
+      .channel(`hospital-patients-live-${businessId || 'all'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hospital_patients',
+        },
+        () => {
+          fetchPatients(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(pollInterval);
+      supabaseClient.removeChannel(channel);
+    };
   }, [businessId, searchQuery]);
 
   return (
@@ -66,7 +91,7 @@ export default function HospitalPatientsTab({
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={fetchPatients}
+            onClick={() => fetchPatients(true)}
             className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 rounded-xl transition-colors"
             title="Refresh Directory"
           >

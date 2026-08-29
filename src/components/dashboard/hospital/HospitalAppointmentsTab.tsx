@@ -19,6 +19,8 @@ import {
 import { HospitalAppointment, HospitalAppointmentStatus } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
 
+import { supabaseClient } from '@/lib/supabase/client';
+
 interface HospitalAppointmentsTabProps {
   businessId?: string;
   onOpenNewAppointment: () => void;
@@ -35,9 +37,9 @@ export default function HospitalAppointmentsTab({
 
   const { showToast } = useToast();
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await fetch(`/api/hospital/appointments?${businessId ? `business_id=${businessId}&` : ''}status=${activeFilter}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.appointments)) {
@@ -46,12 +48,36 @@ export default function HospitalAppointmentsTab({
     } catch (e) {
       console.error('Error fetching hospital appointments:', e);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAppointments();
+    fetchAppointments(true);
+
+    const pollInterval = setInterval(() => {
+      fetchAppointments(false);
+    }, 3000);
+
+    const channel = supabaseClient
+      .channel(`hospital-appointments-live-${businessId || 'all'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hospital_appointments',
+        },
+        () => {
+          fetchAppointments(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(pollInterval);
+      supabaseClient.removeChannel(channel);
+    };
   }, [businessId, activeFilter]);
 
   const handleStatusUpdate = async (id: string, newStatus: HospitalAppointmentStatus) => {
@@ -131,7 +157,7 @@ export default function HospitalAppointmentsTab({
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={fetchAppointments}
+            onClick={() => fetchAppointments(true)}
             className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 rounded-xl transition-colors"
             title="Refresh Ledger"
           >

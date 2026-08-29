@@ -72,23 +72,39 @@ export async function POST(req: Request) {
     // Upsert Patient record if not exists
     let resolvedPatientId = patient_id;
     if (!resolvedPatientId) {
-      const { data: patientData } = await supabaseAdmin
+      const { data: existingPatient } = await supabaseAdmin
         .from('hospital_patients')
-        .upsert(
-          [{
+        .select('id')
+        .eq('business_id', business_id)
+        .eq('phone', patient_phone)
+        .maybeSingle();
+
+      if (existingPatient) {
+        resolvedPatientId = existingPatient.id;
+        await supabaseAdmin
+          .from('hospital_patients')
+          .update({
+            name: patient_name,
+            last_message_at: new Date().toISOString(),
+            status: 'Active',
+          })
+          .eq('id', existingPatient.id);
+      } else {
+        const { data: newPatient } = await supabaseAdmin
+          .from('hospital_patients')
+          .insert([{
             business_id,
             name: patient_name,
             phone: patient_phone,
             last_message_at: new Date().toISOString(),
             status: 'Active',
-          }],
-          { onConflict: 'phone' }
-        )
-        .select()
-        .single();
+          }])
+          .select('id')
+          .single();
 
-      if (patientData) {
-        resolvedPatientId = patientData.id;
+        if (newPatient) {
+          resolvedPatientId = newPatient.id;
+        }
       }
     }
 

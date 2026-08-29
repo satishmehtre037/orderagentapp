@@ -255,6 +255,9 @@ export async function saveCapturedRecord(
       return existingRecord as OrderBookingLead;
     }
 
+    // Auto-sync hospital/clinic appointment and patient records
+    await syncHospitalAppointmentIfApplicable(businessId, customerNumber, mergedDetails);
+
     return updatedRecord as OrderBookingLead;
   }
 
@@ -278,7 +281,165 @@ export async function saveCapturedRecord(
   }
 
   console.log(`[DB Service] 📌 Record captured successfully (ID: ${data.id})`);
+
+  // Auto-sync hospital/clinic appointment and patient records
+  await syncHospitalAppointmentIfApplicable(businessId, customerNumber, details);
+
   return data as OrderBookingLead;
+}
+
+/**
+ * Automatically syncs WhatsApp captured bookings into hospital_appointments and hospital_patients
+ */
+async function syncHospitalAppointmentIfApplicable(
+  businessId: string,
+  customerNumber: string,
+  details: Record<string, any>
+): Promise<void> {
+  try {
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('id', businessId)
+      .maybeSingle();
+    if (!business) return;
+    const cat = business.category;
+    if (cat !== 'hospital' && cat !== 'clinic') return;
+
+    // Parse patient name
+    let patientName = details.patient_name || details.name;
+    if (!patientName && typeof details.notes === 'string') {
+      const match = details.notes.match(/Patient:\s*([^\n,]+)/i);
+      if (match) patientName = match[1].trim();
+    }
+    if (!patientName) patientName = `Patient (${customerNumber.slice(-4)})`;
+
+    // Parse doctor and department from items or details
+    let doctorName = details.doctor_name || details.doctor;
+    let department = details.department;
+    if (Array.isArray(details.items)) {
+      for (const it of details.items) {
+        const itemName = typeof it === 'string' ? it : it?.name || '';
+        if (it?.doctor) doctorName = it.doctor;
+        if (it?.department) department = it.department;
+        if (!doctorName && itemName.includes('Dr.')) {
+          const docMatch = itemName.match(/Dr\.\s*([a-zA-Z\s]+)/i);
+          if (docMatch) doctorName = `Dr. ${docMatch[1].trim()}`;
+        }
+        if (!department) {
+          if (/cardio/i.test(itemName)) department = 'Cardiology OPD';
+          else if (/neuro/i.test(itemName)) department = 'Neurology OPD';
+          else if (/ortho/i.test(itemName)) department = 'Orthopaedics';
+          else if (/pediatr/i.test(itemName)) department = 'Pediatrics';
+          else if (/dental|dentist/i.test(itemName)) department = 'Dental Clinic';
+          else if (/dermat/i.test(itemName)) department = 'Dermatology';
+        }
+      }
+    }
+    if (!doctorName) doctorName = 'Specialist Physician';
+    if (!department) department = 'General OPD';
+
+    // Parse appointment slot time
+    let slotTime = new Date().toISOString();
+    if (details.appointment_time || details.slot || details.date) {
+      const timeStr = details.appointment_time || details.slot || details.date;
+      const parsed = Date.parse(timeStr);
+      if (!isNaN(parsed)) {
+        slotTime = new Date(parsed).toISOString();
+      } else {
+        const cleanStr = `${timeStr} 2026`.replace(/(\d{4})\s+\d{4}/, '$1');
+        const fallbackParsed = Date.parse(cleanStr);
+        if (!isNaN(fallbackParsed)) {
+          slotTime = new Date(fallbackParsed).toISOString();
+        }
+      }
+    }
+
+    // Upsert Patient record in hospital_patients
+    let patientId: string | null = null;
+    const { data: existingPatient } = await supabase
+      .from('hospital_patients')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('phone', customerNumber)
+      .maybeSingle();
+
+    if (existingPatient) {
+      patientId = existingPatient.id;
+      await supabase
+        .from('hospital_patients')
+        .update({
+          name: patientName,
+          last_message_at: new Date().toISOString(),
+          status: 'Active',
+        })
+        .eq('id', existingPatient.id);
+    } else {
+      const { data: newPatient } = await supabase
+        .from('hospital_patients')
+        .insert([{
+          business_id: businessId,
+          name: patientName,
+          phone: customerNumber,
+          last_message_at: new Date().toISOString(),
+          status: 'Active',
+        }])
+        .select('id')
+        .single();
+      if (newPatient) patientId = newPatient.id;
+    }
+
+    // Insert or update appointment in hospital_appointments
+    const tokenNumber = Math.floor(Math.random() * 40) + 1;
+    const feeStr = details.total ? `Consultation Fee: ₹${details.total}` : details.notes || '';
+
+    const { data: existingAppt } = await supabase
+      .from('hospital_appointments')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('patient_phone', customerNumber)
+      .eq('status', 'confirmed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingAppt) {
+      await supabase
+        .from('hospital_appointments')
+        .update({
+          patient_id: patientId,
+          patient_name: patientName,
+          doctor_name: doctorName,
+          department: department,
+          slot_time: slotTime,
+          notes: feeStr,
+        })
+        .eq('id', existingAppt.id);
+      console.log(`[DB Service] 🏥 Updated hospital appointment (${existingAppt.id}) for ${patientName}`);
+    } else {
+      const { data: newAppt } = await supabase
+        .from('hospital_appointments')
+        .insert([{
+          business_id: businessId,
+          patient_id: patientId,
+          patient_name: patientName,
+          patient_phone: customerNumber,
+          doctor_name: doctorName,
+          department: department,
+          slot_time: slotTime,
+          token_number: tokenNumber,
+          status: 'confirmed',
+          type: 'OPD',
+          source: 'whatsapp',
+          notes: feeStr,
+        }])
+        .select('id')
+        .single();
+      console.log(`[DB Service] 🏥 Created hospital appointment (${newAppt?.id}) for ${patientName}`);
+    }
+  } catch (syncErr) {
+    console.error(`[DB Service] ⚠️ Error syncing hospital appointment:`, syncErr);
+  }
 }
 
 /**
