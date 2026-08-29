@@ -344,14 +344,22 @@ export async function handleInboundMessage(inbound: ParsedInbound): Promise<void
   }
 
   // -------------------------------------------------------------------------
-  // 6. Hospital / clinic 1-5 star feedback
+  // 6. Hospital / clinic appointment actions (1=Confirm, 2=Reschedule, 3=Cancel) & feedback
   // -------------------------------------------------------------------------
   const isHospitalOrClinic = effectiveCategory === 'hospital' || effectiveCategory === 'clinic';
-  const ratingMatch = messageText.trim().match(/^([1-5])(\s*(star|stars|\/5|\.0)?)?$/i);
 
-  if (isHospitalOrClinic && ratingMatch) {
-    await handleFeedbackRating(inbound, business, parseInt(ratingMatch[1], 10));
-    return;
+  if (isHospitalOrClinic) {
+    const handledAction = await handleHospitalAppointmentAction(inbound, business);
+    if (handledAction) return;
+
+    // Strict Feedback Rating Check: Must contain star/rating keyword OR explicit rating format
+    const isExplicitRating = /\b(star|stars|\/5|rating|review|⭐)\b/i.test(messageText);
+    const ratingDigitMatch = messageText.trim().match(/^([1-5])(\s*(star|stars|\/5|\.0|⭐)?)?$/i);
+
+    if (ratingDigitMatch && isExplicitRating) {
+      await handleFeedbackRating(inbound, business, parseInt(ratingDigitMatch[1], 10));
+      return;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -503,6 +511,84 @@ async function handleCAFirmBranch(inbound: ParsedInbound, business: any): Promis
   );
   await sendMessage(customerNumber, business.whatsapp_number, leadRes.replyText);
   await saveConversationMessage(business.id, customerNumber, 'outbound', leadRes.replyText);
+}
+
+// ---------------------------------------------------------------------------
+// Branch: hospital / clinic appointment response (1 = Confirm, 2 = Reschedule, 3 = Cancel)
+// ---------------------------------------------------------------------------
+
+async function handleHospitalAppointmentAction(
+  inbound: ParsedInbound,
+  business: any
+): Promise<boolean> {
+  const { customerNumber, messageText, profileName } = inbound;
+  const trimmed = messageText.trim();
+
+  // Find most recent active or pending appointment for this customer
+  const { data: appt } = await supabase
+    .from('hospital_appointments')
+    .select('*')
+    .eq('business_id', business.id)
+    .eq('patient_phone', customerNumber)
+    .in('status', ['confirmed', 'pending', 'new'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!appt) return false;
+
+  const patientName = appt.patient_name || profileName || 'Patient';
+  const doctorName = appt.doctor_name || 'the doctor';
+  const formattedTime = new Date(appt.slot_time).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  const tokenStr = appt.token_number ? ` (Token #${appt.token_number})` : '';
+
+  // Option 1: Confirm
+  if (/^(1|confirm|confirmed|yes|haan|ha|theek|ok|sure)$/i.test(trimmed)) {
+    console.log(`[Webhook Pipeline] 🏥 Patient ${customerNumber} confirmed appointment ${appt.id}`);
+    await supabase
+      .from('hospital_appointments')
+      .update({ status: 'confirmed', rescheduled: false })
+      .eq('id', appt.id);
+
+    const reply = `✅ *Appointment Confirmed!* 🏥\n\nNamaste ${patientName} ji,\n\nYour consultation with *${doctorName}* on *${formattedTime}*${tokenStr} is confirmed.\n\nWe look forward to seeing you at *${business.name}*. Please arrive 10–15 minutes prior to your slot.`;
+    await sendMessage(customerNumber, business.whatsapp_number, reply);
+    await saveConversationMessage(business.id, customerNumber, 'outbound', reply);
+    return true;
+  }
+
+  // Option 2: Reschedule
+  if (/^(2|reschedule|change|badalna|shift|reshedule)$/i.test(trimmed)) {
+    console.log(`[Webhook Pipeline] 🏥 Patient ${customerNumber} requested reschedule for appointment ${appt.id}`);
+    await supabase
+      .from('hospital_appointments')
+      .update({ rescheduled: true })
+      .eq('id', appt.id);
+
+    const reply = `🗓️ *Reschedule Consultation* 🏥\n\nNamaste ${patientName} ji,\n\nUnderstood! Please reply with your new preferred date and time (e.g. *"Tomorrow 4 PM"* or *"31 August 11 AM"*), and our AI will update your booking for *${doctorName}* immediately.`;
+    await sendMessage(customerNumber, business.whatsapp_number, reply);
+    await saveConversationMessage(business.id, customerNumber, 'outbound', reply);
+    return true;
+  }
+
+  // Option 3: Cancel
+  if (/^(3|cancel|cancle|radd|nahi|cancel appointment)$/i.test(trimmed)) {
+    console.log(`[Webhook Pipeline] 🏥 Patient ${customerNumber} cancelled appointment ${appt.id}`);
+    await supabase
+      .from('hospital_appointments')
+      .update({ status: 'cancelled' })
+      .eq('id', appt.id);
+
+    const reply = `❌ *Appointment Cancelled* 🏥\n\nNamaste ${patientName} ji,\n\nYour consultation with *${doctorName}* on *${formattedTime}* has been cancelled as requested.\n\nIf you ever need medical care or wish to re-book, feel free to message us anytime. Stay healthy!`;
+    await sendMessage(customerNumber, business.whatsapp_number, reply);
+    await saveConversationMessage(business.id, customerNumber, 'outbound', reply);
+    return true;
+  }
+
+  return false;
 }
 
 // ---------------------------------------------------------------------------
