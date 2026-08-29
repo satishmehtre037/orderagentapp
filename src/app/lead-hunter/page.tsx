@@ -2140,7 +2140,7 @@ export default function LeadHunterPage() {
         )}
       </main>
 
-      {/* Paste / Bulk Import Modal */}
+      {/* Paste / Bulk Import Modal with Consent Verification */}
       {showPasteModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 text-slate-100 animate-in fade-in zoom-in-95 duration-150">
@@ -2162,12 +2162,47 @@ export default function LeadHunterPage() {
             </p>
 
             <textarea
-              rows={8}
+              rows={5}
               placeholder={`Mehta CA & Associates, 9822123456\nDr. Amit Dental Clinic, 9890987654\n9850112233\n9881445566`}
               value={pastedNumbersText}
               onChange={(e) => setPastedNumbersText(e.target.value)}
               className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed"
             />
+
+            {/* Consent Basis Selection & Mandatory Note */}
+            <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 text-teal-400" />
+                <label className="text-xs font-bold text-white">Lawful Consent Basis (Audit Trail)</label>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">Consent Basis</label>
+                  <select
+                    value={pasteConsentBasis}
+                    onChange={(e) => setPasteConsentBasis(e.target.value as 'opt_in' | 'legitimate_b2b')}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="opt_in">Explicit Opt-in (Direct Inquiry / Customer List)</option>
+                    <option value="legitimate_b2b">Documented B2B Commercial Outreach Basis</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">
+                    Audit Note <span className="text-rose-400">*</span> (Min. 10 characters required)
+                  </label>
+                  <input
+                    type="text"
+                    value={pasteConsentNote}
+                    onChange={(e) => setPasteConsentNote(e.target.value)}
+                    placeholder="e.g. Verified existing business contacts from local trade directory"
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            </div>
 
             <div className="flex items-center justify-end space-x-3 pt-2">
               <button
@@ -2180,9 +2215,10 @@ export default function LeadHunterPage() {
               <button
                 type="button"
                 onClick={handleImportPastedNumbers}
-                className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition"
+                disabled={isImporting || !pastedNumbersText.trim() || pasteConsentNote.trim().length < 10}
+                className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition disabled:opacity-40"
               >
-                Import Contacts into Outreach Queue
+                {isImporting ? 'Importing...' : 'Import Contacts into Outreach Queue'}
               </button>
             </div>
           </div>
