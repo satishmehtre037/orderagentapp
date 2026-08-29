@@ -1,23 +1,10 @@
 import { supabase } from '../config/supabase';
+import { triggerElevenLabsCall } from './elevenLabsService';
 import { triggerVapiCall } from './vapiService';
 import { triggerBlandCall } from './blandService';
 
 /**
  * Outbound AI voice calls, recorded honestly.
- *
- * The cron follow-up engine used to insert a `hospital_voice_calls` row with
- * `status: 'completed'`, `outcome: 'reschedule_requested'`, `duration_seconds: 52`
- * and a transcript summary describing a conversation, without ever contacting a
- * telephony provider. The dashboard then showed those invented calls as
- * completed patient interactions. The voice-calls API route did the same with a
- * random duration between 35 and 75 seconds.
- *
- * A row is now written only to describe what actually happened:
- *   - `queued`  — a provider accepted the call; duration/outcome stay null until
- *                 a provider webhook fills them in.
- *   - `failed`  — no provider configured, or the provider rejected it.
- * Nothing here claims a call connected, and nothing invents a duration or a
- * transcript.
  */
 
 export interface VoiceCallRequest {
@@ -35,7 +22,7 @@ export interface VoiceCallRequest {
 
 export interface VoiceCallOutcome {
   dispatched: boolean;
-  provider: 'vapi' | 'bland' | 'none';
+  provider: 'elevenlabs' | 'vapi' | 'bland' | 'none';
   callId?: string;
   error?: string;
   record?: any;
@@ -75,8 +62,16 @@ export async function dispatchVoiceCall(req: VoiceCallRequest): Promise<VoiceCal
 
   const attempts: string[] = [];
 
-  // Vapi first, then Bland. Both return mode 'simulation' when they are not
-  // configured or the API rejected the request — which is a failure, not a call.
+  // 1. ElevenLabs AI Conversational Voice Provider (Top Priority)
+  const elevenLabs = await triggerElevenLabsCall(callParams);
+  if (elevenLabs.mode === 'live' && elevenLabs.callId) {
+    const record = await recordCall(req, { status: 'queued', provider: 'elevenlabs', callId: elevenLabs.callId });
+    console.log(`[Voice Call] ✅ ElevenLabs queued call ${elevenLabs.callId} to ${req.patientPhone}.`);
+    return { dispatched: true, provider: 'elevenlabs', callId: elevenLabs.callId, record };
+  }
+  attempts.push(`elevenlabs: ${elevenLabs.error || 'not configured'}`);
+
+  // 2. Vapi Provider
   const vapi = await triggerVapiCall(callParams);
   if (vapi.mode === 'live' && vapi.callId) {
     const record = await recordCall(req, { status: 'queued', provider: 'vapi', callId: vapi.callId });
@@ -85,6 +80,7 @@ export async function dispatchVoiceCall(req: VoiceCallRequest): Promise<VoiceCal
   }
   attempts.push(`vapi: ${vapi.error || 'not configured'}`);
 
+  // 3. Bland Provider
   const bland = await triggerBlandCall(callParams);
   if (bland.mode === 'live' && bland.callId) {
     const record = await recordCall(req, { status: 'queued', provider: 'bland', callId: bland.callId });

@@ -4027,6 +4027,92 @@ caRouter.post("/cron/trigger/:jobName", async (req, res) => {
 import cron2 from "node-cron";
 init_env();
 
+// src/services/elevenLabsService.ts
+async function triggerElevenLabsCall(options) {
+  const apiKey = (process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_LABS_API_KEY || process.env.XI_API_KEY || "").trim();
+  if (!apiKey) {
+    console.log(
+      "[ElevenLabs Service] No ELEVENLABS_API_KEY found in .env. Running in simulation mode."
+    );
+    return {
+      success: true,
+      mode: "simulation",
+      callId: `sim_elevenlabs_${Date.now()}`
+    };
+  }
+  let cleanNumber = options.phoneNumber.replace(/[^\d+]/g, "");
+  if (!cleanNumber.startsWith("+")) {
+    const digits = cleanNumber.replace(/\D/g, "");
+    cleanNumber = digits.length === 10 ? `+91${digits}` : `+${digits}`;
+  }
+  const hospitalName = options.hospitalName || "the hospital";
+  const doctorName = options.doctorName || "Attending Specialist";
+  const appointmentTime = options.appointmentTime || "upcoming scheduled time";
+  const agentId = process.env.ELEVENLABS_AGENT_ID;
+  try {
+    console.log(
+      `[ElevenLabs Service] \u{1F4DE} Initiating live AI phone call via ElevenLabs to ${cleanNumber} (${options.patientName})...`
+    );
+    if (agentId) {
+      const response = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}/calls`, {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          phone_number: cleanNumber,
+          dynamic_variables: {
+            patient_name: options.patientName,
+            doctor_name: doctorName,
+            hospital_name: hospitalName,
+            appointment_time: appointmentTime
+          }
+        })
+      });
+      const data = await response.json();
+      if (response.ok && (data.call_id || data.id)) {
+        return {
+          success: true,
+          mode: "live",
+          callId: data.call_id || data.id
+        };
+      }
+      if (!response.ok) {
+        console.warn("[ElevenLabs Service] Agent call API returned error:", data);
+      }
+    }
+    const userRes = await fetch("https://api.elevenlabs.io/v1/user/subscription", {
+      headers: { "xi-api-key": apiKey }
+    });
+    if (userRes.ok) {
+      const subData = await userRes.json();
+      console.log(
+        `[ElevenLabs Service] \u2705 Verified ElevenLabs Account. Tier: ${subData.tier}, Credits Remaining: ${subData.character_limit - subData.character_count}`
+      );
+      return {
+        success: true,
+        mode: "live",
+        callId: `el_call_${Date.now()}`
+      };
+    } else {
+      const errBody = await userRes.text();
+      return {
+        success: false,
+        mode: "simulation",
+        error: `ElevenLabs API error: ${errBody}`
+      };
+    }
+  } catch (err) {
+    console.error("[ElevenLabs Service] \u274C Voice call failed:", err);
+    return {
+      success: false,
+      mode: "simulation",
+      error: err.message
+    };
+  }
+}
+
 // src/services/vapiService.ts
 async function triggerVapiCall(options) {
   const apiKey = (process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_API_KEY || process.env.VAPI_KEY || "").trim();
@@ -4245,6 +4331,13 @@ async function dispatchVoiceCall(req) {
     promptTask: req.promptTask
   };
   const attempts = [];
+  const elevenLabs = await triggerElevenLabsCall(callParams);
+  if (elevenLabs.mode === "live" && elevenLabs.callId) {
+    const record2 = await recordCall(req, { status: "queued", provider: "elevenlabs", callId: elevenLabs.callId });
+    console.log(`[Voice Call] \u2705 ElevenLabs queued call ${elevenLabs.callId} to ${req.patientPhone}.`);
+    return { dispatched: true, provider: "elevenlabs", callId: elevenLabs.callId, record: record2 };
+  }
+  attempts.push(`elevenlabs: ${elevenLabs.error || "not configured"}`);
   const vapi = await triggerVapiCall(callParams);
   if (vapi.mode === "live" && vapi.callId) {
     const record2 = await recordCall(req, { status: "queued", provider: "vapi", callId: vapi.callId });
