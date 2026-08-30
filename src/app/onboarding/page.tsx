@@ -525,7 +525,18 @@ export default function OnboardingPage() {
                             if (typeof window !== 'undefined') {
                               const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || '1972596440345762';
                               const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
+                              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                               const redirectUri = encodeURIComponent(window.location.origin + '/meta-callback');
+
+                              // On mobile devices, avoid multi-tab popups by redirecting directly
+                              if (isMobile) {
+                                const extras = encodeURIComponent(JSON.stringify({ feature: 'whatsapp_embedded_signup', sessionInfoVersion: '2' }));
+                                const metaUrl = configId
+                                  ? `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&config_id=${configId}&response_type=code`
+                                  : `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code&extras=${extras}`;
+                                window.location.href = metaUrl;
+                                return;
+                              }
 
                               if ((window as any).FB) {
                                 (window as any).FB.login(
