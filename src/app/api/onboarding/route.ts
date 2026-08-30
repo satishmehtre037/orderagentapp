@@ -44,7 +44,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const businessName = formData.business_name || formData.businessName || body.businessName || 'My Business';
+    const businessName =
+      formData.business_name ||
+      formData.businessName ||
+      formData.name ||
+      body.business_name ||
+      body.businessName ||
+      body.name ||
+      'Business';
     const category = formData.category || body.category || 'bakery';
 
     // Validated up front, with the real reason. The old code let the insert fail

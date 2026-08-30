@@ -314,8 +314,13 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           formData: {
             ...validData,
+            name: validData.business_name,
+            business_name: validData.business_name,
             whatsapp_number: internationalPhone,
           },
+          name: validData.business_name,
+          business_name: validData.business_name,
+          businessName: validData.business_name,
           ownerEmail: targetEmail,
         }),
       });

@@ -12,10 +12,10 @@ export async function POST(req: Request) {
       // Construct PUT-compatible request
       const formattedBody = {
         businessId: body.businessId || body.business_id,
-        name: body.formData?.business_name,
-        whatsapp_number: body.formData?.whatsapp_number,
-        category: body.formData?.category,
-        configs: body.formData,
+        name: body.formData?.business_name || body.formData?.businessName || body.formData?.name || body.business_name || body.businessName || body.name,
+        whatsapp_number: body.formData?.whatsapp_number || body.whatsapp_number,
+        category: body.formData?.category || body.category,
+        configs: body.formData || body.configs,
       };
 
       const putReq = new Request(req.url, {

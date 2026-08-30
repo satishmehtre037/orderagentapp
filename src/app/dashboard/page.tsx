@@ -333,7 +333,7 @@ export default function DashboardPage() {
             />
             <div className="min-w-0">
               <h1 className="text-sm font-bold text-fg leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[280px]">
-                {business?.name || "MediCare Hospital & Research Centre"}
+                {business?.name || (typeof window !== 'undefined' ? localStorage.getItem('biz_name') : '') || "Business"}
               </h1>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-surface-subtle border border-line text-fg-muted rounded font-bold tracking-wider">
