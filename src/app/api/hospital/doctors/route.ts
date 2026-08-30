@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { requireBusiness } from '@/lib/auth/requireBusiness';
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
+
     const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get('business_id');
     const department = searchParams.get('department');
 
     let query = supabaseAdmin
       .from('hospital_doctors')
       .select('*')
+      .eq('business_id', businessId)
       .order('name', { ascending: true });
 
-    if (businessId) {
-      query = query.eq('business_id', businessId);
-    }
     if (department) {
       query = query.eq('department', department);
     }
@@ -26,11 +30,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    // If table is empty, seed standard doctors list for clinic/hospital
+    // If table is empty for this business, seed standard initial doctors list
     if (!doctors || doctors.length === 0) {
       const defaultDoctors = [
         {
-          business_id: businessId || undefined,
+          business_id: businessId,
           name: 'Dr. Rajesh Gupta',
           department: 'Cardiology',
           specialization: 'Senior Cardiologist & Interventionalist (MD, DM)',
@@ -42,7 +46,7 @@ export async function GET(req: Request) {
           status: 'Active',
         },
         {
-          business_id: businessId || undefined,
+          business_id: businessId,
           name: 'Dr. Ananya Iyer',
           department: 'Pediatrics',
           specialization: 'Consultant Pediatrician & Neonatologist (MD)',
@@ -54,7 +58,7 @@ export async function GET(req: Request) {
           status: 'Active',
         },
         {
-          business_id: businessId || undefined,
+          business_id: businessId,
           name: 'Dr. Vikramaditya Rao',
           department: 'Orthopedics',
           specialization: 'Joint Replacement & Spine Surgeon (MS, MCh)',
@@ -66,7 +70,7 @@ export async function GET(req: Request) {
           status: 'Active',
         },
         {
-          business_id: businessId || undefined,
+          business_id: businessId,
           name: 'Dr. Priya Sharma',
           department: 'General Medicine',
           specialization: 'Senior General Physician & Diabetologist (MBBS, MD)',
@@ -78,7 +82,7 @@ export async function GET(req: Request) {
           status: 'Active',
         },
         {
-          business_id: businessId || undefined,
+          business_id: businessId,
           name: 'Dr. Sameer Deshmukh',
           department: 'Neurology',
           specialization: 'Consultant Neurologist (DM Neurology, AIIMS)',
@@ -108,9 +112,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
+
     const body = await req.json();
     const {
-      business_id,
       name,
       department,
       specialization,
@@ -128,7 +137,7 @@ export async function POST(req: Request) {
     const { data: doctor, error } = await supabaseAdmin
       .from('hospital_doctors')
       .insert([{
-        business_id,
+        business_id: businessId,
         name,
         department,
         specialization,

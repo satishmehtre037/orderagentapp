@@ -4,12 +4,19 @@ import {
   runHospitalFeedbackScanner,
   runHospitalMissedFollowupScanner,
 } from '@/services/hospitalCronService';
+import { requireCronAuth } from '@/lib/auth/requireBusiness';
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ jobName: string }> }
 ) {
   try {
+    // Enforce shared secret authorization
+    const auth = requireCronAuth(req);
+    if (!auth.authorized && auth.errorResponse) {
+      return auth.errorResponse;
+    }
+
     const { jobName } = await params;
     const body = await req.json().catch(() => ({}));
     const businessId = body.business_id;

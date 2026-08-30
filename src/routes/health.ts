@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { ENV } from '../config/env';
 
 const router = Router();
 
@@ -242,12 +243,12 @@ router.get('/', (_req: Request, res: Response) => {
     </head>
     <body>
       <div class="card">
-        <span class="badge">● Server Active (Port 3002)</span>
-        <h1>BizBot OS Backend Engine</h1>
-        <p>This is the Node.js/Express API server providing Meta WhatsApp webhooks, Razorpay billing integrations, and Groq Llama 3.3 AI prompt processing.</p>
+        <span class="badge">● Server Active (Port ${ENV.PORT})</span>
+        <h1>Agento AI Backend Engine</h1>
+        <p>This is the Node.js/Express API server providing Meta WhatsApp webhooks, Razorpay billing integrations, and Groq / AgentRouter AI processing.</p>
         
         <div class="links">
-          <a href="http://localhost:3004/dashboard" class="btn">Go to Next.js Owner Portal (Port 3004) &rarr;</a>
+          <a href="http://localhost:3000/dashboard" class="btn">Go to Next.js Owner Portal (Port 3000) &rarr;</a>
           <a href="/health" class="btn btn-outline">Check Health Status (/health)</a>
         </div>
 

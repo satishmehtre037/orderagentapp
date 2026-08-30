@@ -39,8 +39,10 @@ export const ENV = {
   ANTHROPIC_BASE_URL: (process.env.ANTHROPIC_BASE_URL || 'https://agentrouter.org').replace(/\/+$/, ''),
   /** AgentRouter / Model slug (e.g. glm-5.3, claude-3-5-sonnet-20241022) */
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'glm-5.3',
-  /** Preferred AI Provider: 'agentrouter', 'claude', 'groq', or 'auto' */
-  AI_PROVIDER: process.env.AI_PROVIDER || 'agentrouter',
+  /** Preferred AI Provider: 'groq', 'agentrouter', 'claude', or 'auto' */
+  AI_PROVIDER: process.env.AI_PROVIDER || 'groq',
+  /** Fast2SMS API Key for real-time Indian SMS OTP delivery */
+  FAST2SMS_API_KEY: process.env.FAST2SMS_API_KEY || '',
   PORT: parseInt(process.env.PORT || '3001', 10),
 };
 

@@ -5,12 +5,20 @@ import {
   runLeadFollowupEngine,
   runInvoiceRecoveryEngine,
 } from '@/services/caCronService';
+import { requireCronAuth } from '@/lib/auth/requireBusiness';
 
 export async function POST(
   req: Request,
-  { params }: { params: { jobName: string } }
+  { params }: { params: Promise<{ jobName: string }> }
 ) {
-  const rawJobName = (params?.jobName || '').toLowerCase();
+  // Enforce shared secret authorization
+  const auth = requireCronAuth(req);
+  if (!auth.authorized && auth.errorResponse) {
+    return auth.errorResponse;
+  }
+
+  const { jobName } = await params;
+  const rawJobName = (jobName || '').toLowerCase();
 
   try {
     let result: any = {};
@@ -40,7 +48,6 @@ export async function POST(
     ) {
       result = await runInvoiceRecoveryEngine();
     } else {
-      // Default fallback runs compliance engine safely
       result = await runComplianceEngine();
     }
 

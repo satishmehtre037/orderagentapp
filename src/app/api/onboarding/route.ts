@@ -80,17 +80,34 @@ export async function POST(req: Request) {
     // 1. Check if this owner already has a business (lookup by email first, then by whatsapp_number)
     const { data: existingByEmail } = await adminSupabase
       .from('businesses')
-      .select('id, whatsapp_number')
+      .select('id, whatsapp_number, owner_email')
       .ilike('owner_email', resolvedEmail)
       .maybeSingle();
 
     const { data: existingByPhone } = whatsappNumber
       ? await adminSupabase
           .from('businesses')
-          .select('id, owner_email')
+          .select('id, owner_email, name')
           .eq('whatsapp_number', whatsappNumber)
           .maybeSingle()
       : { data: null };
+
+    // ANTI-COLLISION CHECK: If the WhatsApp number is already registered to a different account, prevent hijacking
+    if (
+      existingByPhone &&
+      existingByPhone.owner_email &&
+      existingByPhone.owner_email.toLowerCase().trim() !== resolvedEmail.toLowerCase().trim()
+    ) {
+      console.warn(
+        `[API Onboarding Conflict] WhatsApp number ${whatsappNumber} is already registered to ${existingByPhone.owner_email}`
+      );
+      return NextResponse.json(
+        {
+          error: `The WhatsApp number ${whatsappNumber} is already registered and in use by another business account. Each business must connect a unique WhatsApp Business number. If you own this number, please sign in with your original account.`,
+        },
+        { status: 409 }
+      );
+    }
 
     const targetBusinessId = existingByEmail?.id || existingByPhone?.id;
     let businessId: string;
@@ -231,6 +248,11 @@ export async function POST(req: Request) {
         business_id: businessId,
         config_key: 'reminder_template',
         config_value: formData.reminder_template || '',
+      },
+      {
+        business_id: businessId,
+        config_key: 'owner_personal_phone',
+        config_value: formData.owner_personal_phone ? `+91${String(formData.owner_personal_phone).replace(/\D/g, '').slice(-10)}` : '',
       },
     ];
 

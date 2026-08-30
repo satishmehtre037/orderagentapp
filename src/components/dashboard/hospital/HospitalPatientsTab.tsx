@@ -5,17 +5,24 @@ import {
   Users,
   Search,
   Plus,
-  Phone,
-  Calendar,
-  HeartPulse,
   Droplet,
-  ShieldAlert,
   MessageSquare,
   RefreshCw,
 } from 'lucide-react';
 import { HospitalPatient } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
 import { supabaseClient } from '@/lib/supabase/client';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  DataTable,
+  Input,
+  type Column,
+} from '@/components/ui';
 
 interface HospitalPatientsTabProps {
   businessId?: string;
@@ -75,155 +82,150 @@ export default function HospitalPatientsTab({
     };
   }, [businessId, searchQuery]);
 
-  return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/80 dark:bg-slate-900/80 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+  const columns: Column<HospitalPatient>[] = [
+    {
+      key: 'name',
+      header: 'Patient Name & Contact',
+      primary: true,
+      render: (patient) => (
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-            <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <span>Patient Health Directory</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Complete electronic medical records, blood profiles, and WhatsApp communication history
-          </p>
+          <div className="font-semibold text-fg">{patient.name}</div>
+          <div className="text-[11px] text-fg-muted font-mono">{patient.phone}</div>
+          {patient.email && <div className="text-[10px] text-fg-subtle">{patient.email}</div>}
         </div>
-
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => fetchPatients(true)}
-            className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 rounded-xl transition-colors"
-            title="Refresh Directory"
+      ),
+    },
+    {
+      key: 'demographics',
+      header: 'Demographics',
+      render: (patient) => (
+        <div className="text-xs text-fg">
+          <span>{patient.gender || 'Unknown'}</span>
+          {patient.age && <span className="text-fg-muted"> • {patient.age} yrs</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'blood_group',
+      header: 'Blood Group',
+      render: (patient) => (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-bold bg-danger-subtle text-danger border border-danger-border">
+          <Droplet className="w-3 h-3" />
+          {patient.blood_group || 'O+'}
+        </span>
+      ),
+    },
+    {
+      key: 'medical_history',
+      header: 'Clinical Summary & Allergies',
+      hideBelow: 'sm',
+      render: (patient) => (
+        <div className="max-w-xs truncate text-xs text-fg-muted" title={patient.medical_history || 'No recorded allergies'}>
+          {patient.medical_history || <span className="text-fg-subtle">No allergies recorded</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Registered',
+      hideBelow: 'md',
+      render: (patient) => (
+        <span className="text-xs font-mono text-fg-muted">
+          {new Date(patient.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (patient) => (
+        <div className="flex items-center justify-end">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              showToast({
+                title: 'WhatsApp Portal Opened',
+                message: `Connecting to ${patient.name} on WhatsApp...`,
+                type: 'whatsapp',
+              });
+            }}
+            title="Open WhatsApp Chat"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={onOpenNewPatient}
-            className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-500 hover:to-teal-500 text-white rounded-xl font-semibold text-xs sm:text-sm shadow-md shadow-indigo-500/20 active:scale-95 transition-all"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>+ Register Patient</span>
-          </button>
+            <MessageSquare className="w-3.5 h-3.5 text-accent" />
+          </Button>
         </div>
-      </div>
+      ),
+    },
+  ];
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">
-            {patients.length}
+  return (
+    <div className="space-y-5 animate-in fade-in duration-150">
+      {/* Header & Controls */}
+      <Card>
+        <CardHeader className="flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-accent" />
+              <span>Patient Health Directory</span>
+            </CardTitle>
+            <CardDescription>
+              Complete electronic medical records, blood profiles, and WhatsApp communication history
+            </CardDescription>
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Registered</div>
-        </div>
 
-        <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-            {patients.filter((p) => p.status === 'Active' || !p.status).length}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fetchPatients(true)}
+              title="Refresh Directory"
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onOpenNewPatient}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              + Register Patient
+            </Button>
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Active Patients</div>
-        </div>
+        </CardHeader>
+      </Card>
 
-        <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-amber-500 font-mono">
-            {patients.filter((p) => p.blood_group).length}
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Blood Profile Logged</div>
-        </div>
-
-        <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-teal-600 dark:text-teal-400 font-mono">
-            {patients.filter((p) => p.phone).length}
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">WhatsApp Connected</div>
-        </div>
-      </div>
-
-      {/* Search Filter */}
-      <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        <input
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <Search className="w-3.5 h-3.5 text-fg-subtle absolute left-3 top-1/2 -translate-y-1/2" />
+        <Input
           type="text"
-          placeholder="Search by patient name, phone number, or blood group (e.g. O+, B+)..."
+          placeholder="Search by patient name, mobile, email..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+          className="w-full pl-8"
         />
       </div>
 
-      {/* Patient Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {patients.length === 0 ? (
-          <div className="col-span-2 py-12 text-center text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl">
-            No patient records found. Click &quot;+ Register Patient&quot; to add one.
-          </div>
-        ) : (
-          patients.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-indigo-500/50 transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-teal-500 text-white font-bold flex items-center justify-center text-sm shadow-md">
-                      {p.name ? p.name.charAt(0).toUpperCase() : 'P'}
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{p.name}</h3>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">{p.phone}</div>
-                    </div>
-                  </div>
-
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400">
-                    {p.status || 'Active'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-                  <div className="flex items-center space-x-1.5 text-slate-600 dark:text-slate-400">
-                    <Droplet className="w-3.5 h-3.5 text-rose-500" />
-                    <span>Blood: <strong className="text-slate-900 dark:text-white font-mono">{p.blood_group || 'O+'}</strong></span>
-                  </div>
-                  <div className="flex items-center space-x-1.5 text-slate-600 dark:text-slate-400">
-                    <HeartPulse className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Age/Gender: <strong className="text-slate-900 dark:text-white">{p.age ? `${p.age}y` : 'Adult'} • {p.gender || 'Other'}</strong></span>
-                  </div>
-                  <div className="flex items-center space-x-1.5 text-slate-600 dark:text-slate-400 col-span-2">
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Emergency Contact: <strong className="text-slate-900 dark:text-white font-mono">{p.emergency_contact || 'None'}</strong></span>
-                  </div>
-                </div>
-
-                {p.medical_history && (
-                  <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-950/60 rounded-xl text-[11px] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800/60">
-                    <span className="font-semibold text-slate-900 dark:text-white">Medical Notes: </span>
-                    {p.medical_history}
-                  </div>
-                )}
+      {/* Patients Table / Mobile Cards */}
+      <Card>
+        <CardContent className="p-0 sm:p-0">
+          <DataTable
+            columns={columns}
+            rows={patients}
+            getRowKey={(patient) => patient.id}
+            loading={loading && patients.length === 0}
+            empty={
+              <div className="py-12 text-center text-xs text-fg-muted">
+                No patients found in directory.
               </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-[10px] text-slate-400">
-                  Last visit: {p.last_visit ? new Date(p.last_visit).toLocaleDateString() : 'Recent'}
-                </span>
-                <button
-                  onClick={() => {
-                    showToast({
-                      title: 'Opening WhatsApp Chat',
-                      message: `Connecting with ${p.name} on ${p.phone}`,
-                      type: 'whatsapp',
-                    });
-                  }}
-                  className="flex items-center space-x-1.5 px-3 py-1 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-600 dark:text-teal-400 rounded-xl text-xs font-semibold transition-colors"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>WhatsApp</span>
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+            }
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

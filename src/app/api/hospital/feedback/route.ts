@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendWhatsAppTextMessage } from '@/lib/whatsapp';
+import { requireBusiness } from '@/lib/auth/requireBusiness';
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
+
     const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get('business_id');
     const status = searchParams.get('status');
 
     let query = supabaseAdmin
       .from('hospital_feedback')
       .select('*')
+      .eq('business_id', businessId)
       .order('requested_at', { ascending: false });
 
-    if (businessId) {
-      query = query.eq('business_id', businessId);
-    }
     if (status && status !== 'all') {
       query = query.eq('status', status);
     }
@@ -36,9 +40,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { business, businessId } = auth;
+
     const body = await req.json();
     const {
-      business_id,
       patient_id,
       appointment_id,
       patient_name,
@@ -58,7 +67,7 @@ export async function POST(req: Request) {
     const { data: feedbackRecord, error } = await supabaseAdmin
       .from('hospital_feedback')
       .insert([{
-        business_id,
+        business_id: businessId,
         patient_id,
         appointment_id,
         patient_name: patient_name || 'Patient',
@@ -78,20 +87,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    const hospitalName = business?.name || 'Hospital & Multi-Specialty Clinic';
+
     // Auto-respond via WhatsApp based on rating
     if (isUnhappy) {
-      const apologyMsg = `🙏 *We Sincerely Apologize*\n\nNamaste ${patient_name || 'Patient'} ji,\n\nWe are sorry to hear that your experience did not meet expectations (${numericRating}/5 ⭐).\n\nOur patient care supervisor has been notified and will reach out to resolve your concern. You may also reply directly with any details.`;
+      const apologyMsg = `🙏 *We Sincerely Apologize*\n\nNamaste ${patient_name || 'Patient'} ji,\n\nWe are sorry to hear that your experience at ${hospitalName} did not meet expectations (${numericRating}/5 ⭐).\n\nOur patient care supervisor has been notified and will reach out to resolve your concern. You may also reply directly with any details.`;
       await sendWhatsAppTextMessage(patient_phone, apologyMsg);
 
       // Log escalation
       await supabaseAdmin.from('hospital_escalations').insert([{
-        business_id,
+        business_id: businessId,
         patient_phone,
         reason: `Patient rated visit ${numericRating}/5: ${comment || 'No specific comment provided.'}`,
         urgency: numericRating === 1 ? 'urgent' : 'normal',
       }]);
     } else {
-      const reviewMsg = `⭐ *Thank You For Your High Rating!*\n\nNamaste ${patient_name || 'Patient'} ji,\n\nWe are delighted to know you had a positive experience (${numericRating}/5 ⭐)!\n\nWould you take 30 seconds to leave us a brief review on Google?\n👉 https://g.page/r/medicare-hospital-review\n\nYour review helps other patients find quality healthcare!`;
+      const reviewMsg = `⭐ *Thank You For Your High Rating!*\n\nNamaste ${patient_name || 'Patient'} ji,\n\nWe are delighted to know you had a positive experience at ${hospitalName} (${numericRating}/5 ⭐)!\n\nYour review helps other patients find quality healthcare!`;
       await sendWhatsAppTextMessage(patient_phone, reviewMsg);
     }
 

@@ -13,8 +13,18 @@ import {
   Zap,
   TrendingUp,
   UserCheck,
+  RefreshCw,
 } from 'lucide-react';
 import type { CAClient } from '@/types';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Input,
+} from '@/components/ui';
 
 interface CAAIAgentTabProps {
   businessId?: string;
@@ -58,7 +68,6 @@ export default function CAAIAgentTab({
     },
   ]);
 
-  // Load real clients from database
   useEffect(() => {
     const fetchClients = async () => {
       try {
@@ -78,276 +87,248 @@ export default function CAAIAgentTab({
   }, [businessId]);
 
   const FAQS = [
-    {
-      q: 'What is the statutory deadline for GSTR-3B monthly filing?',
-      asks: 'Statutory Date',
-      reply: 'GSTR-3B is due on the 20th of every month (e.g., 20th August). Delayed filings attract a statutory late fee of ₹50/day and 18% annual interest on net tax liabilities.',
-    },
-    {
-      q: 'What mandatory documents are required for Corporate ITR filing?',
-      asks: 'Tax Checklist',
-      reply: 'Audited Financial Statements (Balance Sheet & P&L), Form 3CD Tax Audit Report, Form 26AS / AIS Tax Credit reconciliation, and Director DSC credentials.',
-    },
-    {
-      q: 'What is the standard professional fee for New GST Registration?',
-      asks: 'Service Quote',
-      reply: 'New GST Registration is processed at a standard professional fee of ₹1,999, inclusive of ARN tracking, query resolution, and delivery of official GST Certificate.',
-    },
-    {
-      q: 'What is the procedure and timeline for Private Limited Incorporation?',
-      asks: 'ROC Guide',
-      reply: 'Incorporation is executed via the MCA SPICe+ digital gateway. Required credentials include Director PAN, Aadhaar, Digital Signature (DSC), and Registered Office utility proof. Average clearance is 7-10 business days.',
-    },
-    {
-      q: 'What are the statutory late fees and penalties for overdue filings?',
-      asks: 'Penalty Rules',
-      reply: 'GST late fee is ₹50/day (₹20/day for NIL returns). Income Tax late filing fee under Section 234F is ₹1,000 or ₹5,000 based on taxable turnover.',
-    },
+    'What documents are needed for GST-3B monthly filing?',
+    'What is the last date for corporate ITR-6 with tax audit?',
+    'How do I calculate advance tax liability for Q3?',
+    'We received a Section 143(1) intimation. How do we proceed?',
+    'What are the ROC penalties for delayed MGT-7 filing?',
   ];
 
-  const handleSendMessage = async (textToSend?: string) => {
-    const query = textToSend || inputMsg;
-    if (!query.trim()) return;
+  const handleSend = async (queryText?: string) => {
+    const msg = queryText || inputMsg;
+    if (!msg.trim()) return;
 
-    const userMsg: ChatMessage = {
-      id: String(Date.now()),
+    const newClientMsg: ChatMessage = {
+      id: Date.now().toString(),
       sender: 'client',
-      senderName: selectedClientName || 'Client (WhatsApp)',
-      text: query,
-      meta: `${selectedClientName} • Just now`,
+      senderName: selectedClientName,
+      text: msg,
+      meta: `Client (${selectedClientPhone || 'WhatsApp'}) • Just now`,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
-    if (!textToSend) setInputMsg('');
+    setMessages((prev) => [...prev, newClientMsg]);
+    if (!queryText) setInputMsg('');
     setIsTyping(true);
 
     try {
-      // Call live chat API backend
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/ca/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: query,
-          businessId: businessId,
-          customerNumber: selectedClientPhone || '919876543210',
-          category: 'ca_firm',
+          business_id: businessId,
+          client_name: selectedClientName,
+          phone: selectedClientPhone || '919876543210',
+          message: msg,
+          firm_name: businessName,
         }),
       });
 
-      let aiResponseText = '';
-      if (res.ok) {
-        const chatData = await res.json();
-        aiResponseText = chatData.reply || chatData.response || '';
-      }
+      const data = await res.json();
 
-      if (!aiResponseText) {
-        // Fallback intelligent response generator
-        const lower = query.toLowerCase();
-        if (lower.includes('gst') || lower.includes('3b')) {
-          aiResponseText = `The statutory due date for GSTR-3B monthly return is the **20th of every month**. Your return draft will be prepared immediately upon upload of your sales register and purchase ITC invoices.`;
-        } else if (lower.includes('itr') || lower.includes('form 16') || lower.includes('tax')) {
-          aiResponseText = `For Income Tax Return (ITR) filing, your Form 16 / Trial Balance and Bank Statements are required. You may upload them directly here for automated verification.`;
-        } else if (lower.includes('roc') || lower.includes('company') || lower.includes('incorporat')) {
-          aiResponseText = `Company Incorporation (SPICe+) and ROC Annual Compliance (Form AOC-4 & MGT-7) are monitored autonomously by our corporate secretarial desk.`;
-        } else {
-          aiResponseText = `Thank you for your inquiry. Your statutory requirement has been logged into our practice management system and routed to our Senior CA Partners for review.`;
-        }
-      }
-
-      const botMsg: ChatMessage = {
-        id: String(Date.now() + 1),
+      const aiReply: ChatMessage = {
+        id: (Date.now() + 1).toString(),
         sender: 'ai',
-        senderName: 'AI Practice Assistant',
-        text: aiResponseText,
-        meta: '🤖 AI Agent • Just now • Live Auto-reply',
+        senderName: 'AI Tax Assistant',
+        text: data.reply || 'Thank you for your inquiry. Our senior CA team has been notified.',
+        meta: `🤖 AI Agent • ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Live Auto-reply`,
+        escalated: data.escalated || false,
       };
 
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => [...prev, aiReply]);
     } catch (err) {
-      console.error('Error in chat simulator:', err);
+      console.error('Chat AI error:', err);
     } finally {
       setIsTyping(false);
     }
   };
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 animate-in fade-in duration-150">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <span>🤖</span>
-            <span>AI Client Support Agent</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Automatic 24/7 WhatsApp & Email query resolution engine connected to your live database.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Interactive Chat Simulator (7 cols) */}
-        <div className="lg:col-span-7 backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 flex flex-col h-[560px] shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-          {/* Chat Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div className="flex items-center space-x-2.5">
-              <span className="text-xl">💬</span>
-              <div>
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Live WhatsApp Chat Simulator</h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Meta Cloud API v20.0 • 24/7 Active</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">AI Active</span>
-              {clients.length > 0 && (
-                <select
-                  value={selectedClientName}
-                  onChange={(e) => {
-                    const selName = e.target.value;
-                    setSelectedClientName(selName);
-                    const found = clients.find((c) => c.client_name === selName);
-                    if (found) setSelectedClientPhone(found.phone);
-                  }}
-                  className="text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl px-2.5 py-1 focus:outline-none max-w-[140px] truncate"
-                >
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.client_name}>
-                      👤 {c.client_name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+      <Card>
+        <CardHeader className="flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-accent" />
+              <span>24/7 WhatsApp AI Tax & Corporate Law Desk</span>
+            </CardTitle>
+            <CardDescription>
+              Autonomous responses for GST/ITR inquiries, document checklists, fee invoices, and senior partner escalations
+            </CardDescription>
           </div>
 
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3.5 no-scrollbar text-xs bg-slate-50/50 dark:bg-slate-950/40 rounded-2xl my-2">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`flex flex-col ${
-                  m.sender === 'client' ? 'items-end' : 'items-start'
-                }`}
-              >
-                <div
-                  className={`max-w-[85%] p-3.5 rounded-2xl leading-relaxed whitespace-pre-line shadow-xs ${
-                    m.sender === 'client'
-                      ? 'bg-teal-600 text-white rounded-br-xs'
-                      : m.escalated
-                      ? 'bg-purple-50 dark:bg-purple-950/70 border border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-200 rounded-bl-xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 rounded-bl-xs'
-                  }`}
-                >
-                  {m.text}
-                </div>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">{m.meta}</span>
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex items-center space-x-1.5 p-2 bg-white dark:bg-slate-800 rounded-2xl w-16 border border-slate-200 dark:border-slate-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"></span>
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-100"></span>
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-200"></span>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success-subtle text-success border border-success-border">
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              Live CA Assistant Active
+            </span>
           </div>
+        </CardHeader>
+      </Card>
 
-          {/* Chat Input */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-2">
-            <input
-              type="text"
-              placeholder={`Type a statutory query on behalf of "${selectedClientName}" (e.g. When is our GSTR-3B due?)...`}
-              value={inputMsg}
-              onChange={(e) => setInputMsg(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSendMessage();
-              }}
-              className="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <button
-              onClick={() => handleSendMessage()}
-              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition shadow flex items-center justify-center"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
+      {/* Simulator Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left column: Contextual Client Selector & Quick Prompts */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Simulate as Client</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-fg-muted">
+                Choose a client entity to test contextual compliance memory:
+              </div>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar">
+                {clients.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setSelectedClientName(c.client_name);
+                      setSelectedClientPhone(c.phone);
+                    }}
+                    className={`w-full text-left p-2.5 rounded-md border text-xs transition-colors flex items-center justify-between ${
+                      selectedClientName === c.client_name
+                        ? 'bg-accent-subtle border-accent-border text-accent font-semibold shadow-xs'
+                        : 'bg-surface border-line text-fg hover:bg-surface-hover'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold">{c.client_name}</div>
+                      <div className="text-[10px] text-fg-muted font-mono">{c.phone}</div>
+                    </div>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-subtle border border-line text-fg-muted">
+                      {c.entity_type || 'Pvt Ltd'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Right Column: AI Metrics & Top FAQs (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          {/* 4 Mini Stat Cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <div className="p-2.5 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl">
-                <Zap className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xl font-bold font-mono text-teal-600 dark:text-teal-400">94%</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">Auto-resolve rate</div>
-              </div>
-            </div>
-
-            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                <Clock className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">&lt;2s</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">Avg response time</div>
-              </div>
-            </div>
-
-            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl">
-                <UserCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400">{clients.length}</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">Registered Clients</div>
-              </div>
-            </div>
-
-            <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <div className="p-2.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl">
-                <Bot className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xl font-bold font-mono text-purple-600 dark:text-purple-400">24/7</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">AI Bot Status</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Top FAQs Card */}
-          <div className="backdrop-blur-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 space-y-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-            <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
-              <span className="text-base">❓</span>
-              <h3 className="text-xs font-bold text-slate-900 dark:text-white">Top Frequently Asked Questions</h3>
-            </div>
-
-            <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Frequently Asked Tax Queries</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5">
               {FAQS.map((faq, idx) => (
-                <div
+                <button
                   key={idx}
-                  onClick={() => handleSendMessage(faq.q)}
-                  className="py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 rounded-xl cursor-pointer transition"
+                  onClick={() => handleSend(faq)}
+                  className="w-full text-left p-2 rounded-md bg-surface-subtle hover:bg-surface-hover border border-line text-xs text-fg transition-colors flex items-start gap-1.5"
                 >
-                  <div className="text-slate-700 dark:text-slate-300 font-medium">{faq.q}</div>
-                  <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/60 px-2 py-0.5 rounded-full shrink-0">
-                    {faq.asks}
+                  <Sparkles className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">{faq}</span>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right column: Interactive WhatsApp Sandbox */}
+        <div className="lg:col-span-2">
+          <Card className="flex flex-col h-[560px]">
+            {/* Header */}
+            <div className="p-3 border-b border-line bg-surface-subtle flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold text-xs">
+                  CA
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-fg">
+                    {businessName} AI Staff
+                  </div>
+                  <div className="text-[10px] text-success flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                    Online 24/7 on WhatsApp
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setMessages([
+                    {
+                      id: '1',
+                      sender: 'ai',
+                      senderName: 'AI Practice Assistant',
+                      text: `Greetings! I am the 24/7 Autonomous Tax & Corporate Compliance Assistant for ${businessName}. How may I assist you today?`,
+                      meta: '🤖 AI Agent • Live Auto-reply',
+                    },
+                  ])
+                }
+                title="Reset Sandbox"
+                leftIcon={<RefreshCw className="w-3 h-3" />}
+              >
+                Reset
+              </Button>
+            </div>
+
+            {/* Chat Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-base/50">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${msg.sender === 'client' ? 'items-end' : 'items-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-lg p-3 text-xs leading-relaxed shadow-xs whitespace-pre-line ${
+                      msg.sender === 'client'
+                        ? 'bg-accent text-accent-fg rounded-tr-none'
+                        : 'bg-surface text-fg border border-line rounded-tl-none'
+                    }`}
+                  >
+                    {msg.text}
+
+                    {msg.escalated && (
+                      <div className="mt-2 pt-2 border-t border-line/50 flex items-center gap-1.5 text-[11px] font-bold text-danger">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Escalated to Senior CA Partner on WhatsApp</span>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-fg-subtle mt-0.5 font-mono px-1">
+                    {msg.meta}
                   </span>
                 </div>
               ))}
+
+              {isTyping && (
+                <div className="flex items-center gap-1.5 text-xs text-fg-muted p-2 rounded-lg bg-surface border border-line w-fit">
+                  <span className="w-2 h-2 rounded-full bg-accent animate-bounce" />
+                  <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0.4s]" />
+                  <span className="text-[10px] ml-1">AI analyzing GST & Income Tax provisions...</span>
+                </div>
+              )}
             </div>
-          </div>
+
+            {/* Input Bar */}
+            <div className="p-3 border-t border-line bg-surface flex items-center gap-2">
+              <Input
+                placeholder="Ask statutory question (e.g. 'what documents for GST-3B?', 'advance tax due date')..."
+                value={inputMsg}
+                onChange={(e) => setInputMsg(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                className="flex-1 text-xs"
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleSend()}
+                disabled={!inputMsg.trim()}
+                leftIcon={<Send className="w-3.5 h-3.5" />}
+              >
+                Send
+              </Button>
+            </div>
+          </Card>
         </div>
       </div>
     </div>

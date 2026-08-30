@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { dispatchVoiceCall } from '@/services/voiceCallService';
+import { requireBusiness } from '@/lib/auth/requireBusiness';
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
+
     const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get('business_id');
     const callType = searchParams.get('call_type');
 
     let query = supabaseAdmin
       .from('hospital_voice_calls')
       .select('*')
+      .eq('business_id', businessId)
       .order('created_at', { ascending: false });
 
-    if (businessId) {
-      query = query.eq('business_id', businessId);
-    }
     if (callType) {
       query = query.eq('call_type', callType);
     }
@@ -34,28 +38,22 @@ export async function GET(req: Request) {
   }
 }
 
-/**
- * POST — place a real outbound AI voice call.
- *
- * This used to log every attempt as `status: 'completed'`, `outcome: 'confirmed'`
- * with a random `duration_seconds` between 35 and 75 and a transcript claiming
- * "Patient confirmed presence" — even when no telephony provider was configured
- * and no call was placed. It then WhatsApped the patient thanking them for a
- * conversation that never happened. Both are gone: the record now says queued or
- * failed, and no recap is sent for a call that did not go out.
- */
 export async function POST(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { business, businessId } = auth;
+
     const body = await req.json();
     const {
-      business_id,
       patient_id,
       appointment_id,
       patient_name,
       patient_phone,
       doctor_name,
       appointment_time,
-      hospital_name,
       call_type = 'appointment_reminder',
       reason,
     } = body;
@@ -67,15 +65,17 @@ export async function POST(req: Request) {
       );
     }
 
+    const hospitalName = business?.name || 'Hospital & Multi-Specialty Clinic';
+
     const outcome = await dispatchVoiceCall({
-      businessId: business_id,
+      businessId,
       patientId: patient_id,
       appointmentId: appointment_id,
       patientName: patient_name,
       patientPhone: patient_phone,
       doctorName: doctor_name,
       appointmentTime: appointment_time,
-      hospitalName: hospital_name,
+      hospitalName,
       callType: call_type,
       promptTask: reason,
     });
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
         {
           success: false,
           error: outcome.error || 'No voice provider was able to place the call.',
-          hint: 'Configure VAPI_API_KEY (with VAPI_PHONE_NUMBER_ID) or BLAND_API_KEY to place real calls.',
+          hint: 'Configure ELEVENLABS_API_KEY, VAPI_API_KEY, or BLAND_API_KEY to place real calls.',
           call: outcome.record,
         },
         { status: 502 }

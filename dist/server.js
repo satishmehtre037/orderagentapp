@@ -16,15 +16,15 @@ var __export = (target, all) => {
 // src/config/env.ts
 var env_exports = {};
 __export(env_exports, {
-  ENV: () => ENV
+  ENV: () => ENV2
 });
 import dotenv from "dotenv";
-var ENV, requiredEnvVars, missingVars;
+var ENV2, requiredEnvVars, missingVars;
 var init_env = __esm({
   "src/config/env.ts"() {
     dotenv.config({ path: ".env", override: true });
     dotenv.config({ path: ".env.local", override: true });
-    ENV = {
+    ENV2 = {
       SUPABASE_URL: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "",
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || "",
@@ -63,16 +63,16 @@ var init_env = __esm({
       PORT: parseInt(process.env.PORT || "3001", 10)
     };
     requiredEnvVars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
-    missingVars = requiredEnvVars.filter((key) => !ENV[key]);
-    if (!ENV.GROQ_API_KEY) {
+    missingVars = requiredEnvVars.filter((key) => !ENV2[key]);
+    if (!ENV2.GROQ_API_KEY) {
       console.warn(`\u26A0\uFE0F [Config Warning] GROQ_API_KEY is not set in .env.`);
     }
-    if (!ENV.WHATSAPP_VERIFY_TOKEN) {
+    if (!ENV2.WHATSAPP_VERIFY_TOKEN) {
       console.warn(
         `\u26A0\uFE0F [Config Warning] WHATSAPP_VERIFY_TOKEN is not set. Meta webhook verification will be REJECTED until it is.`
       );
     }
-    if (!ENV.WHATSAPP_APP_SECRET) {
+    if (!ENV2.WHATSAPP_APP_SECRET) {
       console.warn(
         `\u26A0\uFE0F [Config Warning] WHATSAPP_APP_SECRET is not set. Inbound webhook payload signatures cannot be verified.`
       );
@@ -91,7 +91,7 @@ __export(groq_exports, {
 });
 import { Groq } from "groq-sdk";
 function getGroqClient() {
-  const apiKey = process.env.GROQ_API_KEY || ENV.GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY || ENV2.GROQ_API_KEY;
   if (!apiKey || apiKey === "placeholder-api-key") {
     return null;
   }
@@ -102,7 +102,7 @@ var init_groq = __esm({
   "src/config/groq.ts"() {
     init_env();
     groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY || ENV.GROQ_API_KEY || "placeholder-api-key"
+      apiKey: process.env.GROQ_API_KEY || ENV2.GROQ_API_KEY || "placeholder-api-key"
     });
   }
 });
@@ -188,10 +188,10 @@ router.get("/test-groq", async (_req, res) => {
 });
 router.get("/test-agentrouter", async (_req, res) => {
   try {
-    const { ENV: ENV2 } = await Promise.resolve().then(() => (init_env(), env_exports));
-    const token = ENV2.ANTHROPIC_AUTH_TOKEN || "sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s";
-    const baseUrl = (ENV2.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
-    const model = ENV2.ANTHROPIC_MODEL || "glm-5.3";
+    const { ENV: ENV3 } = await Promise.resolve().then(() => (init_env(), env_exports));
+    const token = ENV3.ANTHROPIC_AUTH_TOKEN || "sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s";
+    const baseUrl = (ENV3.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
+    const model = ENV3.ANTHROPIC_MODEL || "glm-5.3";
     const testPayload = {
       model,
       messages: [
@@ -332,12 +332,12 @@ router.get("/", (_req, res) => {
     </head>
     <body>
       <div class="card">
-        <span class="badge">\u25CF Server Active (Port 3002)</span>
-        <h1>BizBot OS Backend Engine</h1>
-        <p>This is the Node.js/Express API server providing Meta WhatsApp webhooks, Razorpay billing integrations, and Groq Llama 3.3 AI prompt processing.</p>
+        <span class="badge">\u25CF Server Active (Port ${ENV.PORT})</span>
+        <h1>Agento AI Backend Engine</h1>
+        <p>This is the Node.js/Express API server providing Meta WhatsApp webhooks, Razorpay billing integrations, and Groq / AgentRouter AI processing.</p>
         
         <div class="links">
-          <a href="http://localhost:3004/dashboard" class="btn">Go to Next.js Owner Portal (Port 3004) &rarr;</a>
+          <a href="http://localhost:3000/dashboard" class="btn">Go to Next.js Owner Portal (Port 3000) &rarr;</a>
           <a href="/health" class="btn btn-outline">Check Health Status (/health)</a>
         </div>
 
@@ -362,12 +362,12 @@ import crypto from "crypto";
 init_env();
 import { createClient } from "@supabase/supabase-js";
 import WebSocket from "ws";
-if (!ENV.SUPABASE_URL || !ENV.SUPABASE_SERVICE_ROLE_KEY) {
+if (!ENV2.SUPABASE_URL || !ENV2.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn("\u26A0\uFE0F [Supabase] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing in .env");
 }
 var supabase = createClient(
-  ENV.SUPABASE_URL || "https://placeholder.supabase.co",
-  ENV.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key",
+  ENV2.SUPABASE_URL || "https://placeholder.supabase.co",
+  ENV2.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key",
   {
     auth: {
       persistSession: false,
@@ -416,7 +416,7 @@ async function getBusinessByWhatsappNumber(whatsappNumber) {
   return data;
 }
 async function resolveOperatorBusinessId() {
-  const configured = ENV.WHATSAPP_BUSINESS_NUMBER;
+  const configured = ENV2.WHATSAPP_BUSINESS_NUMBER;
   if (!configured) {
     console.warn(
       "[DB Service] WHATSAPP_BUSINESS_NUMBER is not set \u2014 cannot attribute admin activity to a business. Rows will be written with business_id = null."
@@ -1160,7 +1160,7 @@ var GROQ_MODEL_CASCADE = [
   "groq/compound-mini"
 ];
 function modelCascade() {
-  const configured = ENV.GROQ_MODEL || process.env.GROQ_MODEL || "";
+  const configured = ENV2.GROQ_MODEL || process.env.GROQ_MODEL || "";
   const models = configured ? [configured, ...GROQ_MODEL_CASCADE] : [...GROQ_MODEL_CASCADE];
   return [...new Set(models)];
 }
@@ -1376,12 +1376,12 @@ async function getGroqChatCompletion(messages, options = {}) {
 
 // src/services/claudeService.ts
 async function callAgentRouterAPI(systemPrompt, messages, options = {}) {
-  const token = ENV.ANTHROPIC_AUTH_TOKEN;
+  const token = ENV2.ANTHROPIC_AUTH_TOKEN;
   if (!token) {
     throw new Error("ANTHROPIC_AUTH_TOKEN / AgentRouter token is not configured in environment.");
   }
-  const baseUrl = (ENV.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
-  const model = options.model || ENV.ANTHROPIC_MODEL || "glm-5.3";
+  const baseUrl = (ENV2.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
+  const model = options.model || ENV2.ANTHROPIC_MODEL || "glm-5.3";
   const sanitizedMessages = [];
   for (const m of messages) {
     if (!m.content || !m.content.trim()) continue;
@@ -1493,7 +1493,7 @@ ${m.content}`;
   return cleanLLMOutput(textContent);
 }
 async function getResponse2(systemPrompt, conversationHistory, newMessage, business, configs) {
-  const provider = (ENV.AI_PROVIDER || "auto").toLowerCase();
+  const provider = (ENV2.AI_PROVIDER || "auto").toLowerCase();
   if (provider === "groq") {
     return getResponse(systemPrompt, conversationHistory, newMessage, business, configs);
   }
@@ -1522,7 +1522,7 @@ ${newMessage}`;
 2. When user provides date/time (e.g. "20 august 2 pm"), CONFIRM the appointment warmly and append the JSON capture block.
 3. NEVER INVENT FACTS: do not state a phone number, token number, address, price, or timing that is not present in the business information above. If you don't have it, say you'll have the team confirm.
 4. STRICT DOMAIN GUARDRAIL: Never write code (Python, JS, etc.), do homework, or answer unrelated general queries. Politely refuse and state that you are exclusively the virtual assistant for this business.`;
-  if (ENV.ANTHROPIC_AUTH_TOKEN) {
+  if (ENV2.ANTHROPIC_AUTH_TOKEN) {
     try {
       const response = await callAgentRouterAPI(fullSystemPrompt, formattedHistory);
       console.log(`[AgentRouter] \u2705 Response generated successfully (${response.length} chars).`);
@@ -1546,8 +1546,8 @@ function formatWhatsAppMessage(text) {
   return text.replace(/```(?:json)?[\s\S]*?```/gi, "").replace(/\{[\s\S]*?"(?:type|capture|details|items)"[\s\S]*?\}/gi, "").replace(/^[\s]*\*\s+\*([^*]+)\*/gm, "\u2022 *$1*").replace(/^[\s]*\*\s+/gm, "\u2022 ").replace(/\*\*([^*]+)\*\*/g, "*$1*").replace(/\n{3,}/g, "\n\n").trim();
 }
 function credentials() {
-  const token = ENV.WHATSAPP_CLOUD_API_TOKEN || process.env.WHATSAPP_CLOUD_API_TOKEN || "";
-  const phoneNumberId = ENV.WHATSAPP_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+  const token = ENV2.WHATSAPP_CLOUD_API_TOKEN || process.env.WHATSAPP_CLOUD_API_TOKEN || "";
+  const phoneNumberId = ENV2.WHATSAPP_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
   if (!token || !phoneNumberId) return null;
   return { token, phoneNumberId };
 }
@@ -1635,7 +1635,7 @@ async function sendInteractiveButtonsMessage(toNumber, businessWhatsappNumber, b
   console.warn(`[WhatsApp Service] Retrying ${cleanToNumber} as plain text after interactive rejection.`);
   return sendMessage(toNumber, businessWhatsappNumber, formattedMessage);
 }
-async function sendWhatsAppMessage(toNumber, message, businessWhatsappNumber = ENV.WHATSAPP_BUSINESS_NUMBER) {
+async function sendWhatsAppMessage(toNumber, message, businessWhatsappNumber = ENV2.WHATSAPP_BUSINESS_NUMBER) {
   return sendMessage(toNumber, businessWhatsappNumber, message);
 }
 
@@ -2373,7 +2373,7 @@ You will not receive any further messages from us. Sorry for the interruption.`;
 
 // src/services/inboundPipeline.ts
 function verifySubscription(params) {
-  const expected = ENV.WHATSAPP_VERIFY_TOKEN;
+  const expected = ENV2.WHATSAPP_VERIFY_TOKEN;
   if (!expected) {
     return { ok: false, reason: "WHATSAPP_VERIFY_TOKEN is not configured on the server." };
   }
@@ -2393,9 +2393,13 @@ function verifySubscription(params) {
   return { ok: true, challenge: String(params.challenge) };
 }
 function verifyPayloadSignature(rawBody, signatureHeader) {
-  const secret = ENV.WHATSAPP_APP_SECRET;
+  const secret = process.env.WHATSAPP_APP_SECRET || ENV2.WHATSAPP_APP_SECRET;
   if (!secret) {
-    console.warn("[Webhook] \u26A0\uFE0F WHATSAPP_APP_SECRET not set \u2014 accepting payload WITHOUT signature verification.");
+    if (process.env.NODE_ENV === "production") {
+      console.error("[Webhook] \u274C WHATSAPP_APP_SECRET is not configured in production. Rejecting unverified webhook payload.");
+      return false;
+    }
+    console.warn("[Webhook] \u26A0\uFE0F WHATSAPP_APP_SECRET not set in development \u2014 accepting payload WITHOUT signature verification.");
     return true;
   }
   if (!signatureHeader) {
@@ -2585,7 +2589,7 @@ async function handleProspectReply(inbound, business) {
   );
   const isNegative = /(not now|not interested|no thanks|nahi|btn_not_now)/i.test(messageText);
   await supabase.from("lead_hunter_leads").update({ status: "replied", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", lead.id);
-  if (ENV.ADMIN_ALERT_NUMBER) {
+  if (ENV2.ADMIN_ALERT_NUMBER) {
     const alertHeader = isPositive ? `\u{1F525} *HOT LEAD REPLY*` : isNegative ? `\u2139\uFE0F *Prospect declined*` : `\u{1F4AC} *New prospect reply*`;
     const adminAlertText = `${alertHeader}
 
@@ -2596,7 +2600,7 @@ async function handleProspectReply(inbound, business) {
 \u23F0 *Time*: ${(/* @__PURE__ */ new Date()).toLocaleTimeString("en-IN")}
 
 \u{1F449} https://wa.me/${cleanSender}`;
-    await sendMessage(ENV.ADMIN_ALERT_NUMBER, businessNumber, adminAlertText);
+    await sendMessage(ENV2.ADMIN_ALERT_NUMBER, businessNumber, adminAlertText);
   } else {
     console.warn("[Webhook] ADMIN_ALERT_NUMBER not configured \u2014 prospect alert not sent.");
   }
@@ -2617,9 +2621,9 @@ We won't message you again. If you ever want to look at a website, app, or Whats
   if (isPositive) {
     const confirmText = `\u{1F64F} *Thank you for your interest!*
 
-Our team has received your response and will connect with you shortly with a live custom demo and pricing.` + (ENV.ADMIN_ALERT_NUMBER ? `
+Our team has received your response and will connect with you shortly with a live custom demo and pricing.` + (ENV2.ADMIN_ALERT_NUMBER ? `
 
-Need us sooner? Call or WhatsApp *+${ENV.ADMIN_ALERT_NUMBER}*. \u{1F680}` : "");
+Need us sooner? Call or WhatsApp *+${ENV2.ADMIN_ALERT_NUMBER}*. \u{1F680}` : "");
     await sendMessage(customerNumber, businessNumber, confirmText);
     await saveConversationMessage(business.id, customerNumber, "outbound", confirmText);
     return true;
@@ -2933,8 +2937,8 @@ function accessEndDate(plan, from = /* @__PURE__ */ new Date()) {
 var router3 = Router3();
 var MONTHLY = PLANS[DEFAULT_PLAN_KEY];
 function razorpayClient() {
-  if (!ENV.RAZORPAY_KEY_ID || !ENV.RAZORPAY_KEY_SECRET) return null;
-  return new Razorpay({ key_id: ENV.RAZORPAY_KEY_ID, key_secret: ENV.RAZORPAY_KEY_SECRET });
+  if (!ENV2.RAZORPAY_KEY_ID || !ENV2.RAZORPAY_KEY_SECRET) return null;
+  return new Razorpay({ key_id: ENV2.RAZORPAY_KEY_ID, key_secret: ENV2.RAZORPAY_KEY_SECRET });
 }
 router3.post("/create-subscription", async (req, res) => {
   try {
@@ -2943,7 +2947,7 @@ router3.post("/create-subscription", async (req, res) => {
       return res.status(400).json({ error: "business_id is required" });
     }
     const razorpay = razorpayClient();
-    if (!razorpay || !ENV.RAZORPAY_PLAN_ID) {
+    if (!razorpay || !ENV2.RAZORPAY_PLAN_ID) {
       console.error("[Billing API] RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET / RAZORPAY_PLAN_ID are not configured.");
       return res.status(503).json({
         error: "Subscriptions are not configured on this server.",
@@ -2983,7 +2987,7 @@ router3.post("/create-subscription", async (req, res) => {
     let subscriptionId;
     try {
       const subscription = await razorpay.subscriptions.create({
-        plan_id: ENV.RAZORPAY_PLAN_ID,
+        plan_id: ENV2.RAZORPAY_PLAN_ID,
         customer_notify: 1,
         total_count: 12,
         notes: { business_id: business.id, plan: MONTHLY.key }
@@ -3003,11 +3007,11 @@ router3.post("/create-subscription", async (req, res) => {
     }
     return res.json({
       subscription_id: subscriptionId,
-      razorpay_key_id: ENV.RAZORPAY_KEY_ID,
+      razorpay_key_id: ENV2.RAZORPAY_KEY_ID,
       amount: MONTHLY.amountPaise,
       currency: MONTHLY.currency,
       plan: MONTHLY.key,
-      plan_id: ENV.RAZORPAY_PLAN_ID
+      plan_id: ENV2.RAZORPAY_PLAN_ID
     });
   } catch (err) {
     console.error("[Billing API Exception] create-subscription:", err);
@@ -3017,7 +3021,7 @@ router3.post("/create-subscription", async (req, res) => {
 router3.post("/webhook", async (req, res) => {
   try {
     const signature = req.headers["x-razorpay-signature"];
-    if (!ENV.RAZORPAY_WEBHOOK_SECRET) {
+    if (!ENV2.RAZORPAY_WEBHOOK_SECRET) {
       console.error("[Billing Webhook] RAZORPAY_WEBHOOK_SECRET is not set \u2014 refusing unverifiable webhooks.");
       return res.status(503).json({ error: "Webhook secret is not configured on this server." });
     }
@@ -3026,7 +3030,7 @@ router3.post("/webhook", async (req, res) => {
       return res.status(401).json({ error: "Missing x-razorpay-signature." });
     }
     const rawBody = req.rawBody ?? JSON.stringify(req.body);
-    const expected = crypto2.createHmac("sha256", ENV.RAZORPAY_WEBHOOK_SECRET).update(rawBody).digest("hex");
+    const expected = crypto2.createHmac("sha256", ENV2.RAZORPAY_WEBHOOK_SECRET).update(rawBody).digest("hex");
     const a = Buffer.from(expected, "utf8");
     const b = Buffer.from(signature, "utf8");
     if (a.length !== b.length || !crypto2.timingSafeEqual(a, b)) {
@@ -3397,8 +3401,8 @@ import crypto3 from "crypto";
 var router5 = Router5();
 router5.post("/api/create-order", async (req, res) => {
   try {
-    const key_id = process.env.RAZORPAY_KEY_ID || ENV.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV.RAZORPAY_KEY_SECRET;
+    const key_id = process.env.RAZORPAY_KEY_ID || ENV2.RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV2.RAZORPAY_KEY_SECRET;
     if (!key_id || !key_secret) {
       return res.status(401).json({ error: "Razorpay API credentials not configured" });
     }
@@ -3428,7 +3432,7 @@ router5.post("/api/create-order", async (req, res) => {
 });
 router5.post("/api/verify-payment", (req, res) => {
   try {
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV.RAZORPAY_KEY_SECRET;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV2.RAZORPAY_KEY_SECRET;
     if (!key_secret) {
       return res.status(401).json({ error: "Razorpay secret key not configured" });
     }
@@ -4387,7 +4391,7 @@ async function recordCall(req, result) {
 
 // src/services/hospitalCronService.ts
 async function send(phone, message) {
-  const result = await sendMessage(phone, ENV.WHATSAPP_BUSINESS_NUMBER, message);
+  const result = await sendMessage(phone, ENV2.WHATSAPP_BUSINESS_NUMBER, message);
   if (!result.success) {
     console.error(`[Hospital Cron] WhatsApp send to ${phone} failed: ${result.error}`);
   }
@@ -5048,7 +5052,7 @@ async function dispatchTarget(campaign, target) {
   await appendLog(campaign.id, `${label} \u{1F4E4} Pitching ${businessName} (${target.phone_number})...`, "info");
   const sendResult = await sendInteractiveButtonsMessage(
     target.phone_number,
-    ENV.WHATSAPP_BUSINESS_NUMBER,
+    ENV2.WHATSAPP_BUSINESS_NUMBER,
     pitchText,
     PITCH_BUTTONS.map((b) => ({ id: b.id, title: b.title }))
   );
@@ -5166,7 +5170,7 @@ initHospitalCronScheduler();
 startCampaignWorker(5e3);
 setInterval(async () => {
   try {
-    await fetch(`http://localhost:${ENV.PORT}/billing/check-trials`, { method: "POST" });
+    await fetch(`http://localhost:${ENV2.PORT}/billing/check-trials`, { method: "POST" });
   } catch (err) {
     console.error("[Periodic Trial Check Error]:", err.message);
   }
@@ -5181,14 +5185,14 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason, promise) => {
   console.error("\u{1F525} Unhandled Rejection at:", promise, "reason:", reason);
 });
-app.listen(ENV.PORT, () => {
+app.listen(ENV2.PORT, () => {
   console.log(`
 ======================================================`);
   console.log(`\u{1F680} Agento AI Backend Engine Live!`);
-  console.log(`\u{1F4E1} Listening on Port        : http://localhost:${ENV.PORT}`);
-  console.log(`\u{1F4E5} WhatsApp Webhook         : http://localhost:${ENV.PORT}/webhook`);
-  console.log(`\u{1F4B3} Create Order Endpoint    : http://localhost:${ENV.PORT}/api/create-order`);
-  console.log(`\u{1F510} Verify Payment Endpoint  : http://localhost:${ENV.PORT}/api/verify-payment`);
+  console.log(`\u{1F4E1} Listening on Port        : http://localhost:${ENV2.PORT}`);
+  console.log(`\u{1F4E5} WhatsApp Webhook         : http://localhost:${ENV2.PORT}/webhook`);
+  console.log(`\u{1F4B3} Create Order Endpoint    : http://localhost:${ENV2.PORT}/api/create-order`);
+  console.log(`\u{1F510} Verify Payment Endpoint  : http://localhost:${ENV2.PORT}/api/verify-payment`);
   console.log(`======================================================
 `);
 });

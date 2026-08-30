@@ -1,26 +1,23 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/config/supabase';
+import { requireBusiness } from '@/lib/auth/requireBusiness';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get('businessId');
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
 
-    let query = supabase
+    const { data, error } = await supabase
       .from('ca_documents_tracker')
       .select('*')
+      .eq('business_id', businessId)
       .order('requested_date', { ascending: false });
 
-    if (businessId && businessId !== 'demo-business-id') {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(businessId)) {
-        query = query.eq('business_id', businessId);
-      }
-    }
-
-    const { data, error } = await query;
     if (error) {
       console.warn('[CA Documents API] Fetch notice:', error.message);
       return NextResponse.json({ documents: [] });
@@ -35,6 +32,12 @@ export async function GET(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -45,6 +48,7 @@ export async function DELETE(req: Request) {
     const { error } = await supabase
       .from('ca_documents_tracker')
       .delete()
+      .eq('business_id', businessId)
       .eq('id', id);
 
     if (error) throw error;

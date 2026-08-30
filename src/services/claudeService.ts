@@ -184,8 +184,8 @@ export async function getResponse(
 ): Promise<string> {
   const provider = (ENV.AI_PROVIDER || 'auto').toLowerCase();
 
-  // If explicitly configured to use Groq only, delegate immediately
-  if (provider === 'groq') {
+  // If explicitly configured to use Groq, auto, or fast, delegate immediately to Groq LPU
+  if (provider === 'groq' || provider === 'auto' || provider === 'fast') {
     return groqService.getResponse(systemPrompt, conversationHistory, newMessage, business, configs);
   }
 

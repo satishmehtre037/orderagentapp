@@ -80,13 +80,20 @@ export function verifySubscription(params: {
  *
  * Returns true when APP_SECRET is unset so an existing deployment does not go
  * dark on upgrade, but logs loudly — an unverified webhook accepts forged
- * payloads from anyone who knows the URL.
  */
 export function verifyPayloadSignature(rawBody: string | Buffer, signatureHeader?: string | null): boolean {
-  const secret = ENV.WHATSAPP_APP_SECRET;
+  const secrets = Array.from(new Set([
+    process.env.WHATSAPP_APP_SECRET || ENV.WHATSAPP_APP_SECRET,
+    process.env.AGENTIC_AGENCY_APP_SECRET,
+    process.env.WEBCORE_STUDIO_APP_SECRET,
+  ])).filter(Boolean) as string[];
 
-  if (!secret) {
-    console.warn('[Webhook] ⚠️ WHATSAPP_APP_SECRET not set — accepting payload WITHOUT signature verification.');
+  if (secrets.length === 0) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[Webhook] ❌ No Meta App Secrets configured in production. Rejecting unverified webhook payload.');
+      return false;
+    }
+    console.warn('[Webhook] ⚠️ No Meta App Secrets set in development — accepting payload WITHOUT signature verification.');
     return true;
   }
 
@@ -95,20 +102,19 @@ export function verifyPayloadSignature(rawBody: string | Buffer, signatureHeader
     return false;
   }
 
-  const expected =
-    'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-
   const a = Buffer.from(signatureHeader);
-  const b = Buffer.from(expected);
 
-  if (a.length !== b.length) {
-    console.error('[Webhook] ❌ Signature length mismatch. Rejecting payload.');
-    return false;
+  // Check if signature matches ANY of the configured Meta App Secrets
+  for (const secret of secrets) {
+    const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+    const b = Buffer.from(expected);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+      return true;
+    }
   }
 
-  const valid = crypto.timingSafeEqual(a, b);
-  if (!valid) console.error('[Webhook] ❌ Invalid x-hub-signature-256. Rejecting payload.');
-  return valid;
+  console.error('[Webhook] ❌ Invalid x-hub-signature-256. Rejecting payload.');
+  return false;
 }
 
 // ---------------------------------------------------------------------------

@@ -14,8 +14,8 @@ const router = Router();
  * at app/api/webhook cannot drift apart again.
  */
 
-/** 1. Meta webhook verification (GET /webhook) */
-router.get('/webhook', (req: Request, res: Response) => {
+/** 1. Meta webhook verification (GET /webhook or GET /api/webhook) */
+router.get(['/webhook', '/api/webhook'], (req: Request, res: Response) => {
   const result = verifySubscription({
     mode: req.query['hub.mode'] as string,
     token: req.query['hub.verify_token'] as string,
@@ -32,8 +32,8 @@ router.get('/webhook', (req: Request, res: Response) => {
   return res.status(200).send(result.challenge);
 });
 
-/** 2. Inbound messages (POST /webhook) */
-router.post('/webhook', async (req: Request, res: Response) => {
+/** 2. Inbound messages (POST /webhook or POST /api/webhook) */
+router.post(['/webhook', '/api/webhook'], async (req: Request, res: Response) => {
   // Verify before acknowledging, so a forged payload gets 403 rather than 200.
   const rawBody = (req as any).rawBody ?? JSON.stringify(req.body ?? {});
   if (!verifyPayloadSignature(rawBody, req.header('x-hub-signature-256'))) {

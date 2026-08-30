@@ -99,6 +99,9 @@ export const onboardingWizardSchema = z.object({
         message: 'Please enter a valid 10-digit mobile number',
       }
     ),
+
+  // Owner Personal WhatsApp Number for Sandbox Testing
+  owner_personal_phone: z.string().optional(),
 });
 
 export type OnboardingWizardFormData = z.infer<typeof onboardingWizardSchema>;

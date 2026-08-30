@@ -117,9 +117,35 @@ export async function PUT(req: Request) {
     // 1. Update business table only if there are fields to update
     const updatePayload: Record<string, any> = {};
     if (name) updatePayload.name = name;
-    if (whatsapp_number) updatePayload.whatsapp_number = whatsapp_number;
     if (category) updatePayload.category = category;
     if (body.subscription_status) updatePayload.subscription_status = body.subscription_status;
+
+    if (whatsapp_number) {
+      // Normalize number
+      const clean = String(whatsapp_number).replace(/\D/g, '').slice(-10);
+      const formattedNumber = clean.length === 10 ? `+91${clean}` : whatsapp_number;
+      updatePayload.whatsapp_number = formattedNumber;
+
+      // Anti-Collision Check: verify no OTHER business is currently using this number
+      const { data: duplicateBiz } = await adminSupabase
+        .from('businesses')
+        .select('id, name, owner_email')
+        .eq('whatsapp_number', formattedNumber)
+        .neq('id', targetBizId)
+        .maybeSingle();
+
+      if (duplicateBiz) {
+        console.warn(
+          `[API Business PUT Conflict] WhatsApp number ${formattedNumber} is already in use by business ${duplicateBiz.id} (${duplicateBiz.name})`
+        );
+        return NextResponse.json(
+          {
+            error: `The WhatsApp number ${formattedNumber} is already registered and in use by another business account. Each business must connect a unique WhatsApp Business number.`,
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     let updatedBiz: any = null;
 
@@ -134,31 +160,16 @@ export async function PUT(req: Request) {
       if (bizErr) {
         console.error('[API Business Update Error]:', bizErr);
         if (bizErr.code === '23505' && whatsapp_number) {
-          // Re-assign number to this business by clearing from old business
-          console.log(`[API Business PUT] Re-assigning ${whatsapp_number} to business ${targetBizId}...`);
-          await adminSupabase
-            .from('businesses')
-            .update({ whatsapp_number: null })
-            .eq('whatsapp_number', whatsapp_number)
-            .neq('id', targetBizId);
-
-          const { data: retryData, error: retryErr } = await adminSupabase
-            .from('businesses')
-            .update(updatePayload)
-            .eq('id', targetBizId)
-            .select()
-            .maybeSingle();
-
-          if (retryErr) {
-            return NextResponse.json({ error: retryErr.message }, { status: 500 });
-          }
-          updatedBiz = retryData;
-        } else {
-          return NextResponse.json({ error: bizErr.message }, { status: 500 });
+          return NextResponse.json(
+            {
+              error: `The WhatsApp number is already in use by another business account.`,
+            },
+            { status: 409 }
+          );
         }
-      } else {
-        updatedBiz = data;
+        return NextResponse.json({ error: bizErr.message }, { status: 500 });
       }
+      updatedBiz = data;
     }
 
     // 2. Save config entries

@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Check } from 'lucide-react';
+import { useDragScroll } from '../../hooks/useDragScroll';
 
 interface StepIndicatorProps {
   currentStep: number;
@@ -14,9 +17,18 @@ const STEPS = [
 ];
 
 export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onStepClick }) => {
+  const { ref, isDragging, dragProps } = useDragScroll<HTMLDivElement>();
+
   return (
-    <div className="w-full bg-slate-50/80 border-b border-slate-200/80 p-2.5 sm:p-4 rounded-t-xl">
-      <div className="flex items-center justify-between overflow-x-auto gap-2 no-scrollbar">
+    <div className="w-full bg-surface-subtle border-b border-line p-2.5 sm:p-4 rounded-t-xl select-none">
+      <div
+        ref={ref}
+        {...dragProps}
+        className={`flex items-center justify-between overflow-x-auto gap-2 no-scrollbar overscroll-x-contain touch-pan-x cursor-grab active:cursor-grabbing ${
+          isDragging ? 'select-none' : ''
+        }`}
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {STEPS.map((step) => {
           const isCurrent = step.id === currentStep;
           const isCompleted = step.id < currentStep;
@@ -27,23 +39,23 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onSte
               type="button"
               disabled={step.id > currentStep}
               onClick={() => onStepClick && onStepClick(step.id)}
-              className={`flex-1 min-w-[130px] p-2.5 rounded-lg border text-left transition-all ${
+              className={`flex-1 min-w-[130px] p-2.5 rounded-lg border text-left transition-all shrink-0 ${
                 isCurrent
-                  ? 'bg-white border-slate-900 text-slate-900 shadow-sm ring-1 ring-slate-900/10'
+                  ? 'bg-surface border-accent text-fg shadow-xs ring-1 ring-accent/20'
                   : isCompleted
-                  ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900 hover:bg-emerald-50'
-                  : 'bg-slate-100/60 border-slate-200/60 text-slate-400 cursor-not-allowed'
+                  ? 'bg-success-subtle border-success-border text-success hover:bg-success-subtle/80'
+                  : 'bg-surface-subtle/40 border-line/60 text-fg-subtle cursor-not-allowed'
               }`}
             >
-              <div className="flex items-center justify-between text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">
+              <div className="flex items-center justify-between text-[10px] font-medium text-fg-muted uppercase tracking-wider mb-0.5 pointer-events-none">
                 <span>{step.stepNum}</span>
                 {isCompleted && (
-                  <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-                    <Check className="w-2.5 h-2.5" />
+                  <span className="w-3.5 h-3.5 rounded-full bg-success text-accent-fg flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
                   </span>
                 )}
               </div>
-              <div className="text-xs font-semibold truncate">
+              <div className="text-xs font-semibold truncate text-fg pointer-events-none">
                 {step.label}
               </div>
             </button>

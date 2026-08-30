@@ -39,3 +39,6 @@ cloudflared.exe
 .claude-flow/data/
 .claude-flow/logs/
 .claude-flow/sessions/
+.otp_store.json
+svg]
+doctor_voice_sample.mp3

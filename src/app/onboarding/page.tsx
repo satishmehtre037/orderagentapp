@@ -19,10 +19,19 @@ import { GymForm } from '../../components/ledger/GymForm';
 import { TuitionForm } from '../../components/ledger/TuitionForm';
 import { RetailForm } from '../../components/ledger/RetailForm';
 import { RealEstateForm } from '../../components/ledger/RealEstateForm';
+import { CAForm } from '../../components/ledger/CAForm';
 import { ReviewLedgerCard } from '../../components/ledger/ReviewLedgerCard';
 import { CATEGORY_PRESETS } from '../../lib/constants/categoryPresets';
 import { BusinessCategory } from '../../types';
-import { Bot, ArrowRight, ArrowLeft, PhoneCall, Info } from 'lucide-react';
+import { Bot, ArrowRight, ArrowLeft, Info, AlertCircle, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
+import { ThemeToggle } from '../../components/ui/ThemeContext';
+import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Label,
+} from '../../components/ui';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -30,8 +39,13 @@ export default function OnboardingPage() {
   const [ownerEmail, setOwnerEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [phoneChecking, setPhoneChecking] = useState(false);
+  const [phoneStatus, setPhoneStatus] = useState<{
+    available?: boolean;
+    error?: string;
+    message?: string;
+  } | null>(null);
 
-  // Initialize form with default category items
   const methods = useForm<OnboardingWizardFormData>({
     resolver: zodResolver(onboardingWizardSchema),
     defaultValues: {
@@ -98,326 +112,566 @@ export default function OnboardingPage() {
         } catch (e) {
           console.error('Error checking existing business:', e);
         }
-      } else {
-        setOwnerEmail('owner@bizbotos.in');
       }
     }
     checkAuth();
   }, [router]);
 
+  // Handle Meta OAuth Code from popup postMessage or direct redirect
+  const handleMetaCodeExchange = async (code: string) => {
+    setCurrentStep(3);
+    setPhoneChecking(true);
+    try {
+      const email = ownerEmail || (typeof window !== 'undefined' ? localStorage.getItem('biz_email') : '') || '';
+      const res = await fetch('/api/meta/embedded-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, email }),
+      });
+      const data = await res.json();
+      if (data?.whatsapp_number && /^[6-9]\d{9}$/.test(data.whatsapp_number)) {
+        setValue('whatsapp_number', data.whatsapp_number, { shouldValidate: true });
+        setPhoneStatus({
+          available: true,
+          message: '✅ WhatsApp Business Account Verified & Connected via Meta!',
+        });
+      } else {
+        setPhoneStatus({
+          available: true,
+          message: '✅ Meta Account Linked! Please confirm your 10-digit WhatsApp mobile number below.',
+        });
+      }
+    } catch (err) {
+      console.error('Embedded signup exchange error:', err);
+      setPhoneStatus({
+        available: false,
+        error: 'Failed to complete Meta onboarding. Please try again.',
+      });
+    } finally {
+      setPhoneChecking(false);
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  };
+
+  useEffect(() => {
+    // 1. Check for URL redirect code
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      if (code) {
+        handleMetaCodeExchange(code);
+      }
+    }
+
+    // 2. Listen for popup postMessage and Meta Embedded Signup events
+    const messageListener = (event: MessageEvent) => {
+      if (event.data?.type === 'META_AUTH_CALLBACK' && event.data?.code) {
+        handleMetaCodeExchange(event.data.code);
+      }
+
+      // Catch WA_EMBEDDED_SIGNUP sessionInfo from Meta
+      if (
+        event.origin === 'https://www.facebook.com' ||
+        event.origin === 'https://web.facebook.com'
+      ) {
+        try {
+          const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          if (data?.type === 'WA_EMBEDDED_SIGNUP') {
+            console.log('[Meta Embedded Signup Session Info]:', data.data);
+            const { phone_number_id, waba_id } = data.data || {};
+            if (phone_number_id) {
+              const email = ownerEmail || (typeof window !== 'undefined' ? localStorage.getItem('biz_email') : '') || '';
+              fetch('/api/meta/embedded-signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone_number_id, waba_id, email }),
+              })
+                .then((res) => res.json())
+                .then((resData) => {
+                  if (resData?.whatsapp_number && /^[6-9]\d{9}$/.test(resData.whatsapp_number)) {
+                    setValue('whatsapp_number', resData.whatsapp_number, { shouldValidate: true });
+                  }
+                })
+                .catch(console.error);
+            }
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('message', messageListener);
+
+    // 3. Initialize official Facebook JavaScript SDK
+    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
+    (window as any).fbAsyncInit = function() {
+      (window as any).FB?.init({
+        appId: appId,
+        cookie: true,
+        xfbml: true,
+        version: 'v20.0'
+      });
+    };
+
+    if (!document.getElementById('facebook-jssdk')) {
+      const js = document.createElement('script');
+      js.id = 'facebook-jssdk';
+      js.src = 'https://connect.facebook.net/en_US/sdk.js';
+      document.body.appendChild(js);
+    }
+
+    return () => window.removeEventListener('message', messageListener);
+  }, [ownerEmail, setValue]);
+
+  const watchedPhone = watch('whatsapp_number');
+  useEffect(() => {
+    const num = (watchedPhone || '').replace(/\D/g, '').slice(-10);
+    if (num.length === 10 && /^[6-9]\d{9}$/.test(num)) {
+      let active = true;
+      const timeout = setTimeout(async () => {
+        setPhoneChecking(true);
+        try {
+          const email = ownerEmail || (typeof window !== 'undefined' ? localStorage.getItem('biz_email') : '') || '';
+          const res = await fetch(`/api/business/check-number?number=${encodeURIComponent(num)}&email=${encodeURIComponent(email)}`);
+          const data = await res.json();
+          if (active) {
+            if (!data.available) {
+              setPhoneStatus({
+                available: false,
+                error: data.error || 'This number is already registered to another account.',
+              });
+            } else {
+              setPhoneStatus({
+                available: true,
+                message: 'Available & Ready for 24/7 AI Staff!',
+              });
+            }
+          }
+        } catch (e) {
+          // ignore
+        } finally {
+          if (active) setPhoneChecking(false);
+        }
+      }, 300);
+      return () => {
+        active = false;
+        clearTimeout(timeout);
+      };
+    } else {
+      setPhoneStatus(null);
+    }
+  }, [watchedPhone, ownerEmail]);
+
   const handleNextStep = async () => {
     setSubmitError(null);
+    let valid = true;
+
     if (currentStep === 1) {
-      const valid = await trigger(['business_name', 'category']);
-      if (valid) setCurrentStep(2);
+      valid = await trigger(['business_name', 'category']);
     } else if (currentStep === 2) {
-      setCurrentStep(3);
+      valid = await trigger(['hours']);
     } else if (currentStep === 3) {
-      const valid = await trigger(['whatsapp_number']);
-      if (valid) setCurrentStep(4);
+      valid = await trigger(['whatsapp_number']);
+      if (!valid) return;
+
+      const num = (watch('whatsapp_number') || '').replace(/\D/g, '').slice(-10);
+      if (!num || !/^[6-9]\d{9}$/.test(num)) {
+        setPhoneStatus({ available: false, error: 'Please enter a valid 10-digit Indian mobile number.' });
+        return;
+      }
+
+      if (phoneStatus && phoneStatus.available === false) {
+        return;
+      }
+    }
+
+    if (valid) {
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
     }
   };
 
   const handlePrevStep = () => {
     setSubmitError(null);
-    if (currentStep > 1) setCurrentStep((prev) => prev - 1);
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const onSubmitWizard = async (data: OnboardingWizardFormData) => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-
+  const onSubmitWizard = async (validData: OnboardingWizardFormData) => {
     try {
-      const cleanDigits = data.whatsapp_number.replace(/\D/g, '').replace(/^91/, '');
-      const fullWhatsAppNumber = cleanDigits ? `+91${cleanDigits}` : '';
+      setIsSubmitting(true);
+      setSubmitError(null);
 
-      const payload = {
-        ownerEmail,
-        businessName: data.business_name,
-        category: data.category,
-        whatsappNumber: fullWhatsAppNumber,
-        formData: {
-          ...data,
-          whatsapp_number: fullWhatsAppNumber,
-        },
-      };
+      const targetEmail = ownerEmail || (typeof window !== 'undefined' ? localStorage.getItem('biz_email') : null) || 'owner@mybusiness.com';
+      const cleanPhone = (validData.whatsapp_number || '').replace(/\D/g, '');
+      const tenDigitPhone = cleanPhone.startsWith('91') && cleanPhone.length === 12
+        ? cleanPhone.slice(2)
+        : cleanPhone.slice(0, 10);
+      const internationalPhone = `+91 ${tenDigitPhone}`;
 
-      const res = await fetch('/api/onboarding', {
+      const res = await fetch('/api/business/save-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          formData: {
+            ...validData,
+            whatsapp_number: internationalPhone,
+          },
+          ownerEmail: targetEmail,
+        }),
       });
 
       const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.error || 'Failed to complete onboarding');
-      }
+      if (!res.ok) throw new Error(resData.error || 'Failed to save configuration.');
 
       if (typeof window !== 'undefined') {
-        if (resData.businessId) localStorage.setItem('biz_id', resData.businessId);
-        if (data.category) localStorage.setItem('biz_category', data.category);
-        if (ownerEmail) localStorage.setItem('biz_email', ownerEmail);
+        const generatedBizId = resData.businessId || resData.business?.id;
+        if (generatedBizId) {
+          localStorage.setItem('biz_id', generatedBizId);
+        }
+        localStorage.setItem('biz_email', targetEmail);
+        localStorage.setItem('onboarding_completed', 'true');
+        localStorage.setItem('biz_name', validData.business_name);
+        localStorage.setItem('biz_category', validData.category);
+        localStorage.setItem('biz_phone', internationalPhone);
       }
 
       router.push('/dashboard');
     } catch (err: any) {
       console.error('Onboarding submission error:', err);
-      setSubmitError(err.message || 'Something went wrong. Please check your data.');
+      setSubmitError(err.message || 'An error occurred while launching your AI agent.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#F8FAFC] py-4 sm:py-8 px-3 sm:px-6 lg:px-8 font-sans antialiased text-slate-900 overflow-x-hidden max-w-full pb-safe">
-      <div className="max-w-4xl mx-auto space-y-5 sm:space-y-6">
-        {/* Top Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 rounded-2xl bg-slate-950 border border-white/20 shadow-md flex items-center justify-center p-1.5 flex-shrink-0">
-              <img
-                src="/logo.png"
-                alt="Agento AI"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">Agento AI</h1>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium">Autonomous WhatsApp AI Setup</p>
-            </div>
+    <main className="min-h-[100dvh] bg-base flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8 font-sans antialiased text-fg transition-colors duration-150 relative">
+      {/* Top Floating Theme Switch */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-4xl text-center space-y-2 mb-6">
+        <div className="inline-flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-surface border border-line shadow-sm flex items-center justify-center p-2">
+            <img src="/logo.png" alt="Agento AI" className="w-full h-full object-contain" />
           </div>
-          <span className="text-xs font-bold px-3 py-1 bg-slate-200/80 text-slate-700 rounded-full border border-slate-300/70 flex-shrink-0">
-            Step {currentStep} of 4
-          </span>
         </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight">
+          Launch Your 24/7 WhatsApp AI Staff
+        </h1>
+        <p className="text-xs sm:text-sm text-fg-muted max-w-md mx-auto">
+          Complete the 4-step wizard to train and deploy your autonomous customer agent in under 2 minutes.
+        </p>
+      </div>
 
-        {/* Step Indicator Bar */}
-        <StepIndicator currentStep={currentStep} />
+      {/* Step Indicator */}
+      <div className="sm:mx-auto sm:w-full sm:max-w-4xl mb-6">
+        <StepIndicator currentStep={currentStep} onStepClick={(s) => s <= currentStep && setCurrentStep(s)} />
+      </div>
 
-        {/* Error Notification */}
-        {submitError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start space-x-2">
-            <Info className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-            <span>{submitError}</span>
-          </div>
-        )}
-
-        {/* Form Body */}
+      <div className="sm:mx-auto sm:w-full sm:max-w-4xl">
         <FormProvider {...methods}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (currentStep < 4) {
-                handleNextStep();
-              }
+              if (currentStep < 4) handleNextStep();
             }}
-            className="space-y-6"
           >
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-8 shadow-sm">
-              {/* STEP 1 */}
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
-                      Step 1 of 4 — Business Profile
-                    </span>
-                    <h2 className="text-xl font-bold text-slate-900 mt-1">
-                      Tell us about your Business
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Select your category and enter your business details to configure your AI agent knowledge base.
-                    </p>
+            <Card className="shadow-md">
+              <CardContent className="p-6 sm:p-8 space-y-6">
+                {submitError && (
+                  <div className="p-3.5 rounded-md bg-danger-subtle border border-danger-border text-xs font-medium text-danger flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{submitError}</span>
                   </div>
+                )}
 
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Business Name *
-                    </label>
-                    <input
-                      {...methods.register('business_name')}
-                      placeholder="e.g. CafeDay Artisan Bakery"
-                      className="w-full text-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 font-medium"
-                    />
-                    {errors.business_name && (
-                      <p className="text-xs text-red-600 mt-1">{errors.business_name.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Select Business Category *
-                    </label>
-                    <CategorySelector
-                      value={selectedCategory}
-                      onChange={handleCategorySelect}
-                    />
-                    {errors.category && (
-                      <p className="text-xs text-red-600 mt-1">{errors.category.message}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 2 */}
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
-                      Step 2 of 4 — Catalog & Services
-                    </span>
-                    <h2 className="text-xl font-bold text-slate-900 mt-1">
-                      {selectedCategory === 'bakery'
-                        ? 'Set up your Bakery Menu & Pricing'
-                        : selectedCategory === 'cafe'
-                        ? 'Set up your Cafe Menu & Beverages'
-                        : selectedCategory === 'salon'
-                        ? 'Set up your Salon Services & Pricing'
-                        : selectedCategory === 'clinic'
-                        ? 'Set up Doctor Consultations & OPD Tariffs'
-                        : selectedCategory === 'hospital'
-                        ? 'Set up Hospital Departments, Doctors & OPD Tariffs'
-                        : selectedCategory === 'gym'
-                        ? 'Set up your Gym Memberships & Passes'
-                        : selectedCategory === 'tuition'
-                        ? 'Set up your Courses & Fee Structure'
-                        : selectedCategory === 'retail'
-                        ? 'Set up your Retail Product Catalog & Prices'
-                        : selectedCategory === 'real_estate'
-                        ? 'Set up your Property Configurations & Advisory'
-                        : selectedCategory === 'ca_firm'
-                        ? 'Set up your CA & Tax Filing Services & Fees'
-                        : 'Set up your Service Catalog & Pricing'}
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Your AI agent uses these exact items to answer customer questions and take orders on WhatsApp.
-                    </p>
-                  </div>
-
-                  {selectedCategory === 'bakery' && <BakeryForm />}
-                  {selectedCategory === 'cafe' && <CafeForm />}
-                  {selectedCategory === 'salon' && <SalonForm />}
-                  {selectedCategory === 'clinic' && <ClinicForm />}
-                  {selectedCategory === 'hospital' && <ClinicForm />}
-                  {selectedCategory === 'gym' && <GymForm />}
-                  {selectedCategory === 'tuition' && <TuitionForm />}
-                  {selectedCategory === 'retail' && <RetailForm />}
-                  {selectedCategory === 'real_estate' && <RealEstateForm />}
-                  {selectedCategory === 'ca_firm' && <SalonForm />}
-                  {selectedCategory === 'custom' && <SalonForm />}
-                </div>
-              )}
-
-              {/* STEP 3 */}
-              {currentStep === 3 && (
-                <div className="space-y-6">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
-                      Step 3 of 4 — WhatsApp Binding
-                    </span>
-                    <h2 className="text-xl font-bold text-slate-900 mt-1">
-                      Connect your Business WhatsApp Number
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Enter the dedicated phone number that will run your AI assistant.
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-6 space-y-4">
+                {/* STEP 1: Business Identity & Category */}
+                {currentStep === 1 && (
+                  <div className="space-y-5">
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Business WhatsApp Number *
-                      </label>
-                      
-                      {/* Fixed +91 India Code with 10-Digit Mobile Numberpad */}
-                      <div className="flex rounded-lg border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-900 shadow-sm">
-                        <div className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-slate-100/90 border-r border-slate-200 text-slate-700 select-none">
-                          <span className="text-base leading-none">🇮🇳</span>
-                          <span className="text-xs font-mono font-semibold text-slate-800">+91</span>
-                        </div>
-                        <input
-                          type="tel"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          maxLength={10}
-                          autoComplete="tel-national"
-                          value={watch('whatsapp_number') || ''}
-                          onChange={(e) => {
-                            const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-                            setValue('whatsapp_number', digits, { shouldValidate: true });
-                          }}
-                          placeholder="9876543210"
-                          className="flex-1 px-3.5 py-2.5 text-sm font-mono font-semibold text-slate-900 bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:font-normal"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between mt-1.5">
-                        {errors.whatsapp_number ? (
-                          <p className="text-xs text-red-600 font-medium">{errors.whatsapp_number.message}</p>
-                        ) : (
-                          <p className="text-[11px] text-slate-500">Enter exactly 10 digits without +91 or 0</p>
-                        )}
-                        <span className="text-[10px] font-mono text-slate-400">
-                          {`${(watch('whatsapp_number') || '').length}/10 digits`}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-white border border-slate-200 rounded-lg text-xs space-y-1.5">
-                      <div className="flex items-center space-x-2 text-slate-900 font-semibold">
-                        <Info className="w-4 h-4 text-slate-600" />
-                        <span>How Meta WhatsApp Integration Works</span>
-                      </div>
-                      <p className="text-slate-500 leading-relaxed">
-                        We connect your number to Meta WhatsApp Cloud API webhooks. Once you click "Go Live", your AI agent will automatically start responding to customer messages sent to this number.
+                      <span className="text-xs font-bold text-accent tracking-wider uppercase">
+                        Step 1 of 4 — Business Setup
+                      </span>
+                      <h2 className="text-xl font-bold text-fg mt-1">
+                        Tell us about your business
+                      </h2>
+                      <p className="text-xs text-fg-muted mt-0.5">
+                        Your AI agent will introduce itself using this legal entity or brand name.
                       </p>
                     </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="mb-1.5 block">Store / Business Name *</Label>
+                        <Input
+                          {...methods.register('business_name')}
+                          placeholder="e.g. Royal Confectionery & Cafe"
+                        />
+                        {errors.business_name && (
+                          <p className="text-xs text-danger mt-1 font-medium">
+                            {errors.business_name.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label className="mb-2 block">Select Business Category *</Label>
+                        <CategorySelector
+                          value={selectedCategory}
+                          onChange={handleCategorySelect}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* STEP 4 */}
-              {currentStep === 4 && (
-                <ReviewLedgerCard
-                  formData={formData}
-                  ownerEmail={ownerEmail}
-                  onBack={handlePrevStep}
-                  onGoLive={() => {
-                    handleSubmit(
-                      (validData) => onSubmitWizard(validData),
-                      (errs) => {
-                        console.warn('[Onboarding] Validation warning on Go Live:', errs);
-                        onSubmitWizard(methods.getValues());
-                      }
-                    )();
-                  }}
-                  isSubmitting={isSubmitting}
-                />
-              )}
+                {/* STEP 2: Catalog & Working Hours */}
+                {currentStep === 2 && (
+                  <div className="space-y-5">
+                    <div>
+                      <span className="text-xs font-bold text-accent tracking-wider uppercase">
+                        Step 2 of 4 — Products & Operational Rules
+                      </span>
+                      <h2 className="text-xl font-bold text-fg mt-1">
+                        Define your products, prices & hours
+                      </h2>
+                      <p className="text-xs text-fg-muted mt-0.5">
+                        These items will be recommended automatically by AI when customers chat on WhatsApp.
+                      </p>
+                    </div>
 
-              {/* Action Buttons */}
-              {currentStep < 4 && (
-                <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={handlePrevStep}
-                    disabled={currentStep === 1}
-                    className="inline-flex items-center space-x-2 text-xs font-medium px-4 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
-                  </button>
+                    <div>
+                      <Label className="mb-1.5 block">Store Working Hours *</Label>
+                      <Input
+                        {...methods.register('hours')}
+                        placeholder="e.g. Mon - Sun, 9:00 AM - 10:00 PM"
+                      />
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="inline-flex items-center space-x-2 text-xs font-medium px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-colors"
-                  >
-                    <span>Save & Continue</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
+                    <div className="pt-2 border-t border-line">
+                      {selectedCategory === 'bakery' && <BakeryForm />}
+                      {selectedCategory === 'cafe' && <CafeForm />}
+                      {selectedCategory === 'salon' && <SalonForm />}
+                      {selectedCategory === 'clinic' && <ClinicForm />}
+                      {selectedCategory === 'hospital' && <ClinicForm />}
+                      {selectedCategory === 'gym' && <GymForm />}
+                      {selectedCategory === 'tuition' && <TuitionForm />}
+                      {selectedCategory === 'retail' && <RetailForm />}
+                      {selectedCategory === 'real_estate' && <RealEstateForm />}
+                      {selectedCategory === 'ca_firm' && <CAForm />}
+                      {selectedCategory === 'custom' && <CAForm />}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: WhatsApp Number */}
+                {currentStep === 3 && (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div>
+                      <span className="text-[11px] font-mono font-bold tracking-wider text-accent uppercase">
+                        Step 3 of 4 — WhatsApp Binding
+                      </span>
+                      <h2 className="text-xl font-bold text-fg mt-1">
+                        Connect your WhatsApp Business Account
+                      </h2>
+                      <p className="text-xs text-fg-muted mt-0.5">
+                        Meta-verified automatic onboarding &amp; 24/7 AI staff provisioning.
+                      </p>
+                    </div>
+
+                    {/* Meta Official 1-Click Embedded Signup Card */}
+                    <div className="p-5 bg-gradient-to-br from-blue-500/10 via-surface to-surface border border-blue-500/30 rounded-xl space-y-3 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-[#1877F2] text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                            f
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-fg">Official Meta Embedded Signup</h3>
+                            <p className="text-[11px] text-fg-muted">Meta verifies your line and Agento AI provisions your 24/7 AI staff automatically.</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">
+                          Recommended
+                        </span>
+                      </div>
+
+                      {phoneChecking ? (
+                        <div className="p-4 bg-surface border border-blue-500/30 rounded-lg space-y-2.5 animate-in fade-in duration-150">
+                          <div className="flex items-center gap-2 text-xs font-bold text-accent">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Your WhatsApp is being connected and configured automatically...</span>
+                          </div>
+                          <div className="space-y-1.5 text-[11px] text-fg-muted">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-success">✓</span> Authorizing Meta Business Account
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Loader2 className="w-3 h-3 animate-spin text-accent" /> Linking WABA &amp; Registering Phone
+                            </div>
+                            <div className="flex items-center gap-1.5 text-fg-subtle">
+                              ○ Subscribing Webhooks &amp; Loading AI Knowledge
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="primary"
+                          className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-semibold py-2.5 shadow-md flex items-center justify-center gap-2"
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || '1972596440345762';
+                              const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
+                              const redirectUri = encodeURIComponent(window.location.origin + '/meta-callback');
+
+                              if ((window as any).FB) {
+                                (window as any).FB.login(
+                                  (response: any) => {
+                                    if (response?.authResponse?.code) {
+                                      handleMetaCodeExchange(response.authResponse.code);
+                                    }
+                                  },
+                                  {
+                                    config_id: configId,
+                                    response_type: 'code',
+                                    override_default_response_type: true,
+                                    extras: {
+                                      setup: {},
+                                      featureType: '',
+                                      sessionInfoVersion: '2',
+                                    },
+                                  }
+                                );
+                              } else {
+                                const extras = encodeURIComponent(JSON.stringify({ feature: 'whatsapp_embedded_signup', sessionInfoVersion: '2' }));
+                                const metaUrl = configId
+                                  ? `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&config_id=${configId}&response_type=code`
+                                  : `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code&extras=${extras}`;
+                                window.open(metaUrl, 'meta_signup', 'width=600,height=700');
+                              }
+                            }
+                          }}
+                        >
+                          <span className="text-base font-bold">f</span> Connect WhatsApp with Facebook
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Direct Dedicated Business Number Connection */}
+                    <div className="p-5 bg-surface-subtle border border-line rounded-lg space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <Label className="block font-semibold">Dedicated Business Mobile Number *</Label>
+                          {phoneChecking ? (
+                            <span className="text-[11px] text-accent flex items-center gap-1">
+                              <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+                            </span>
+                          ) : phoneStatus?.available ? (
+                            <span className="text-[11px] font-semibold text-success flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5" /> Ready for AI Staff
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className={`flex rounded-md border bg-surface overflow-hidden transition-all focus-within:ring-2 shadow-xs ${
+                          phoneStatus?.available
+                            ? 'border-success focus-within:ring-success'
+                            : 'border-line focus-within:ring-accent'
+                        }`}>
+                          <div className="flex items-center gap-1.5 px-3 py-2 bg-surface-subtle border-r border-line text-fg select-none font-mono text-xs">
+                            <span>🇮🇳</span>
+                            <span className="font-semibold">+91</span>
+                          </div>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={10}
+                            autoComplete="tel-national"
+                            value={watch('whatsapp_number') || ''}
+                            onChange={(e) => {
+                              const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setValue('whatsapp_number', digits, { shouldValidate: true });
+                            }}
+                            placeholder="8108313063"
+                            className="flex-1 px-3 py-2 text-sm font-mono font-semibold text-fg bg-transparent focus:outline-none placeholder:text-fg-subtle placeholder:font-normal"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1.5 text-[11px]">
+                          <p className="text-fg-muted">Enter 10-digit dedicated SIM or business line</p>
+                          <span className="font-mono text-fg-subtle">
+                            {`${(watch('whatsapp_number') || '').length}/10 digits`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {phoneStatus?.error && (
+                        <div className="p-3 bg-danger-subtle border border-danger-border text-danger rounded-md text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-150">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>{phoneStatus.error}</span>
+                        </div>
+                      )}
+
+                      {phoneStatus?.available && (
+                        <div className="p-3.5 bg-success-subtle border border-success-border text-success rounded-lg text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>✅ Number ready! Click &quot;Save &amp; Continue&quot; to review and go live.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4: Review & Go Live */}
+                {currentStep === 4 && (
+                  <ReviewLedgerCard
+                    formData={formData}
+                    ownerEmail={ownerEmail}
+                    onBack={handlePrevStep}
+                    onGoLive={() => {
+                      handleSubmit(
+                        (validData) => onSubmitWizard(validData),
+                        (errs) => {
+                          console.warn('[Onboarding] Validation warning on Go Live:', errs);
+                          onSubmitWizard(methods.getValues());
+                        }
+                      )();
+                    }}
+                    isSubmitting={isSubmitting}
+                  />
+                )}
+
+                {/* Navigation Controls */}
+                {currentStep < 4 && (
+                  <div className="pt-4 border-t border-line flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handlePrevStep}
+                      disabled={currentStep === 1}
+                      leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}
+                    >
+                      Back
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleNextStep}
+                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                    >
+                      Save & Continue
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </form>
         </FormProvider>
       </div>

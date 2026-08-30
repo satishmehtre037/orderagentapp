@@ -4,9 +4,16 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseClient } from '../../lib/supabase/client';
-import { Bot, ArrowRight, ShieldCheck, User, Mail, Lock } from 'lucide-react';
+import { ArrowRight, User, Mail, Lock, AlertCircle, ShieldCheck } from 'lucide-react';
 import { signupSchema } from '../../lib/validations/auth';
 import { ThemeToggle } from '../../components/ui/ThemeContext';
+import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Label,
+} from '../../components/ui';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -65,7 +72,7 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#F8FAFC] dark:bg-slate-950 flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 pb-safe font-sans antialiased text-slate-900 dark:text-slate-100 transition-colors duration-200 relative">
+    <main className="min-h-[100dvh] bg-base flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 pb-safe font-sans antialiased text-fg transition-colors duration-150 relative">
       {/* Top Floating Theme Switch */}
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
@@ -73,7 +80,7 @@ export default function SignupPage() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-3">
         <div className="inline-flex items-center justify-center">
-          <div className="w-16 h-16 rounded-3xl bg-slate-950 border border-white/20 shadow-xl flex items-center justify-center p-2">
+          <div className="w-14 h-14 rounded-2xl bg-surface border border-line shadow-md flex items-center justify-center p-2">
             <img
               src="/logo.png"
               alt="Agento AI"
@@ -81,108 +88,101 @@ export default function SignupPage() {
             />
           </div>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight">
           Get Started with Agento AI
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+        <p className="text-xs sm:text-sm text-fg-muted max-w-xs mx-auto leading-relaxed">
           Create your business account to activate your WhatsApp AI assistant
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-slate-900 py-8 px-6 sm:px-10 shadow-xl shadow-slate-200/50 dark:shadow-black/40 border border-slate-200/80 dark:border-slate-800 rounded-3xl transition-colors duration-200">
-          <form className="space-y-5" onSubmit={handleSignup}>
-            {errorMsg && (
-              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs font-medium text-rose-700 dark:text-rose-300">
-                {errorMsg}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Your Full Name
-              </label>
-              <div className="relative rounded-2xl shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <User className="h-4 w-4" />
+        <Card className="shadow-lg">
+          <CardContent className="p-6 sm:p-8">
+            <form className="space-y-4" onSubmit={handleSignup}>
+              {errorMsg && (
+                <div className="p-3 rounded-md bg-danger-subtle border border-danger-border text-xs font-medium text-danger flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMsg}</span>
                 </div>
-                <input
-                  type="text"
-                  required
-                  autoComplete="name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="block w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 transition-all font-medium"
-                  placeholder="Satish Mehtre"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Business Email Address
-              </label>
-              <div className="relative rounded-2xl shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="h-4 w-4" />
-                </div>
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 transition-all font-medium"
-                  placeholder="owner@mybusiness.com"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Password
-              </label>
-              <div className="relative rounded-2xl shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="h-4 w-4" />
-                </div>
-                <input
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 transition-all font-medium"
-                  placeholder="••••••••••••"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 px-4 rounded-2xl bg-slate-950 dark:bg-white hover:bg-slate-900 dark:hover:bg-slate-100 text-white dark:text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 active:scale-98 disabled:opacity-50 mt-2"
-            >
-              {loading ? (
-                <span>Creating Business Account...</span>
-              ) : (
-                <>
-                  <span>Create Account & Setup Store</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
               )}
-            </button>
-          </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Already have an account?{' '}
-              <Link href="/login" className="text-slate-900 dark:text-white font-bold hover:underline">
-                Sign in here
-              </Link>
-            </p>
-          </div>
-        </div>
+              <div>
+                <Label className="mb-1.5 block">Full Name</Label>
+                <div className="relative">
+                  <User className="h-4 w-4 text-fg-subtle absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="pl-9"
+                    placeholder="Rahul Sharma"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-1.5 block">Business Email Address</Label>
+                <div className="relative">
+                  <Mail className="h-4 w-4 text-fg-subtle absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9"
+                    placeholder="owner@mybusiness.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-1.5 block">Create Password</Label>
+                <div className="relative">
+                  <Lock className="h-4 w-4 text-fg-subtle absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type="password"
+                    required
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  loading={loading}
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  Create Account & Begin Trial
+                </Button>
+              </div>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-line text-center">
+              <p className="text-xs text-fg-muted">
+                Already have an account?{' '}
+                <Link
+                  href="/login"
+                  className="font-semibold text-accent hover:underline inline-flex items-center gap-1"
+                >
+                  Sign In
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

@@ -1,22 +1,26 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendWhatsAppTextMessage } from '@/lib/whatsapp';
+import { requireBusiness } from '@/lib/auth/requireBusiness';
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
+
     const { searchParams } = new URL(req.url);
-    const businessId = searchParams.get('business_id');
     const isCritical = searchParams.get('is_critical');
     const patientId = searchParams.get('patient_id');
 
     let query = supabaseAdmin
       .from('hospital_reports')
       .select('*')
+      .eq('business_id', businessId)
       .order('created_at', { ascending: false });
 
-    if (businessId) {
-      query = query.eq('business_id', businessId);
-    }
     if (isCritical === 'true') {
       query = query.eq('is_critical', true);
     }
@@ -40,9 +44,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireBusiness(req);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+    const { businessId } = auth;
+
     const body = await req.json();
     const {
-      business_id,
       patient_id,
       patient_name,
       patient_phone,
@@ -69,13 +78,13 @@ export async function POST(req: Request) {
     const { data: report, error } = await supabaseAdmin
       .from('hospital_reports')
       .insert([{
-        business_id,
+        business_id: businessId,
         patient_id,
         patient_name,
         patient_phone,
-        doctor_name: doctor_name || 'Dr. Rajesh Gupta',
+        doctor_name: doctor_name || 'Specialist Doctor',
         report_type,
-        file_url: file_url || `https://medicare.hospital/reports/REP-${Math.floor(1000 + Math.random() * 9000)}.pdf`,
+        file_url: file_url || `https://reports.storage/REP-${Math.floor(1000 + Math.random() * 9000)}.pdf`,
         ai_summary: generatedSummary,
         is_critical,
         status: 'Ready',
@@ -90,7 +99,7 @@ export async function POST(req: Request) {
 
     // Auto-deliver via WhatsApp
     const msg = is_critical
-      ? `🚨 *URGENT: Diagnostic Lab Report Ready*\n\nNamaste ${patient_name} ji,\n\nYour *${report_type}* test report is ready for download.\n\n⚠️ *Clinical Summary:* ${generatedSummary}\n\n📄 *Download PDF:* ${report.file_url}\n\nOur attending physician *${doctor_name || 'Dr. Gupta'}* has been informed. Please visit OPD or call us immediately.`
+      ? `🚨 *URGENT: Diagnostic Lab Report Ready*\n\nNamaste ${patient_name} ji,\n\nYour *${report_type}* test report is ready for download.\n\n⚠️ *Clinical Summary:* ${generatedSummary}\n\n📄 *Download PDF:* ${report.file_url}\n\nOur attending physician *${doctor_name || 'Attending Doctor'}* has been informed. Please visit OPD or call us immediately.`
       : `📄 *Diagnostic Lab Report Ready*\n\nNamaste ${patient_name} ji,\n\nYour *${report_type}* test results have been verified by the lab.\n\n💡 *AI Summary:* ${generatedSummary}\n\n📥 *Download PDF:* ${report.file_url}\n\nFor questions, reply directly to this WhatsApp message!`;
 
     if (patient_phone) {

@@ -126,9 +126,9 @@ ALTER TABLE public.ca_documents_tracker ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ca_leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ca_query_logs ENABLE ROW LEVEL SECURITY;
 
--- Allow public service role access & authenticated access
-CREATE POLICY "Allow service role full access ca_clients" ON public.ca_clients FOR ALL USING (true);
-CREATE POLICY "Allow service role full access ca_compliance_calendar" ON public.ca_compliance_calendar FOR ALL USING (true);
-CREATE POLICY "Allow service role full access ca_documents_tracker" ON public.ca_documents_tracker FOR ALL USING (true);
-CREATE POLICY "Allow service role full access ca_leads" ON public.ca_leads FOR ALL USING (true);
-CREATE POLICY "Allow service role full access ca_query_logs" ON public.ca_query_logs FOR ALL USING (true);
+-- Allow service role full access
+CREATE POLICY "service_role_full_access_ca_clients" ON public.ca_clients TO service_role USING (true);
+CREATE POLICY "service_role_full_access_ca_compliance_calendar" ON public.ca_compliance_calendar TO service_role USING (true);
+CREATE POLICY "service_role_full_access_ca_documents_tracker" ON public.ca_documents_tracker TO service_role USING (true);
+CREATE POLICY "service_role_full_access_ca_leads" ON public.ca_leads TO service_role USING (true);
+CREATE POLICY "service_role_full_access_ca_query_logs" ON public.ca_query_logs TO service_role USING (true);

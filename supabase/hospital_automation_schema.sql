@@ -160,11 +160,15 @@ ALTER TABLE public.hospital_voice_calls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hospital_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hospital_escalations ENABLE ROW LEVEL SECURITY;
 
--- Allow public service role access & authenticated access
-CREATE POLICY "Allow service role full access hospital_patients" ON public.hospital_patients FOR ALL USING (true);
-CREATE POLICY "Allow service role full access hospital_doctors" ON public.hospital_doctors FOR ALL USING (true);
-CREATE POLICY "Allow service role full access hospital_appointments" ON public.hospital_appointments FOR ALL USING (true);
-CREATE POLICY "Allow service role full access hospital_reports" ON public.hospital_reports FOR ALL USING (true);
-CREATE POLICY "Allow service role full access hospital_voice_calls" ON public.hospital_voice_calls FOR ALL USING (true);
-CREATE POLICY "Allow service role full access hospital_feedback" ON public.hospital_feedback FOR ALL USING (true);
-CREATE POLICY "Allow service role full access hospital_escalations" ON public.hospital_escalations FOR ALL USING (true);
+-- Allow service role full access & authenticated tenant access
+CREATE POLICY "service_role_full_access_hospital_patients" ON public.hospital_patients TO service_role USING (true);
+CREATE POLICY "service_role_full_access_hospital_doctors" ON public.hospital_doctors TO service_role USING (true);
+CREATE POLICY "service_role_full_access_hospital_appointments" ON public.hospital_appointments TO service_role USING (true);
+CREATE POLICY "service_role_full_access_hospital_reports" ON public.hospital_reports TO service_role USING (true);
+CREATE POLICY "service_role_full_access_hospital_voice_calls" ON public.hospital_voice_calls TO service_role USING (true);
+CREATE POLICY "service_role_full_access_hospital_feedback" ON public.hospital_feedback TO service_role USING (true);
+CREATE POLICY "service_role_full_access_hospital_escalations" ON public.hospital_escalations TO service_role USING (true);
+
+-- Unique indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_hospital_patients_business_phone ON public.hospital_patients(business_id, phone);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_hospital_appointments_no_double_booking ON public.hospital_appointments(business_id, doctor_name, slot_time) WHERE status != 'cancelled';

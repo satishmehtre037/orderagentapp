@@ -15,6 +15,15 @@ import {
 } from 'lucide-react';
 import { HospitalPatient } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Input,
+} from '@/components/ui';
 
 interface HospitalAIAgentTabProps {
   businessId?: string;
@@ -98,10 +107,11 @@ export default function HospitalAIAgentTab({
         tools.push('Get Hospital And Doctor Info');
         aiReply = `👨‍⚕️ *Department & Doctor Information*\n\n• *Cardiology:* Dr. Rajesh Gupta (Mon–Fri, 9:00 AM – 2:00 PM | Fee: ₹800)\n• *Pediatrics:* Dr. Ananya Iyer (Mon, Wed, Fri, Sat, 10:00 AM – 4:00 PM | Fee: ₹600)\n• *Orthopedics:* Dr. Vikramaditya Rao (Tue, Thu, Sat, 11:00 AM – 6:00 PM | Fee: ₹900)\n• *General Medicine:* Dr. Priya Sharma (Daily, 9:00 AM – 5:00 PM | Fee: ₹500)\n\nWould you like me to book a slot for you?`;
       } else if (lower.includes('reschedule') || lower.includes('change date') || lower.includes('cancel')) {
-        tools.push('Reschedule Appointment');
-        aiReply = `🔄 *Appointment Rescheduled*\n\nYour appointment with *Dr. Priya Sharma* has been moved to *Friday at 2:00 PM*.\n\nYour revised token number is *#OPD-08*. Updated confirmation sent to your WhatsApp.`;
+        tools.push('Reschedule / Cancel Appointment');
+        aiReply = `🗓️ *Appointment Rescheduled*\n\nYour consultation has been moved to *Friday at 4:30 PM* with *Dr. Priya Sharma*.\n\nYour new queue token is *#OPD-22*.`;
       } else {
-        aiReply = `Thank you for contacting MediCare Hospital. I can assist you with booking OPD consultations, checking diagnostic lab results, rescheduling visits, or providing doctor schedules. How may I help you?`;
+        tools.push('Get Hospital And Doctor Info');
+        aiReply = `Thank you for reaching out to *${businessName || 'MediCare Hospital'}*. I can help you with:\n\n1️⃣ *Book Doctor Consultation*\n2️⃣ *Check Diagnostic Lab Report Status*\n3️⃣ *OPD Queue & Token Inquiries*\n4️⃣ *Emergency Casualty Information*\n\nWhat would you like assistance with?`;
       }
 
       const aiMsg: ChatMessage = {
@@ -109,7 +119,7 @@ export default function HospitalAIAgentTab({
         sender: 'ai',
         text: aiReply,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        toolsUsed: tools.length > 0 ? tools : undefined,
+        toolsUsed: tools,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -117,154 +127,205 @@ export default function HospitalAIAgentTab({
     }, 900);
   };
 
+  const samplePrompts = [
+    'Book an appointment with Dr. Rajesh Gupta for tomorrow morning',
+    'Are my CBC lab test reports ready?',
+    'What are the doctor timings and consultation fees for Orthopedics?',
+    'I have severe chest pain and breathlessness since 1 hour',
+    'I want to reschedule my appointment to Friday evening',
+  ];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-5 animate-in fade-in duration-150">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/80 dark:bg-slate-900/80 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-            <Bot className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-            <span>24/7 Medical AI WhatsApp Simulator</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Test Gemini-powered clinical triage, live slot bookings, lab report status checks, and emergency escalation guardrails
-          </p>
-        </div>
-
-        {/* Patient Switcher */}
-        <div className="flex items-center space-x-2">
-          <User className="w-4 h-4 text-slate-400" />
-          <select
-            value={selectedPatient?.id || ''}
-            onChange={(e) => {
-              const p = patients.find((pat) => pat.id === e.target.value);
-              if (p) setSelectedPatient(p);
-            }}
-            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none"
-          >
-            {patients.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.phone})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Suggested Quick Prompt Chips */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1 no-scrollbar text-xs">
-        <span className="text-slate-400 font-semibold flex items-center shrink-0">
-          <Sparkles className="w-3.5 h-3.5 text-teal-500 mr-1" />
-          Quick Test:
-        </span>
-        {[
-          'Book consultation with Dr. Rajesh Gupta (Cardiology) for tomorrow 11:00 AM',
-          'What are the OPD timings and consultation fee for Pediatrics?',
-          'Is my Complete Blood Count (CBC) lab report ready?',
-          'I have severe chest pain and breathing difficulty',
-          'I need to reschedule my consultation to Friday 2:00 PM',
-        ].map((chip, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSendMessage(chip)}
-            className="px-3 py-1 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-700 dark:text-teal-300 border border-teal-500/30 rounded-xl whitespace-nowrap transition-colors"
-          >
-            {chip}
-          </button>
-        ))}
-      </div>
-
-      {/* WhatsApp Chat Simulator Window */}
-      <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col h-[520px]">
-        {/* Chat Window Header */}
-        <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center font-bold text-sm">
-              🏥
-            </div>
-            <div>
-              <div className="text-xs font-bold flex items-center space-x-1.5">
-                <span>{businessName || 'MediCare Hospital'} AI Assistant</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              </div>
-              <div className="text-[10px] text-slate-300">
-                Testing as: {selectedPatient?.name || 'Patient'} ({selectedPatient?.phone || '+91 98765 43210'})
-              </div>
-            </div>
+      <Card>
+        <CardHeader className="flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-accent" />
+              <span>24/7 WhatsApp Medical AI Simulator</span>
+            </CardTitle>
+            <CardDescription>
+              Test medical triage, OPD appointment booking, lab OCR status, and emergency casualty handoffs in real-time
+            </CardDescription>
           </div>
-          <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-400/30">
-            Gemini 2.0 Flash • 8 Tools Active
-          </span>
-        </div>
 
-        {/* Messages Stream */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50 dark:bg-slate-950/50">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${msg.sender === 'patient' ? 'items-end' : 'items-start'}`}
-            >
-              <div
-                className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed ${
-                  msg.sender === 'patient'
-                    ? 'bg-teal-600 text-white rounded-tr-none shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 rounded-tl-none shadow-sm'
-                }`}
-              >
-                <div className="whitespace-pre-line">{msg.text}</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success-subtle text-success border border-success-border">
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              Live Medical LLM Active
+            </span>
+          </div>
+        </CardHeader>
+      </Card>
 
-                {msg.toolsUsed && (
-                  <div className="mt-2 pt-2 border-t border-slate-200/40 dark:border-slate-700/40 flex flex-wrap gap-1">
-                    {msg.toolsUsed.map((tool, i) => (
-                      <span
-                        key={i}
-                        className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20"
-                      >
-                        ⚡ Tool: {tool}
-                      </span>
-                    ))}
-                  </div>
-                )}
+      {/* Simulator Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left column: Simulator controls & tools */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Simulate as Patient</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-fg-muted">
+                Select an active patient record to test contextual memory:
               </div>
-              <span className="text-[9px] text-slate-400 mt-1 px-1">{msg.timestamp}</span>
-            </div>
-          ))}
+              <div className="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar">
+                {patients.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedPatient(p)}
+                    className={`w-full text-left p-2.5 rounded-md border text-xs transition-colors flex items-center justify-between ${
+                      selectedPatient?.id === p.id
+                        ? 'bg-accent-subtle border-accent-border text-accent font-semibold shadow-xs'
+                        : 'bg-surface border-line text-fg hover:bg-surface-hover'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold">{p.name}</div>
+                      <div className="text-[10px] text-fg-muted font-mono">{p.phone}</div>
+                    </div>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-subtle border border-line text-fg-muted">
+                      {p.blood_group || 'O+'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-          {isTyping && (
-            <div className="flex items-center space-x-2 text-slate-400 text-xs p-2">
-              <span className="w-2 h-2 rounded-full bg-teal-500 animate-bounce" />
-              <span className="w-2 h-2 rounded-full bg-teal-500 animate-bounce [animation-delay:0.2s]" />
-              <span className="w-2 h-2 rounded-full bg-teal-500 animate-bounce [animation-delay:0.4s]" />
-              <span className="text-[11px] text-teal-600 dark:text-teal-400 font-medium ml-1">
-                AI Agent is analyzing clinical schedule & tools...
-              </span>
-            </div>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Quick Scenario Prompts</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5">
+              {samplePrompts.map((prompt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSendMessage(prompt)}
+                  className="w-full text-left p-2 rounded-md bg-surface-subtle hover:bg-surface-hover border border-line text-xs text-fg transition-colors flex items-start gap-1.5 group"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">{prompt}</span>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Input Bar */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSendMessage();
-          }}
-          className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center space-x-2"
-        >
-          <input
-            type="text"
-            placeholder="Type a clinical query or booking instruction..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-teal-500"
-          />
-          <button
-            type="submit"
-            disabled={!inputMessage.trim() || isTyping}
-            className="p-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
+        {/* Right column: Chat Simulator Screen */}
+        <div className="lg:col-span-2">
+          <Card className="flex flex-col h-[560px]">
+            {/* WhatsApp Chat Header */}
+            <div className="p-3 border-b border-line bg-surface-subtle flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold text-xs">
+                  AI
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-fg">
+                    {businessName || 'MediCare Hospital'} AI Staff
+                  </div>
+                  <div className="text-[10px] text-success flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                    Online 24/7 on WhatsApp
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setMessages([
+                    {
+                      id: '1',
+                      sender: 'ai',
+                      text: `Hello! I am the 24/7 Medical AI Assistant for ${businessName || 'MediCare Hospital'}. How may I assist you today?`,
+                      timestamp: '10:00 AM',
+                    },
+                  ])
+                }
+                title="Reset Conversation"
+                leftIcon={<RefreshCw className="w-3 h-3" />}
+              >
+                Reset
+              </Button>
+            </div>
+
+            {/* Chat Messages Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-base/50">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${msg.sender === 'patient' ? 'items-end' : 'items-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-lg p-3 text-xs leading-relaxed shadow-xs whitespace-pre-line ${
+                      msg.sender === 'patient'
+                        ? 'bg-accent text-accent-fg rounded-tr-none'
+                        : 'bg-surface text-fg border border-line rounded-tl-none'
+                    }`}
+                  >
+                    {msg.text}
+
+                    {msg.toolsUsed && msg.toolsUsed.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-line/50 flex flex-wrap gap-1">
+                        {msg.toolsUsed.map((tool, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-surface-subtle text-accent border border-accent-border"
+                          >
+                            <Zap className="w-2.5 h-2.5" />
+                            {tool}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-fg-subtle mt-0.5 font-mono px-1">
+                    {msg.timestamp}
+                  </span>
+                </div>
+              ))}
+
+              {isTyping && (
+                <div className="flex items-center gap-1.5 text-xs text-fg-muted p-2 rounded-lg bg-surface border border-line w-fit">
+                  <span className="w-2 h-2 rounded-full bg-accent animate-bounce" />
+                  <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0.4s]" />
+                  <span className="text-[10px] ml-1">AI checking hospital schedule & medical guidelines...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Input Bar */}
+            <div className="p-3 border-t border-line bg-surface flex items-center gap-2">
+              <Input
+                placeholder="Type patient query (e.g. 'book appointment', 'lab report status')..."
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                className="flex-1 text-xs"
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleSendMessage()}
+                disabled={!inputMessage.trim()}
+                leftIcon={<Send className="w-3.5 h-3.5" />}
+              >
+                Send
+              </Button>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

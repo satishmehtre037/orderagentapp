@@ -13,11 +13,14 @@
     "start": "next start",
     "server": "npx tsx src/server.ts",
     "start:backend": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "android:sync": "cap sync android",
     "android:open": "cap open android",
     "android:run": "cap run android"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^3.0.184",
     "@capacitor/android": "^8.5.0",
     "@capacitor/cli": "^7.6.8",
     "@capacitor/core": "^8.5.0",
@@ -26,6 +29,7 @@
     "@hookform/resolvers": "^3.10.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.109.0",
+    "ai": "^6.0.271",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -58,6 +62,7 @@
     "ruflo": "^3.38.20",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.11"
   }
 }

@@ -1,116 +1,90 @@
 import React from 'react';
 import Link from 'next/link';
 import { Shield, ArrowLeft, Lock, Eye, Server, UserCheck } from 'lucide-react';
+import { ThemeToggle } from '../../components/ui/ThemeContext';
+import { Card, CardContent } from '../../components/ui';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#1E293B] font-sans antialiased">
+    <div className="min-h-screen bg-base text-fg font-sans antialiased transition-colors duration-150">
       {/* Header */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <header className="bg-surface/80 backdrop-blur-md border-b border-line sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
           <Link
             href="/dashboard"
-            className="inline-flex items-center text-sm font-semibold text-[#0F3D3E] hover:text-[#0a292a] transition-colors"
+            className="inline-flex items-center text-xs font-semibold text-fg hover:text-accent transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
             Back to Dashboard
           </Link>
-          <div className="flex items-center space-x-2">
-            <img src="/logo.png" alt="Agento AI" className="w-6 h-6 rounded-md object-contain" />
-            <span className="text-xs font-semibold text-slate-800">Agento AI Legal</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="Agento AI" className="w-5 h-5 rounded-md object-contain" />
+              <span className="text-xs font-semibold text-fg">Agento AI Legal</span>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-8">
-        <div className="border-b border-[#E2E8F0] pb-6">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#E0F2F1] text-[#0F3D3E] text-xs font-bold uppercase tracking-wider mb-3">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <div className="border-b border-line pb-6">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-subtle text-accent text-xs font-bold uppercase tracking-wider mb-3 border border-accent-border">
             <Shield className="w-3.5 h-3.5" />
             <span>Legal Compliance</span>
           </div>
-          <h1 className="text-3xl font-serif font-bold text-[#0F3D3E] tracking-tight sm:text-4xl">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight">
             Privacy Policy
           </h1>
-          <p className="text-sm text-[#64748B] mt-2">
-            Last Updated: August 16, 2026 | Effective Date: August 16, 2026
+          <p className="text-xs text-fg-muted mt-1.5">
+            Last Updated: August 2026 | Effective Date: August 2026
           </p>
         </div>
 
-        <section className="prose prose-slate max-w-none space-y-6 text-sm sm:text-base leading-relaxed text-[#334155]">
-          <div>
-            <h2 className="text-xl font-serif font-bold text-[#0F3D3E] mb-2 flex items-center">
-              <Lock className="w-5 h-5 mr-2 text-[#0F3D3E]" /> 1. Overview & Commitment
-            </h2>
-            <p>
-              Welcome to <strong>WebcoreStudio</strong> (operating the <strong>BizBot OS</strong> platform). We are dedicated to protecting your personal information and respecting your data privacy rights. This Privacy Policy details how we collect, store, process, and safeguard information when you use our WhatsApp conversational commerce software, web dashboards, and mobile applications.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-serif font-bold text-[#0F3D3E] mb-2 flex items-center">
-              <Eye className="w-5 h-5 mr-2 text-[#0F3D3E]" /> 2. Information We Collect
-            </h2>
-            <p>We only collect data necessary to provide our WhatsApp AI business automation services:</p>
-            <ul className="list-disc pl-5 space-y-1.5 mt-2">
-              <li><strong>Account Credentials:</strong> Name, business name, official email address, and phone numbers.</li>
-              <li><strong>Business Catalog Data:</strong> Menus, service offerings, pricing tiers, business hours, and operational policies.</li>
-              <li><strong>WhatsApp Interaction Records:</strong> Inbound and outbound customer messages, inquiry contexts, and automated booking/order payloads.</li>
-              <li><strong>Payment & Billing Data:</strong> Transaction IDs, invoice details, and subscription tiers processed securely via Razorpay (we never store your raw credit/debit card numbers or UPI MPINs).</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-serif font-bold text-[#0F3D3E] mb-2 flex items-center">
-              <Server className="w-5 h-5 mr-2 text-[#0F3D3E]" /> 3. How We Use Your Data
-            </h2>
-            <p>Collected information is utilized strictly for the following business purposes:</p>
-            <ul className="list-disc pl-5 space-y-1.5 mt-2">
-              <li>To power real-time, automated AI customer responses over the official WhatsApp Cloud API.</li>
-              <li>To generate live order books, appointment schedules, and lead notifications for store owners.</li>
-              <li>To process subscription billing, renewals, and invoice generation.</li>
-              <li>To maintain system uptime, prevent unauthorized intrusion, and optimize API performance.</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-serif font-bold text-[#0F3D3E] mb-2 flex items-center">
-              <UserCheck className="w-5 h-5 mr-2 text-[#0F3D3E]" /> 4. Third-Party Service Providers
-            </h2>
-            <p>
-              We collaborate with industry-leading, ISO/SOC-2 certified infrastructure partners to deliver our services:
-            </p>
-            <ul className="list-disc pl-5 space-y-1.5 mt-2">
-              <li><strong>Meta / WhatsApp Cloud API:</strong> Secure message transmission.</li>
-              <li><strong>Razorpay:</strong> RBI-licensed payment gateway for payment processing.</li>
-              <li><strong>Supabase:</strong> End-to-end encrypted database storage with Row-Level Security.</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-serif font-bold text-[#0F3D3E] mb-2">
-              5. Data Security & Retention
-            </h2>
-            <p>
-              We enforce SSL/TLS 256-bit encryption in transit and AES-256 encryption at rest. Your business records and catalogs remain private to your authenticated account. You may request account deletion or data export at any time by contacting our compliance desk.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-serif font-bold text-[#0F3D3E] mb-2">
-              6. Contact Our Privacy Officer
-            </h2>
-            <p>
-              If you have any questions or data requests regarding this Privacy Policy, please reach out to:
-            </p>
-            <div className="bg-white border border-[#E2E8F0] rounded-lg p-4 mt-3 space-y-1 text-sm font-medium">
-              <p><strong>Entity:</strong> WebcoreStudio (BizBot OS)</p>
-              <p><strong>Email:</strong> support@webcorestudios.in / support@bizbotos.in</p>
-              <p><strong>Phone:</strong> +91 97021 57387</p>
-              <p><strong>Location:</strong> Mumbai, Maharashtra, India</p>
+        <Card>
+          <CardContent className="p-6 sm:p-8 space-y-6 text-xs sm:text-sm leading-relaxed text-fg-muted">
+            <div>
+              <h2 className="text-base font-bold text-fg mb-2 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-accent" /> 1. Overview & Commitment
+              </h2>
+              <p>
+                Welcome to <strong>WebCore Studios</strong> (operating the <strong>Agento AI</strong> platform). We are dedicated to protecting your personal information and respecting your data privacy rights. This Privacy Policy details how we collect, store, process, and safeguard information when you use our WhatsApp conversational AI software, web dashboards, and mobile applications.
+              </p>
             </div>
-          </div>
-        </section>
+
+            <div>
+              <h2 className="text-base font-bold text-fg mb-2 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-accent" /> 2. Information We Collect
+              </h2>
+              <p>We only collect data necessary to provide our WhatsApp AI business automation services:</p>
+              <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                <li><strong>Account Credentials:</strong> Name, business name, official email address, and phone numbers.</li>
+                <li><strong>Business Catalog Data:</strong> Menus, service offerings, pricing tiers, business hours, and operational policies.</li>
+                <li><strong>WhatsApp Interaction Records:</strong> Inbound and outbound customer messages, inquiry contexts, and automated booking/order payloads.</li>
+                <li><strong>Payment & Billing Data:</strong> Transaction IDs, invoice details, and subscription tiers processed securely via Razorpay (we never store your raw credit/debit card numbers or UPI MPINs).</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 className="text-base font-bold text-fg mb-2 flex items-center gap-2">
+                <Server className="w-4 h-4 text-accent" /> 3. Data Storage & Security
+              </h2>
+              <p>
+                All data is encrypted in transit (TLS 1.3) and at rest (AES-256) using Supabase Postgres cloud infrastructure with Row-Level Security (RLS) policies enforcing multi-tenant isolation.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-base font-bold text-fg mb-2 flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-accent" /> 4. Data Ownership & Deletion
+              </h2>
+              <p>
+                You retain complete ownership over your business data and customer transaction history. You can permanently delete your entire account and associated records at any time from your Dashboard Billing settings.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

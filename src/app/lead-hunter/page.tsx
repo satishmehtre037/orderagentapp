@@ -486,7 +486,7 @@ export default function LeadHunterPage() {
         let name = t.business_name;
         if (!name || name.startsWith('Lead (')) {
           if (clean === '918779841346' || clean === '8779841346') {
-            name = 'Satish Mehtre (WebCore Demo Lead)';
+            name = 'Satish Mehtre (WebCore Studios)';
           } else {
             const matched = leads.find((l) => (l.phone_number || '').replace(/\D/g, '') === clean);
             if (matched) name = matched.business_name;
@@ -507,7 +507,7 @@ export default function LeadHunterPage() {
         let threadName = t.business_name;
         if (!threadName || threadName.startsWith('Lead (')) {
           if (clean === '918779841346' || clean === '8779841346') {
-            threadName = 'Satish Mehtre (WebCore Demo Lead)';
+            threadName = 'Satish Mehtre (WebCore Studios)';
           } else {
             const matched = leads.find((l) => (l.phone_number || '').replace(/\D/g, '') === clean);
             if (matched) threadName = matched.business_name;
@@ -1004,7 +1004,7 @@ export default function LeadHunterPage() {
     if (!thread) return 'Prospect';
     const clean = (thread.phone || '').replace(/\D/g, '');
     if (clean === '918779841346' || clean === '8779841346') {
-      return 'Satish Mehtre (WebCore Demo Lead)';
+      return 'Satish Mehtre (WebCore Studios)';
     }
     const matchedLead = leads.find((l) => (l.phone_number || '').replace(/\D/g, '') === clean);
     if (matchedLead && matchedLead.business_name && !matchedLead.business_name.startsWith('External Contact')) {
