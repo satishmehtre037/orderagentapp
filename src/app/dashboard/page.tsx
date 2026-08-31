@@ -78,6 +78,7 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>("orders");
@@ -191,6 +192,7 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
     loadDashboardData();
   }, []);
 
@@ -332,8 +334,11 @@ export default function DashboardPage() {
               className="w-10 h-10 rounded-lg object-contain bg-slate-900 border border-white/20 shadow-xs p-1 flex-shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="text-sm font-bold text-fg leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[280px]">
-                {business?.name || (typeof window !== 'undefined' ? localStorage.getItem('biz_name') : '') || "Business"}
+              <h1
+                suppressHydrationWarning
+                className="text-sm font-bold text-fg leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[280px]"
+              >
+                {business?.name || (mounted && typeof window !== 'undefined' ? localStorage.getItem('biz_name') : '') || "Business"}
               </h1>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-surface-subtle border border-line text-fg-muted rounded font-bold tracking-wider">

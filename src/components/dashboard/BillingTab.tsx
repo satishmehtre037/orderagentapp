@@ -88,6 +88,11 @@ export const BillingTab: React.FC<BillingTabProps> = ({
 
   const [countdownText, setCountdownText] = useState('Calculating...');
   const [isTrialEnded, setIsTrialEnded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const updateCountdown = () => {
