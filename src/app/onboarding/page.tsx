@@ -45,6 +45,7 @@ export default function OnboardingPage() {
     error?: string;
     message?: string;
   } | null>(null);
+  const [metaLinkedNotice, setMetaLinkedNotice] = useState<string | null>(null);
 
   const methods = useForm<OnboardingWizardFormData>({
     resolver: zodResolver(onboardingWizardSchema),
@@ -135,16 +136,14 @@ export default function OnboardingPage() {
       const data = await res.json();
       if (data?.whatsapp_number && /^[6-9]\d{9}$/.test(data.whatsapp_number)) {
         setValue('whatsapp_number', data.whatsapp_number, { shouldValidate: true });
+        setMetaLinkedNotice(null);
         setPhoneStatus({
           available: true,
           message: '✅ WhatsApp Business Account Verified & Connected via Meta!',
         });
       } else {
         setValue('whatsapp_number', '', { shouldValidate: false });
-        setPhoneStatus({
-          available: null,
-          message: '✅ Meta Account Linked! Please enter your 10-digit WhatsApp mobile number below.',
-        });
+        setMetaLinkedNotice('✅ Meta Account Linked! Please enter your 10-digit WhatsApp mobile number below.');
       }
     } catch (err) {
       console.error('Embedded signup exchange error:', err);
@@ -606,6 +605,13 @@ export default function OnboardingPage() {
                         <div className="p-3 bg-danger-subtle border border-danger-border text-danger rounded-md text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-150">
                           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                           <span>{phoneStatus.error}</span>
+                        </div>
+                      )}
+
+                      {metaLinkedNotice && !phoneStatus?.available && !phoneStatus?.error && (
+                        <div className="p-3.5 bg-accent/10 border border-accent/30 text-accent rounded-lg text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>{metaLinkedNotice}</span>
                         </div>
                       )}
 
