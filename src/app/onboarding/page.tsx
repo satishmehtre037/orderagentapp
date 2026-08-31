@@ -605,10 +605,14 @@ export default function OnboardingPage() {
                         </div>
                       )}
 
-                      {phoneStatus?.available && (
-                        <div className="p-3.5 bg-success-subtle border border-success-border text-success rounded-lg text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
+                      {phoneStatus?.message && (
+                        <div className={`p-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150 ${
+                          phoneStatus.available === true
+                            ? 'bg-success-subtle border border-success-border text-success'
+                            : 'bg-accent/10 border border-accent/30 text-accent'
+                        }`}>
                           <CheckCircle2 className="w-4 h-4 shrink-0" />
-                          <span>✅ Number ready! Click &quot;Save &amp; Continue&quot; to review and go live.</span>
+                          <span>{phoneStatus.message}</span>
                         </div>
                       )}
                     </div>
