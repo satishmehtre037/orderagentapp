@@ -126,7 +126,11 @@ export default function OnboardingPage() {
       const res = await fetch('/api/meta/embedded-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, email }),
+        body: JSON.stringify({
+          code,
+          email,
+          redirect_uri: window.location.origin + '/meta-callback',
+        }),
       });
       const data = await res.json();
       if (data?.whatsapp_number && /^[6-9]\d{9}$/.test(data.whatsapp_number)) {

@@ -8,10 +8,13 @@ const adminSupabase = supabase;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    let { code, phone_number_id, waba_id, businessId, email, customPin } = body;
+    let { code, phone_number_id, waba_id, businessId, email, customPin, redirect_uri } = body;
 
     const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
     const appSecret = ENV.WHATSAPP_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '';
+
+    const origin = req.headers.get('origin') || 'https://orderagentapp.webcorestudio.dev';
+    const finalRedirectUri = redirect_uri || `${origin}/meta-callback`;
 
     let accessToken = ENV.WHATSAPP_CLOUD_API_TOKEN || process.env.WHATSAPP_CLOUD_API_TOKEN;
     let registeredPhone = '';
@@ -20,9 +23,10 @@ export async function POST(req: Request) {
     if (code && appSecret) {
       try {
         const tokenRes = await fetch(
-          `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}`
+          `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}&redirect_uri=${encodeURIComponent(finalRedirectUri)}`
         );
         const tokenData = await tokenRes.json();
+        console.log('[Meta Token Exchange Result]:', tokenData?.access_token ? 'SUCCESS' : tokenData?.error?.message);
         if (tokenData?.access_token) {
           accessToken = tokenData.access_token;
         }
