@@ -170,15 +170,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       const orderData = await res.json();
       if (!res.ok) throw new Error(orderData.error || 'Failed to initiate checkout.');
 
-      // Helper to remove the custom blurred backdrop overlay
-      const removeBackdrop = () => {
-        const el = document.getElementById('rzp-custom-backdrop');
-        if (el) {
-          el.style.opacity = '0';
-          setTimeout(() => el.remove(), 300);
-        }
-      };
-
       // Sanitize prefill values so Razorpay does not reject them
       const rawContact = typeof window !== 'undefined' ? localStorage.getItem('biz_phone') || '' : '';
       const cleanContact = rawContact.replace(/\D/g, '').slice(-10);
@@ -187,7 +178,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       const rawEmail = typeof window !== 'undefined' ? localStorage.getItem('biz_email') || '' : '';
       const prefillEmail = rawEmail.includes('@') ? rawEmail.trim() : undefined;
 
-      // Razorpay Checkout invocation — 100% default native Razorpay popup
+      // 100% default Razorpay Standard Checkout — no custom config
       const options: any = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TQ8rV6xWi4mag7',
         amount: orderData.amount,
@@ -205,41 +196,10 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           business_id: businessId || '',
           plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
         },
-        config: {
-          display: {
-            blocks: {
-              upi: {
-                name: 'UPI / QR',
-                instruments: [
-                  {
-                    method: 'upi',
-                    flows: ['intent', 'qr', 'collect'],
-                  },
-                ],
-              },
-              other: {
-                name: 'Other Payment Methods',
-                instruments: [
-                  { method: 'card' },
-                  { method: 'netbanking' },
-                  { method: 'wallet' },
-                ],
-              },
-            },
-            sequence: ['block.upi', 'block.other'],
-            preferences: {
-              show_default_blocks: true,
-            },
-          },
-        },
         modal: {
           ondismiss: function () {
             setLoading(false);
-            removeBackdrop();
           },
-        },
-        theme: {
-          backdrop_color: 'rgba(0, 0, 0, 0.65)',
         },
         handler: async function (response: any) {
           try {
@@ -266,7 +226,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({
             setErrorMsg('Payment verification failed. Please contact support.');
           } finally {
             setLoading(false);
-            removeBackdrop();
           }
         },
       };
@@ -292,39 +251,13 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       }
 
       const rzp = new window.Razorpay(options);
-
-      // ---- Custom dark blurred backdrop overlay ----
-      const backdrop = document.createElement('div');
-      backdrop.id = 'rzp-custom-backdrop';
-      Object.assign(backdrop.style, {
-        position: 'fixed',
-        inset: '0',
-        zIndex: '999',           // Razorpay's container is z-index 99999
-        background: 'rgba(0, 0, 0, 0.6)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        transition: 'opacity 0.3s ease',
-        opacity: '0',
-      });
-      document.body.appendChild(backdrop);
-      // Fade in on next frame
-      requestAnimationFrame(() => { backdrop.style.opacity = '1'; });
-
       rzp.on('payment.failed', function (resp: any) {
         setErrorMsg(`Payment failed: ${resp.error?.description || 'Transaction was not completed.'}`);
-        removeBackdrop();
       });
-
-      // Safety net: also clean up on cancel event
-      rzp.on('payment.cancel', () => removeBackdrop());
-
       rzp.open();
     } catch (err: any) {
       console.error('Checkout error:', err);
       setErrorMsg(err.message || 'Error creating payment.');
-      // Clean up backdrop if Razorpay fails to open
-      const el = document.getElementById('rzp-custom-backdrop');
-      if (el) el.remove();
     } finally {
       setLoading(false);
     }
