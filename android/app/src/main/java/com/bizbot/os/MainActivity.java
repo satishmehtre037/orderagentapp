@@ -1,17 +1,22 @@
 package com.bizbot.os;
 
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
 
@@ -44,7 +49,7 @@ public class MainActivity extends BridgeActivity {
             return insets;
         });
 
-        // Ensure WebView settings are configured for checkout.js
+        // Configure WebView for Razorpay & Native UPI Intent deep linking
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;
         if (webView != null) {
             WebSettings settings = webView.getSettings();
@@ -52,6 +57,47 @@ public class MainActivity extends BridgeActivity {
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
+            settings.setSupportMultipleWindows(true);
+
+            Bridge bridge = getBridge();
+            if (bridge != null) {
+                webView.setWebViewClient(new BridgeWebViewClient(bridge) {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                        Uri uri = request.getUrl();
+                        if (uri != null) {
+                            String scheme = uri.getScheme();
+                            String urlStr = uri.toString();
+                            if (scheme != null && (
+                                scheme.equalsIgnoreCase("upi") ||
+                                scheme.equalsIgnoreCase("tez") ||
+                                scheme.equalsIgnoreCase("phonepe") ||
+                                scheme.equalsIgnoreCase("paytmmp") ||
+                                scheme.equalsIgnoreCase("whatsapp") ||
+                                scheme.equalsIgnoreCase("market") ||
+                                scheme.equalsIgnoreCase("intent")
+                            )) {
+                                try {
+                                    Intent intent;
+                                    if (scheme.equalsIgnoreCase("intent")) {
+                                        intent = Intent.parseUri(urlStr, Intent.URI_INTENT_SCHEME);
+                                    } else {
+                                        intent = new Intent(Intent.ACTION_VIEW, uri);
+                                    }
+                                    if (intent != null) {
+                                        view.getContext().startActivity(intent);
+                                        return true;
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        return super.shouldOverrideUrlLoading(view, request);
+                    }
+                });
+            }
         }
     }
 }
+
