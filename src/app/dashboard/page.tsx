@@ -120,10 +120,14 @@ export default function DashboardPage() {
       });
 
       if (bizId) {
-        await supabaseClient
-          .from("businesses")
-          .update({ is_bot_paused: nextPausedState })
-          .eq("id", bizId);
+        await fetch('/api/business', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessId: bizId,
+            is_bot_paused: nextPausedState,
+          }),
+        });
       }
     } catch (err) {
       console.error("Failed to toggle AI pause state:", err);

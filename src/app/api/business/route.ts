@@ -119,6 +119,7 @@ export async function PUT(req: Request) {
     if (name) updatePayload.name = name;
     if (category) updatePayload.category = category;
     if (body.subscription_status) updatePayload.subscription_status = body.subscription_status;
+    if (typeof body.is_bot_paused === 'boolean') updatePayload.is_bot_paused = body.is_bot_paused;
 
     if (whatsapp_number) {
       // Normalize number
