@@ -196,6 +196,33 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           business_id: businessId || '',
           plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
         },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: 'UPI / QR',
+                instruments: [
+                  {
+                    method: 'upi',
+                    flows: ['intent', 'qr', 'collect'],
+                  },
+                ],
+              },
+              other: {
+                name: 'Other Payment Methods',
+                instruments: [
+                  { method: 'card' },
+                  { method: 'netbanking' },
+                  { method: 'wallet' },
+                ],
+              },
+            },
+            sequence: ['block.upi', 'block.other'],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
+        },
         modal: {
           ondismiss: function () {
             setLoading(false);
