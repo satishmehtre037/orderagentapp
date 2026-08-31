@@ -69,6 +69,9 @@ export async function GET(req: Request) {
     if (configMap.category) {
       business.category = configMap.category;
     }
+    if (typeof business.is_bot_paused === 'undefined' && typeof configMap.is_bot_paused !== 'undefined') {
+      business.is_bot_paused = configMap.is_bot_paused === 'true' || configMap.is_bot_paused === true;
+    }
 
     return NextResponse.json({ business, configs: configMap });
   } catch (err: any) {
@@ -114,6 +117,18 @@ export async function PUT(req: Request) {
     const targetBizId = target.id;
     console.log(`[API Business PUT] Updating business ID: ${targetBizId}`);
 
+    // If is_bot_paused is passed, ensure it is safely recorded in business_config
+    if (typeof body.is_bot_paused === 'boolean') {
+      await adminSupabase
+        .from('business_config')
+        .upsert({
+          business_id: targetBizId,
+          config_key: 'is_bot_paused',
+          config_value: body.is_bot_paused ? 'true' : 'false',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'business_id,config_key' });
+    }
+
     // 1. Update business table only if there are fields to update
     const updatePayload: Record<string, any> = {};
     if (name) updatePayload.name = name;
@@ -151,12 +166,30 @@ export async function PUT(req: Request) {
     let updatedBiz: any = null;
 
     if (Object.keys(updatePayload).length > 0) {
-      const { data, error: bizErr } = await adminSupabase
+      let { data, error: bizErr } = await adminSupabase
         .from('businesses')
         .update(updatePayload)
         .eq('id', targetBizId)
         .select()
         .maybeSingle();
+
+      // If updating with is_bot_paused failed due to missing column in businesses table, retry without it
+      if (bizErr && 'is_bot_paused' in updatePayload) {
+        const fallbackPayload = { ...updatePayload };
+        delete fallbackPayload.is_bot_paused;
+        if (Object.keys(fallbackPayload).length > 0) {
+          const fallbackRes = await adminSupabase
+            .from('businesses')
+            .update(fallbackPayload)
+            .eq('id', targetBizId)
+            .select()
+            .maybeSingle();
+          data = fallbackRes.data;
+          bizErr = fallbackRes.error;
+        } else {
+          bizErr = null;
+        }
+      }
 
       if (bizErr) {
         console.error('[API Business Update Error]:', bizErr);
