@@ -327,3 +327,17 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Razorpay Modal Backdrop — Enforce transparent dark frosted glass
+   ========================================================================== */
+.razorpay-container {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+iframe[name*="razorpay"],
+.razorpay-checkout-frame {
+  background: transparent !important;
+}
