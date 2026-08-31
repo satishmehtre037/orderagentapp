@@ -966,7 +966,6 @@ export default function DashboardPage() {
             <span>•</span>
             <span>24/7 Autonomous WhatsApp AI Staff & Business OS</span>
           </div>
-          <div className="flex flex-wrap items-center gap-6">
             <Link href="/privacy" className="hover:text-fg transition-colors">
               Privacy Policy
             </Link>
@@ -974,10 +973,13 @@ export default function DashboardPage() {
               Terms of Service
             </Link>
             <Link href="/refund" className="hover:text-fg transition-colors">
-              Cancellation & Refund Policy
+              Cancellation &amp; Refund Policy
+            </Link>
+            <Link href="/shipping" className="hover:text-fg transition-colors">
+              Shipping &amp; Delivery
             </Link>
             <Link href="/contact" className="hover:text-fg transition-colors">
-              Support & Contact
+              Support &amp; Contact
             </Link>
           </div>
         </div>

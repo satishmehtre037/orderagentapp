@@ -170,12 +170,48 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       const orderData = await res.json();
       if (!res.ok) throw new Error(orderData.error || 'Failed to initiate checkout.');
 
-      // Razorpay Checkout invocation — standard native default Razorpay popup
+      // Sanitize prefill values so Razorpay does not reject them
+      const rawContact = typeof window !== 'undefined' ? localStorage.getItem('biz_phone') || '' : '';
+      const cleanContact = rawContact.replace(/\D/g, '').slice(-10);
+      const prefillContact = cleanContact.length === 10 ? cleanContact : undefined;
+
+      const rawEmail = typeof window !== 'undefined' ? localStorage.getItem('biz_email') || '' : '';
+      const prefillEmail = rawEmail.includes('@') ? rawEmail.trim() : undefined;
+
+      // Razorpay Checkout invocation — 100% standard native Razorpay popup
+      const logoUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/logo.png`
+        : 'https://orderagentapp.webcorestudio.dev/logo.png';
+
       const options: any = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TQ8rV6xWi4mag7',
         amount: orderData.amount,
         currency: 'INR',
         order_id: orderData.orderId,
+        name: 'WebCore Studios',
+        description: selectedBillingCycle === 'annual'
+          ? 'Annual Pro Plan — ₹9,999/year'
+          : 'Monthly Pro Plan — ₹999/month',
+        image: logoUrl,
+        prefill: {
+          ...(prefillEmail ? { email: prefillEmail } : {}),
+          ...(prefillContact ? { contact: prefillContact } : {}),
+        },
+        notes: {
+          business_id: businessId || '',
+          plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
+        },
+        theme: {
+          color: '#0fa958',
+          backdrop_color: 'rgba(0, 0, 0, 0.65)',
+        },
+        modal: {
+          backdropclose: false,
+          escape: true,
+          ondismiss: function () {
+            setLoading(false);
+          },
+        },
         handler: async function (response: any) {
           try {
             const verifyRes = await fetch('/api/billing/verify-payment', {
@@ -193,56 +229,15 @@ export const BillingTab: React.FC<BillingTabProps> = ({
               setSuccessMsg('🎉 Payment successful! Pro Plan activated.');
               if (onSubscriptionUpdated) onSubscriptionUpdated();
               loadPayments();
+            } else {
+              const verifyErr = await verifyRes.json().catch(() => ({}));
+              setErrorMsg(verifyErr.error || 'Payment verification failed.');
             }
           } catch (e: any) {
-            setErrorMsg('Payment verification failed.');
+            setErrorMsg('Payment verification failed. Please contact support.');
           } finally {
             setLoading(false);
           }
-        },
-        name: 'Agento AI — WebcoreStudio',
-        description: selectedBillingCycle === 'annual'
-          ? 'Annual Pro Plan — ₹9,999/year'
-          : 'Monthly Pro Plan — ₹999/month',
-        prefill: {
-          email: typeof window !== 'undefined' ? localStorage.getItem('biz_email') || '' : '',
-          contact: typeof window !== 'undefined' ? localStorage.getItem('biz_phone') || '' : '',
-        },
-        notes: {
-          business_id: businessId,
-          plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
-        },
-        theme: {
-          color: '#6366f1',
-        },
-        modal: {
-          backdropclose: false,
-          escape: true,
-          confirm_close: true,
-        },
-        config: {
-          display: {
-            blocks: {
-              utib: {
-                name: 'Pay using UPI',
-                instruments: [
-                  { method: 'upi' },
-                ],
-              },
-              other: {
-                name: 'Other Methods',
-                instruments: [
-                  { method: 'card' },
-                  { method: 'netbanking' },
-                  { method: 'wallet' },
-                ],
-              },
-            },
-            sequence: ['block.utib', 'block.other'],
-            preferences: {
-              show_default_blocks: true,
-            },
-          },
         },
       };
 
