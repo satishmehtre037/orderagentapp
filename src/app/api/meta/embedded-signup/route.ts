@@ -43,17 +43,79 @@ export async function POST(req: Request) {
             registeredPhone = phoneData.display_phone_number;
           }
         } else {
-          // Discover phone numbers from user's linked WhatsApp Business Accounts
-          const wabaRes = await fetch(`https://graph.facebook.com/v20.0/me/whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name}`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          const wabaData = await wabaRes.json();
-          // Find the specific authorized WABA or first phone number with an active line
-          for (const waba of wabaData?.data || []) {
-            const phone = waba?.phone_numbers?.data?.[0];
-            if (phone?.display_phone_number) {
-              registeredPhone = phone.display_phone_number;
-              break;
+          // 1. Discover WABA IDs from granular_scopes if available
+          let targetWabaIds: string[] = [];
+          try {
+            const appSecret = ENV.WHATSAPP_APP_SECRET || '';
+            const appId = ENV.AGENTIC_AGENCY_APP_ID || ENV.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
+            if (appSecret) {
+              const debugRes = await fetch(`https://graph.facebook.com/v20.0/debug_token?input_token=${accessToken}&access_token=${appId}|${appSecret}`);
+              const debugData = await debugRes.json();
+              const granular = debugData?.data?.granular_scopes || [];
+              for (const g of granular) {
+                if (g?.target_ids?.length) {
+                  targetWabaIds.push(...g.target_ids);
+                }
+              }
+            }
+          } catch (dErr) {
+            console.warn('[Debug Token Inspection Warning]:', dErr);
+          }
+
+          // 2. Fetch direct phone numbers from target WABAs
+          for (const wid of targetWabaIds) {
+            if (registeredPhone) break;
+            try {
+              const pRes = await fetch(`https://graph.facebook.com/v20.0/${wid}/phone_numbers?fields=id,display_phone_number,verified_name`, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+              const pData = await pRes.json();
+              const phone = pData?.data?.[0];
+              if (phone?.display_phone_number) {
+                registeredPhone = phone.display_phone_number;
+                phone_number_id = phone.id || phone_number_id;
+                waba_id = wid;
+                break;
+              }
+            } catch (err) {
+              console.warn(`[WABA ${wid} Phone Fetch Warning]:`, err);
+            }
+          }
+
+          // 3. Fallback: discover via /me/whatsapp_business_accounts
+          if (!registeredPhone) {
+            const wabaRes = await fetch(`https://graph.facebook.com/v20.0/me/whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const wabaData = await wabaRes.json();
+            for (const waba of wabaData?.data || []) {
+              const phone = waba?.phone_numbers?.data?.[0];
+              if (phone?.display_phone_number) {
+                registeredPhone = phone.display_phone_number;
+                phone_number_id = phone.id || phone_number_id;
+                waba_id = waba.id || waba_id;
+                break;
+              }
+            }
+          }
+
+          // 4. Fallback: discover via /me/businesses
+          if (!registeredPhone) {
+            const bizRes = await fetch(`https://graph.facebook.com/v20.0/me/businesses?fields=id,name,owned_whatsapp_business_accounts{id,name,phone_numbers{id,display_phone_number,verified_name}}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const bizData = await bizRes.json();
+            for (const b of bizData?.data || []) {
+              for (const w of b?.owned_whatsapp_business_accounts?.data || []) {
+                const phone = w?.phone_numbers?.data?.[0];
+                if (phone?.display_phone_number) {
+                  registeredPhone = phone.display_phone_number;
+                  phone_number_id = phone.id || phone_number_id;
+                  waba_id = w.id || waba_id;
+                  break;
+                }
+              }
+              if (registeredPhone) break;
             }
           }
         }
