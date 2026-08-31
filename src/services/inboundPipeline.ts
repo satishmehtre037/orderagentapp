@@ -122,6 +122,7 @@ export function verifyPayloadSignature(rawBody: string | Buffer, signatureHeader
 // ---------------------------------------------------------------------------
 
 export interface ParsedInbound {
+  messageId?: string;
   businessNumber: string;
   customerNumber: string;
   messageText: string;
@@ -130,6 +131,76 @@ export interface ParsedInbound {
   isMediaDocument: boolean;
   mediaPayload: { mediaId?: string; mimeType?: string; filename?: string };
   messageType: string;
+}
+
+// ---------------------------------------------------------------------------
+// In-Memory Message Deduplication (Prevents Double AI Replies on Meta Retries)
+// ---------------------------------------------------------------------------
+const PROCESSED_MSG_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const processedMessageIds = new Map<string, number>();
+const inFlightMessageIds = new Set<string>();
+
+export function isMessageProcessed(messageId?: string, customerNumber?: string, messageText?: string): boolean {
+  const now = Date.now();
+
+  // Housekeeping: clean expired IDs
+  if (processedMessageIds.size > 2000) {
+    for (const [id, ts] of processedMessageIds.entries()) {
+      if (now - ts > PROCESSED_MSG_TTL_MS) {
+        processedMessageIds.delete(id);
+      }
+    }
+  }
+
+  // 1. Check primary message ID
+  if (messageId) {
+    if (inFlightMessageIds.has(messageId)) {
+      console.log(`[Webhook Deduplication] 🛡️ Skipping duplicate in-flight message ID: ${messageId}`);
+      return true;
+    }
+    const ts = processedMessageIds.get(messageId);
+    if (ts && now - ts < PROCESSED_MSG_TTL_MS) {
+      console.log(`[Webhook Deduplication] 🛡️ Skipping duplicate already-processed message ID: ${messageId}`);
+      return true;
+    }
+  }
+
+  // 2. Check semantic payload key (customer + text in last 4 seconds)
+  if (customerNumber && messageText) {
+    const semanticKey = `sem_${customerNumber}_${messageText.trim().slice(0, 40)}`;
+    if (inFlightMessageIds.has(semanticKey)) {
+      console.log(`[Webhook Deduplication] 🛡️ Skipping duplicate in-flight message content from ${customerNumber}`);
+      return true;
+    }
+    const semTs = processedMessageIds.get(semanticKey);
+    if (semTs && now - semTs < 5000) {
+      console.log(`[Webhook Deduplication] 🛡️ Skipping duplicate rapid delivery from ${customerNumber}`);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function markMessageInFlight(messageId?: string, customerNumber?: string, messageText?: string): void {
+  if (messageId) inFlightMessageIds.add(messageId);
+  if (customerNumber && messageText) {
+    const semanticKey = `sem_${customerNumber}_${messageText.trim().slice(0, 40)}`;
+    inFlightMessageIds.add(semanticKey);
+  }
+}
+
+export function markMessageDone(messageId?: string, customerNumber?: string, messageText?: string): void {
+  const now = Date.now();
+  if (messageId) {
+    inFlightMessageIds.delete(messageId);
+    processedMessageIds.set(messageId, now);
+  }
+  if (customerNumber && messageText) {
+    const semanticKey = `sem_${customerNumber}_${messageText.trim().slice(0, 40)}`;
+    inFlightMessageIds.delete(semanticKey);
+    processedMessageIds.set(semanticKey, now);
+  }
 }
 
 /** Extracts every message in a Meta webhook payload (a batch may carry several). */
@@ -145,6 +216,7 @@ export async function parseInboundWebhook(body: any): Promise<ParsedInbound[]> {
       const contactProfile = value?.contacts?.[0];
 
       for (const message of value?.messages || []) {
+        const messageId = message.id || '';
         const customerNumber = message.from;
         let messageText = '';
         let isVoiceNote = false;
@@ -201,6 +273,7 @@ export async function parseInboundWebhook(body: any): Promise<ParsedInbound[]> {
         if (!messageText.trim() && !isMediaDocument) continue;
 
         parsed.push({
+          messageId,
           businessNumber,
           customerNumber,
           messageText,
@@ -235,6 +308,24 @@ export async function processWebhookPayload(body: any): Promise<void> {
 }
 
 export async function handleInboundMessage(inbound: ParsedInbound): Promise<void> {
+  const { messageId, businessNumber, customerNumber, messageText, isVoiceNote, isMediaDocument, mediaPayload } = inbound;
+
+  // 0. Deduplication guard — prevent double AI replies if Meta sends duplicate deliveries/retries
+  if (isMessageProcessed(messageId, customerNumber, messageText)) {
+    console.log(`[Webhook] 🛡️ Dropped duplicate webhook message from ${customerNumber}`);
+    return;
+  }
+
+  markMessageInFlight(messageId, customerNumber, messageText);
+
+  try {
+    await executeInboundMessage(inbound);
+  } finally {
+    markMessageDone(messageId, customerNumber, messageText);
+  }
+}
+
+async function executeInboundMessage(inbound: ParsedInbound): Promise<void> {
   const { businessNumber, customerNumber, messageText, isVoiceNote, isMediaDocument, mediaPayload } = inbound;
 
   console.log(`\n======================================================`);
