@@ -200,6 +200,50 @@ export const BillingTab: React.FC<BillingTabProps> = ({
             setLoading(false);
           }
         },
+        name: 'Agento AI — WebcoreStudio',
+        description: selectedBillingCycle === 'annual'
+          ? 'Annual Pro Plan — ₹9,999/year'
+          : 'Monthly Pro Plan — ₹999/month',
+        prefill: {
+          email: typeof window !== 'undefined' ? localStorage.getItem('biz_email') || '' : '',
+          contact: typeof window !== 'undefined' ? localStorage.getItem('biz_phone') || '' : '',
+        },
+        notes: {
+          business_id: businessId,
+          plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
+        },
+        theme: {
+          color: '#6366f1',
+        },
+        modal: {
+          backdropclose: false,
+          escape: true,
+          confirm_close: true,
+        },
+        config: {
+          display: {
+            blocks: {
+              utib: {
+                name: 'Pay using UPI',
+                instruments: [
+                  { method: 'upi' },
+                ],
+              },
+              other: {
+                name: 'Other Methods',
+                instruments: [
+                  { method: 'card' },
+                  { method: 'netbanking' },
+                  { method: 'wallet' },
+                ],
+              },
+            },
+            sequence: ['block.utib', 'block.other'],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
+        },
       };
 
       const loadRazorpayScript = (): Promise<boolean> => {
