@@ -103,6 +103,7 @@ export const EditBusinessInfoTab: React.FC<EditBusinessInfoTabProps> = ({
   const { handleSubmit, reset, setValue, watch } = methods;
 
   useEffect(() => {
+    if (!businessId) return;
     async function loadConfig() {
       try {
         setLoading(true);

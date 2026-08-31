@@ -67,9 +67,12 @@ export const BillingTab: React.FC<BillingTabProps> = ({
   const [deleting, setDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
+    const targetBizId = businessId || (typeof window !== 'undefined' ? localStorage.getItem('biz_id') : '');
+    if (!targetBizId) return;
+
     try {
       setDeleting(true);
-      const res = await fetch(`/api/business?businessId=${encodeURIComponent(businessId)}`, {
+      const res = await fetch(`/api/business?businessId=${encodeURIComponent(targetBizId)}`, {
         method: 'DELETE',
       });
       if (res.ok) {
