@@ -143,10 +143,14 @@ export default function DashboardPage() {
         bizEmail = localStorage.getItem("biz_email");
       }
 
-      if (!bizId && !bizEmail) {
-        const { data: authData } = await supabaseClient.auth.getUser();
-        if (authData?.user) {
-          bizEmail = authData.user.email ?? null;
+      // Always check auth state to get reliable email
+      const { data: authData } = await supabaseClient.auth.getUser();
+      const authEmail = authData?.user?.email ?? null;
+
+      if (!bizEmail && authEmail) {
+        bizEmail = authEmail;
+        if (typeof window !== "undefined") {
+          localStorage.setItem("biz_email", authEmail);
         }
       }
 
@@ -155,11 +159,24 @@ export default function DashboardPage() {
         return;
       }
 
-      const queryParam = bizId
-        ? `id=${encodeURIComponent(bizId)}`
-        : `email=${encodeURIComponent(bizEmail!)}`;
-      const res = await fetch(`/api/business?${queryParam}`);
-      const data = await res.json();
+      // Try fetching by ID first, then by email
+      let data: any = null;
+      if (bizId) {
+        const res = await fetch(`/api/business?id=${encodeURIComponent(bizId)}`);
+        data = await res.json();
+      }
+
+      // If ID lookup returned no business, also try email
+      if (!data?.business && bizEmail) {
+        const res = await fetch(`/api/business?email=${encodeURIComponent(bizEmail)}`);
+        data = await res.json();
+      }
+
+      // Also try with auth email if different from stored email
+      if (!data?.business && authEmail && authEmail !== bizEmail) {
+        const res = await fetch(`/api/business?email=${encodeURIComponent(authEmail)}`);
+        data = await res.json();
+      }
 
       if (data?.business) {
         const bizRecord = data.business;
@@ -186,12 +203,14 @@ export default function DashboardPage() {
           setActiveTab((prev) => (prev === "orders" ? "ca_dashboard" : prev));
         }
       } else {
-        // Only redirect to onboarding if no active user session exists
-        const { data: currentSession } = await supabaseClient.auth.getSession();
-        if (!currentSession?.session?.user) {
-          router.push("/onboarding");
-          return;
+        // No business found for this user — send to onboarding to create one
+        if (typeof window !== "undefined") {
+          // Clear stale localStorage so onboarding starts fresh
+          localStorage.removeItem("biz_id");
+          localStorage.removeItem("biz_name");
         }
+        router.push("/onboarding");
+        return;
       }
     } catch (err) {
       console.error("Error fetching dashboard business:", err);

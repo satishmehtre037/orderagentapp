@@ -43,23 +43,28 @@ export default function LoginPage() {
       if (error) throw error;
 
       if (data.session) {
+        const userEmail = email.trim();
         if (typeof window !== 'undefined') {
-          localStorage.setItem('biz_email', email.trim());
+          localStorage.setItem('biz_email', userEmail);
         }
 
+        // Pre-fetch business to determine where to navigate
+        let hasBusiness = false;
         try {
-          const bizRes = await fetch(`/api/business?email=${encodeURIComponent(email.trim())}`);
+          const bizRes = await fetch(`/api/business?email=${encodeURIComponent(userEmail)}`);
           const bizData = await bizRes.json();
           if (bizData?.business?.id && typeof window !== 'undefined') {
             localStorage.setItem('biz_id', bizData.business.id);
             localStorage.setItem('biz_name', bizData.business.name);
-            localStorage.setItem('biz_email', bizData.business.owner_email || email.trim());
+            localStorage.setItem('biz_email', bizData.business.owner_email || userEmail);
+            hasBusiness = true;
           }
         } catch (e) {
           console.error('Pre-fetch business on login error:', e);
         }
 
-        router.push('/dashboard');
+        // Go directly to the right page — dashboard if business exists, onboarding if not
+        router.push(hasBusiness ? '/dashboard' : '/onboarding');
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Invalid email or password.');
