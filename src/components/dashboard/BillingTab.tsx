@@ -170,23 +170,12 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       const orderData = await res.json();
       if (!res.ok) throw new Error(orderData.error || 'Failed to initiate checkout.');
 
-      // Razorpay Checkout invocation — uses default branding configured in your Razorpay Merchant Dashboard
+      // Razorpay Checkout invocation — standard native default Razorpay popup
       const options: any = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TQ8rV6xWi4mag7',
         amount: orderData.amount,
         currency: 'INR',
         order_id: orderData.orderId,
-        modal: {
-          backdropclose: true,
-          escape: true,
-          confirm_close: false,
-          ondismiss: () => {
-            setLoading(false);
-          },
-        },
-        theme: {
-          backdrop_color: 'rgba(0, 0, 0, 0.75)',
-        },
         handler: async function (response: any) {
           try {
             const verifyRes = await fetch('/api/billing/verify-payment', {
