@@ -8,10 +8,10 @@ const adminSupabase = supabase;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { code, phone_number_id, waba_id, businessId, email, customPin } = body;
+    let { code, phone_number_id, waba_id, businessId, email, customPin } = body;
 
     const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
-    const appSecret = ENV.WHATSAPP_APP_SECRET || process.env.WHATSAPP_APP_SECRET;
+    const appSecret = ENV.WHATSAPP_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '';
 
     let accessToken = ENV.WHATSAPP_CLOUD_API_TOKEN || process.env.WHATSAPP_CLOUD_API_TOKEN;
     let registeredPhone = '';
@@ -46,8 +46,6 @@ export async function POST(req: Request) {
           // 1. Discover WABA IDs from granular_scopes if available
           let targetWabaIds: string[] = [];
           try {
-            const appSecret = ENV.WHATSAPP_APP_SECRET || '';
-            const appId = ENV.AGENTIC_AGENCY_APP_ID || ENV.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
             if (appSecret) {
               const debugRes = await fetch(`https://graph.facebook.com/v20.0/debug_token?input_token=${accessToken}&access_token=${appId}|${appSecret}`);
               const debugData = await debugRes.json();
