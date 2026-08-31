@@ -964,8 +964,9 @@ export default function DashboardPage() {
           <div className="flex items-center space-x-2">
             <span className="font-semibold text-fg">Agento AI</span>
             <span>•</span>
-            <span>24/7 Autonomous WhatsApp AI Staff & Business OS</span>
+            <span>24/7 Autonomous WhatsApp AI Staff &amp; Business OS</span>
           </div>
+          <div className="flex flex-wrap items-center gap-6">
             <Link href="/privacy" className="hover:text-fg transition-colors">
               Privacy Policy
             </Link>
