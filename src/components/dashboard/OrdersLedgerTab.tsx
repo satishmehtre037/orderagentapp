@@ -177,8 +177,26 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
   useEffect(() => {
     fetchOrders(false);
 
+    // 1. Fast, silent background polling every 3 seconds for instant zero-lag updates
+    const pollInterval = setInterval(() => {
+      fetchOrders(true);
+    }, 3000);
+
+    // 2. Instant refetch when the merchant switches back to the Dashboard tab/window
+    const handleFocus = () => {
+      fetchOrders(true);
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        fetchOrders(true);
+      }
+    });
+
+    // 3. Supabase Realtime WebSocket listener
+    let channel: any = null;
     if (businessId) {
-      const channel = supabaseClient
+      channel = supabaseClient
         .channel(`orders_realtime_${businessId}`)
         .on(
           'postgres_changes',
@@ -191,7 +209,10 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
           (payload) => {
             if (payload.eventType === 'INSERT') {
               const newOrder = payload.new as OrderBookingLead;
-              setOrders((prev) => [newOrder, ...prev]);
+              setOrders((prev) => {
+                const exists = prev.some((o) => o.id === newOrder.id);
+                return exists ? prev : [newOrder, ...prev];
+              });
               setRealtimeNotice(`🔔 New entry recorded from ${newOrder.customer_number}`);
               setTimeout(() => setRealtimeNotice(null), 5000);
             } else if (payload.eventType === 'UPDATE') {
@@ -203,11 +224,15 @@ export const OrdersLedgerTab: React.FC<OrdersLedgerTabProps> = ({
           }
         )
         .subscribe();
-
-      return () => {
-        supabaseClient.removeChannel(channel);
-      };
     }
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      if (channel) {
+        supabaseClient.removeChannel(channel);
+      }
+    };
   }, [businessId]);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
