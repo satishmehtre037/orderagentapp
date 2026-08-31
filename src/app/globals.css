@@ -327,3 +327,20 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Razorpay Modal Dark Backdrop with Blur
+   --------------------------------------------------------------------------
+   Gives Razorpay's standard popup window a clean, dimmed, blurred backdrop over
+   the page rather than any plain or solid white background.
+   ========================================================================== */
+.razorpay-container {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.razorpay-backdrop {
+  background-color: transparent !important;
+}
+
