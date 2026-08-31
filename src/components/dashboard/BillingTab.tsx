@@ -167,7 +167,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
         amount: orderData.amount,
         currency: 'INR',
-        name: 'Agento AI',
+        name: 'Webcore Studio',
         description: '24/7 Autonomous WhatsApp AI Staff Pro Plan',
         order_id: orderData.orderId,
         handler: async function (response: any) {
@@ -193,7 +193,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           }
         },
         theme: {
-          color: '#0f172a',
+          color: '#1877F2',
         },
       };
 

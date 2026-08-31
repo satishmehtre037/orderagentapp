@@ -62,7 +62,7 @@ export function Tabs({
       aria-orientation="horizontal"
       style={{ WebkitOverflowScrolling: 'touch' }}
       className={cn(
-        'flex gap-1 overflow-x-auto no-scrollbar overscroll-x-contain touch-pan-x bg-surface-subtle p-1 rounded-md cursor-grab active:cursor-grabbing select-none',
+        'inline-flex w-fit max-w-full gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain touch-pan-x bg-surface-subtle p-1.5 rounded-lg cursor-grab active:cursor-grabbing select-none border border-line-subtle shadow-xs',
         isDragging && 'select-none',
         className,
       )}
