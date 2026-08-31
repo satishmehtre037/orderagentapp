@@ -109,6 +109,11 @@ export default function OnboardingPage() {
           const res = await fetch(`/api/business?email=${encodeURIComponent(userEmail.trim())}`);
           const bizData = await res.json();
           if (bizData?.business?.id) {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('biz_id', bizData.business.id);
+              localStorage.setItem('biz_name', bizData.business.name);
+              localStorage.setItem('biz_email', bizData.business.owner_email || userEmail.trim());
+            }
             router.push('/dashboard');
           }
         } catch (e) {

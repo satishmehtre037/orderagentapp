@@ -163,6 +163,11 @@ export default function DashboardPage() {
 
       if (data?.business) {
         const bizRecord = data.business;
+        if (typeof window !== "undefined") {
+          localStorage.setItem("biz_id", bizRecord.id);
+          localStorage.setItem("biz_name", bizRecord.name);
+          localStorage.setItem("biz_email", bizRecord.owner_email || bizEmail || "");
+        }
         const resolvedCategory = resolveCategoryFromNameOrType(
           bizRecord.category,
           bizRecord.name,
@@ -181,8 +186,12 @@ export default function DashboardPage() {
           setActiveTab((prev) => (prev === "orders" ? "ca_dashboard" : prev));
         }
       } else {
-        router.push("/onboarding");
-        return;
+        // Only redirect to onboarding if no active user session exists
+        const { data: currentSession } = await supabaseClient.auth.getSession();
+        if (!currentSession?.session?.user) {
+          router.push("/onboarding");
+          return;
+        }
       }
     } catch (err) {
       console.error("Error fetching dashboard business:", err);

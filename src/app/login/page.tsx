@@ -44,8 +44,21 @@ export default function LoginPage() {
 
       if (data.session) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('biz_email', email);
+          localStorage.setItem('biz_email', email.trim());
         }
+
+        try {
+          const bizRes = await fetch(`/api/business?email=${encodeURIComponent(email.trim())}`);
+          const bizData = await bizRes.json();
+          if (bizData?.business?.id && typeof window !== 'undefined') {
+            localStorage.setItem('biz_id', bizData.business.id);
+            localStorage.setItem('biz_name', bizData.business.name);
+            localStorage.setItem('biz_email', bizData.business.owner_email || email.trim());
+          }
+        } catch (e) {
+          console.error('Pre-fetch business on login error:', e);
+        }
+
         router.push('/dashboard');
       }
     } catch (err: any) {
