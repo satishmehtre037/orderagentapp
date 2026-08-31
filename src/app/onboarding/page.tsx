@@ -532,7 +532,7 @@ export default function OnboardingPage() {
                           className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-semibold py-2.5 shadow-md flex items-center justify-center gap-2"
                           onClick={() => {
                             if (typeof window !== 'undefined') {
-                              const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
+                              const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '1368087472137493';
                               const redirectUri = encodeURIComponent(window.location.origin + '/meta-callback');
                               const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                               

@@ -10,8 +10,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     let { code, phone_number_id, waba_id, businessId, email, customPin, redirect_uri } = body;
 
-    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
-    const appSecret = ENV.WHATSAPP_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '';
+    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || process.env.WEBCORE_STUDIO_APP_ID || '1368087472137493';
+    const appSecret = process.env.WEBCORE_STUDIO_APP_SECRET || ENV.WHATSAPP_APP_SECRET || process.env.WHATSAPP_APP_SECRET || 'd0ab51314556a00433ccf3ddf00526e8';
 
     const origin = req.headers.get('origin') || 'https://orderagentapp.webcorestudio.dev';
     const finalRedirectUri = redirect_uri || `${origin}/meta-callback`;
