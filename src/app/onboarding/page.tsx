@@ -528,44 +528,16 @@ export default function OnboardingPage() {
                           className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-semibold py-2.5 shadow-md flex items-center justify-center gap-2"
                           onClick={() => {
                             if (typeof window !== 'undefined') {
-                              const configId = process.env.NEXT_PUBLIC_META_CONFIG_ID || '1972596440345762';
                               const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '4476606339291818';
-                              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                               const redirectUri = encodeURIComponent(window.location.origin + '/meta-callback');
+                              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                              
+                              // Clean direct Meta OAuth dialog
+                              const metaUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code`;
 
-                              // On mobile devices, avoid multi-tab popups by redirecting directly
                               if (isMobile) {
-                                const extras = encodeURIComponent(JSON.stringify({ feature: 'whatsapp_embedded_signup', sessionInfoVersion: '2' }));
-                                const metaUrl = configId
-                                  ? `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&config_id=${configId}&response_type=code`
-                                  : `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code&extras=${extras}`;
                                 window.location.href = metaUrl;
-                                return;
-                              }
-
-                              if ((window as any).FB) {
-                                (window as any).FB.login(
-                                  (response: any) => {
-                                    if (response?.authResponse?.code) {
-                                      handleMetaCodeExchange(response.authResponse.code);
-                                    }
-                                  },
-                                  {
-                                    config_id: configId,
-                                    response_type: 'code',
-                                    override_default_response_type: true,
-                                    extras: {
-                                      setup: {},
-                                      featureType: '',
-                                      sessionInfoVersion: '2',
-                                    },
-                                  }
-                                );
                               } else {
-                                const extras = encodeURIComponent(JSON.stringify({ feature: 'whatsapp_embedded_signup', sessionInfoVersion: '2' }));
-                                const metaUrl = configId
-                                  ? `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&config_id=${configId}&response_type=code`
-                                  : `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code&extras=${extras}`;
                                 window.open(metaUrl, 'meta_signup', 'width=600,height=700');
                               }
                             }
