@@ -59,15 +59,14 @@ public class MainActivity extends BridgeActivity {
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
             settings.setSupportMultipleWindows(true);
 
-            // Override User-Agent so Razorpay checkout.js renders the popup
-            // version (which shows UPI / QR code) instead of the mobile
-            // full-page version that hides UPI when it cannot detect apps
-            // inside a WebView.
+            // Strip Android WebView specific markers (; wv and Version/4.0) so Razorpay
+            // identifies the environment as standard Google Chrome Mobile and provides
+            // all native UPI Apps (GPay, PhonePe, Paytm, BHIM) as well as UPI QR options.
             String defaultUA = settings.getUserAgentString();
-            String desktopUA = defaultUA
-                .replaceAll("\\s*Mobile\\s*", " ")
-                .replaceAll("\\s*Android[^;)]*[;)]?", " ");
-            settings.setUserAgentString(desktopUA);
+            String chromeMobileUA = defaultUA
+                .replace("; wv", "")
+                .replaceAll("Version/\\d+\\.\\d+\\s*", "");
+            settings.setUserAgentString(chromeMobileUA);
 
             Bridge bridge = getBridge();
             if (bridge != null) {
@@ -83,6 +82,8 @@ public class MainActivity extends BridgeActivity {
                                 scheme.equalsIgnoreCase("tez") ||
                                 scheme.equalsIgnoreCase("phonepe") ||
                                 scheme.equalsIgnoreCase("paytmmp") ||
+                                scheme.equalsIgnoreCase("bhim") ||
+                                scheme.equalsIgnoreCase("credpay") ||
                                 scheme.equalsIgnoreCase("whatsapp") ||
                                 scheme.equalsIgnoreCase("market") ||
                                 scheme.equalsIgnoreCase("intent")
@@ -95,6 +96,7 @@ public class MainActivity extends BridgeActivity {
                                         intent = new Intent(Intent.ACTION_VIEW, uri);
                                     }
                                     if (intent != null) {
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                         view.getContext().startActivity(intent);
                                         return true;
                                     }
