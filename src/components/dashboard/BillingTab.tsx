@@ -178,11 +178,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       const rawEmail = typeof window !== 'undefined' ? localStorage.getItem('biz_email') || '' : '';
       const prefillEmail = rawEmail.includes('@') ? rawEmail.trim() : undefined;
 
-      // Razorpay Checkout invocation — 100% standard native Razorpay popup
-      const logoUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/logo.png`
-        : 'https://orderagentapp.webcorestudio.dev/logo.png';
-
+      // Razorpay Checkout invocation — 100% default native Razorpay popup
       const options: any = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TQ8rV6xWi4mag7',
         amount: orderData.amount,
@@ -192,7 +188,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         description: selectedBillingCycle === 'annual'
           ? 'Annual Pro Plan — ₹9,999/year'
           : 'Monthly Pro Plan — ₹999/month',
-        image: logoUrl,
         prefill: {
           ...(prefillEmail ? { email: prefillEmail } : {}),
           ...(prefillContact ? { contact: prefillContact } : {}),
@@ -201,13 +196,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
           business_id: businessId || '',
           plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
         },
-        theme: {
-          color: '#0fa958',
-          backdrop_color: 'rgba(0, 0, 0, 0.65)',
-        },
         modal: {
-          backdropclose: false,
-          escape: true,
           ondismiss: function () {
             setLoading(false);
           },
