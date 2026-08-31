@@ -60,6 +60,7 @@ const LEGACY_PLAN_KEYS: Record<string, PlanKey> = {
   annual_10: 'annual_9990',
   monthly: 'monthly_999',
   annual: 'annual_9990',
+  annual_9999: 'annual_9990',
 };
 
 /** Resolves a plan key from untrusted input. Returns null if it is not a real plan. */

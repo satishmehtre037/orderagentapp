@@ -158,12 +158,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({
       setErrorMsg(null);
       setSuccessMsg(null);
 
+      const planKey = selectedBillingCycle === 'annual' ? 'annual_9990' : 'monthly_999';
+
       const res = await fetch('/api/billing/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessId,
-          plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
+          plan: planKey,
         }),
       });
 
@@ -186,7 +188,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         order_id: orderData.orderId,
         name: 'WebCore Studios',
         description: selectedBillingCycle === 'annual'
-          ? 'Annual Pro Plan — ₹9,999/year'
+          ? 'Annual Pro Plan — ₹9,990/year'
           : 'Monthly Pro Plan — ₹999/month',
         prefill: {
           ...(prefillEmail ? { email: prefillEmail } : {}),
@@ -194,7 +196,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({
         },
         notes: {
           business_id: businessId || '',
-          plan: selectedBillingCycle === 'annual' ? 'annual_9999' : 'monthly_999',
+          plan: planKey,
         },
         modal: {
           ondismiss: function () {
