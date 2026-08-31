@@ -328,3 +328,17 @@
   }
 }
 
+/* ==========================================================================
+   Razorpay Checkout Backdrop — dark frosted-glass behind popup
+   ========================================================================== */
+.razorpay-container {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+.razorpay-backdrop {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+

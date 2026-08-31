@@ -59,6 +59,16 @@ public class MainActivity extends BridgeActivity {
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
             settings.setSupportMultipleWindows(true);
 
+            // Override User-Agent so Razorpay checkout.js renders the popup
+            // version (which shows UPI / QR code) instead of the mobile
+            // full-page version that hides UPI when it cannot detect apps
+            // inside a WebView.
+            String defaultUA = settings.getUserAgentString();
+            String desktopUA = defaultUA
+                .replaceAll("\\s*Mobile\\s*", " ")
+                .replaceAll("\\s*Android[^;)]*[;)]?", " ");
+            settings.setUserAgentString(desktopUA);
+
             Bridge bridge = getBridge();
             if (bridge != null) {
                 webView.setWebViewClient(new BridgeWebViewClient(bridge) {

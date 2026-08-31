@@ -228,6 +228,9 @@ export const BillingTab: React.FC<BillingTabProps> = ({
             setLoading(false);
           },
         },
+        theme: {
+          backdrop_color: 'rgba(0, 0, 0, 0.65)',
+        },
         handler: async function (response: any) {
           try {
             const verifyRes = await fetch('/api/billing/verify-payment', {
