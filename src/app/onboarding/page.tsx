@@ -136,9 +136,10 @@ export default function OnboardingPage() {
           message: '✅ WhatsApp Business Account Verified & Connected via Meta!',
         });
       } else {
+        setValue('whatsapp_number', '', { shouldValidate: false });
         setPhoneStatus({
-          available: true,
-          message: '✅ Meta Account Linked! Please confirm your 10-digit WhatsApp mobile number below.',
+          available: null,
+          message: '✅ Meta Account Linked! Please enter your 10-digit WhatsApp mobile number below.',
         });
       }
     } catch (err) {

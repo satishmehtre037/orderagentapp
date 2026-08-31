@@ -48,20 +48,13 @@ export async function POST(req: Request) {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           const wabaData = await wabaRes.json();
-          const firstPhone = wabaData?.data?.[0]?.phone_numbers?.data?.[0];
-          if (firstPhone?.display_phone_number) {
-            registeredPhone = firstPhone.display_phone_number;
-          }
-        }
-
-        // Fallback to default Cloud API Phone ID if available
-        if (!registeredPhone && ENV.WHATSAPP_PHONE_NUMBER_ID && accessToken) {
-          const defaultPhoneRes = await fetch(`https://graph.facebook.com/v20.0/${ENV.WHATSAPP_PHONE_NUMBER_ID}?fields=display_phone_number,verified_name,status`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          const defaultData = await defaultPhoneRes.json();
-          if (defaultData?.display_phone_number) {
-            registeredPhone = defaultData.display_phone_number;
+          // Find the specific authorized WABA or first phone number with an active line
+          for (const waba of wabaData?.data || []) {
+            const phone = waba?.phone_numbers?.data?.[0];
+            if (phone?.display_phone_number) {
+              registeredPhone = phone.display_phone_number;
+              break;
+            }
           }
         }
       } catch (pErr) {
