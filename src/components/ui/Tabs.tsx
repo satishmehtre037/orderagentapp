@@ -62,7 +62,7 @@ export function Tabs({
       aria-orientation="horizontal"
       style={{ WebkitOverflowScrolling: 'touch' }}
       className={cn(
-        'inline-flex w-fit max-w-full gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain touch-pan-x bg-surface-subtle p-1.5 rounded-lg cursor-grab active:cursor-grabbing select-none border border-line-subtle shadow-xs',
+        'flex w-full gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain touch-pan-x bg-surface-subtle p-1.5 rounded-xl cursor-grab active:cursor-grabbing select-none border border-line-subtle shadow-xs',
         isDragging && 'select-none',
         className,
       )}
@@ -83,11 +83,11 @@ export function Tabs({
             onClick={() => onChange(item.key)}
             onKeyDown={(e) => handleKeyDown(e, idx)}
             className={cn(
-              'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5',
-              'text-xs font-medium transition-colors duration-150',
+              'flex-1 justify-center inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2',
+              'text-xs font-semibold transition-all duration-150',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
               isActive
-                ? 'bg-surface text-fg shadow-xs border border-line'
+                ? 'bg-surface text-fg shadow-sm border border-line'
                 : 'text-fg-muted hover:text-fg hover:bg-surface-hover border border-transparent',
             )}
           >

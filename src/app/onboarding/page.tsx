@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -372,6 +373,14 @@ export default function OnboardingPage() {
         <p className="text-xs sm:text-sm text-fg-muted max-w-md mx-auto">
           Complete the 4-step wizard to train and deploy your autonomous customer agent in under 2 minutes.
         </p>
+        <div className="pt-1">
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline font-semibold"
+          >
+            Already created your store on laptop? Sign in to Dashboard &rarr;
+          </Link>
+        </div>
       </div>
 
       {/* Step Indicator */}
