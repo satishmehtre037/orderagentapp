@@ -404,12 +404,22 @@ async function executeInboundMessage(inbound: ParsedInbound): Promise<void> {
   // 4. Pause + subscription guards
   // -------------------------------------------------------------------------
   const configs = await getBusinessConfigs(business.id);
-  const isBotPaused = configs.some(
-    (c) => c.config_key === 'bot_paused' && (c.config_value === true || c.config_value === 'true')
-  );
+  const isBotPaused =
+    (business as any).is_bot_paused === true ||
+    String((business as any).is_bot_paused) === 'true' ||
+    configs.some(
+      (c) =>
+        (c.config_key === 'is_bot_paused' ||
+          c.config_key === 'bot_paused' ||
+          c.config_key === 'is_paused' ||
+          c.config_key === 'ai_paused') &&
+        (c.config_value === true || c.config_value === 'true' || c.config_value === '1')
+    );
 
   if (isBotPaused) {
-    console.log(`[Webhook Pipeline] ⏸️ AI agent paused by owner for "${business.name}". Logged, not answered.`);
+    console.log(
+      `[Webhook Pipeline] ⏸️ AI agent is PAUSED for "${business.name}" (${business.id}). Inbound message logged to conversations, but automated AI reply is withheld.`
+    );
     return;
   }
 
