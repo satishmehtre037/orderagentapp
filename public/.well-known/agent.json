@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Agento AI",
+  "version": "1.0.0",
+  "description": "Autonomous 24/7 WhatsApp AI Staff & Business Operating System for healthcare appointments, tax compliance chasing, and commerce.",
+  "url": "https://orderagentapp.webcorestudio.dev",
+  "provider": {
+    "name": "WebCore Studio",
+    "url": "https://orderagentapp.webcorestudio.dev",
+    "contact": "support@webcorestudios.in"
+  },
+  "documentation": {
+    "llms_txt": "https://orderagentapp.webcorestudio.dev/llms.txt",
+    "llms_full_txt": "https://orderagentapp.webcorestudio.dev/llms-full.txt",
+    "openapi": "https://orderagentapp.webcorestudio.dev/openapi.json",
+    "api_docs": "https://orderagentapp.webcorestudio.dev/api-docs",
+    "sitemap": "https://orderagentapp.webcorestudio.dev/sitemap.xml"
+  },
+  "capabilities": [
+    "whatsapp_inbound_chat_reasoning",
+    "whatsapp_voice_transcription_whisper",
+    "hospital_opd_booking_and_reminders",
+    "diagnostic_report_ocr_delivery",
+    "ca_compliance_deadline_countdown",
+    "ca_document_collection_ocr",
+    "razorpay_upi_order_management"
+  ],
+  "authentication": {
+    "type": "bearer",
+    "header": "Authorization"
+  }
+}

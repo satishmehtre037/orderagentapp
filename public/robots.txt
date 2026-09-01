@@ -1,0 +1,45 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/admin/
+
+User-agent: GPTBot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /api-docs
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /openapi.json
+Disallow: /dashboard/
+Disallow: /api/admin/
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /api-docs
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /openapi.json
+Disallow: /dashboard/
+Disallow: /api/admin/
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /api-docs
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /openapi.json
+Disallow: /dashboard/
+Disallow: /api/admin/
+
+Sitemap: https://orderagentapp.webcorestudio.dev/sitemap.xml

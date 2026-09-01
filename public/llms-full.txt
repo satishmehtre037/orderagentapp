@@ -1,0 +1,71 @@
+# Agento AI — Full Machine-Readable Architectural & Integration Guide
+
+## Overview
+Agento AI is a production-grade multi-tenant AI Business Operating System engineered by WebCore Studio. It connects Meta's WhatsApp Cloud Business API directly to low-latency LLM models (Claude 3.5 Sonnet / Groq Llama 3) and custom business workflow engines.
+
+Canonical Domain: https://orderagentapp.webcorestudio.dev
+OpenAPI 3.1 Spec: https://orderagentapp.webcorestudio.dev/openapi.json
+Developer Guide: https://orderagentapp.webcorestudio.dev/api-docs
+XML Sitemap: https://orderagentapp.webcorestudio.dev/sitemap.xml
+
+---
+
+## Autonomous Workflows & Jobs
+
+### 1. Hospital OPD Booking & Patient Care Workflow
+- **Patient Interaction Flow**:
+  1. Patient messages the hospital's WhatsApp number.
+  2. The AI assistant answers department questions, presents doctor OPD schedules, and collects patient details.
+  3. A new appointment token is allocated in `hospital_appointments`.
+  4. The automated reminder engine scans upcoming slots every 15 minutes and sends 24-hour and 2-hour interactive reminders (with `1=Confirm`, `2=Reschedule`, `3=Cancel` action options).
+  5. When a doctor completes the consultation, the survey engine automatically asks for a 1-5 star rating. 5-star ratings prompt an invitation to write a Google Review, while low ratings immediately escalate to the patient care desk.
+
+### 2. CA Firm & Tax Consultancy Workflow
+- **Client & Filing Flow**:
+  1. CA firm registers corporate and individual clients in `ca_clients`.
+  2. The compliance engine scans upcoming GST, TDS, and ITR deadlines every morning.
+  3. If required documents are missing, WhatsApp chasing messages are dispatched with secure upload prompts.
+  4. Clients upload PDF documents (Bank statements, Form 16, purchase invoices) directly to WhatsApp.
+  5. Files are OCR processed, classified into `ca_client_documents`, and stored securely in Supabase Storage with signed tokens.
+
+### 3. Retail & E-Commerce Order Flow
+- **Order & Payment Flow**:
+  1. Shopper browses product catalog via WhatsApp keywords or natural language.
+  2. AI assembles line items, applies dynamic tax/discounts, and generates a live Razorpay UPI checkout link.
+  3. Once paid, the Razorpay webhook verifies HMAC-SHA256 signatures, transitions the order to `paid`, generates a PDF invoice, and notifies the merchant.
+
+---
+
+## REST API Specification Summary
+
+### Common Headers
+- `Content-Type: application/json`
+- `Authorization: Bearer <TOKEN>` (or `x-business-id: <UUID>`)
+- `Accept: application/json` (or `Accept: text/markdown` for markdown representation)
+
+### Key Endpoints
+1. `GET /api/hospital/appointments` — List appointments. Query params: `business_id` (required), `date` (YYYY-MM-DD), `doctor_name`, `status`.
+2. `POST /api/hospital/appointments` — Create appointment. Body: `{ business_id, patient_name, patient_phone, doctor_name, department, slot_time, reason }`.
+3. `PUT /api/hospital/appointments` — Update status. Body: `{ id, business_id, status: "confirmed" | "completed" | "cancelled" | "rescheduled" }`.
+4. `GET /api/hospital/doctors` — List active doctors. Query param: `business_id`.
+5. `GET /api/hospital/reports` — List lab reports. Query param: `business_id`.
+6. `POST /api/hospital/reports` — Upload and dispatch report. Body: `{ business_id, patient_name, patient_phone, doctor_name, report_type, file_url, ai_summary, is_critical }`.
+7. `GET /api/ca/compliance` — List compliance deadlines. Query param: `business_id`.
+8. `POST /api/hospital/cron/trigger/{jobName}` — Trigger cron scan (`reminders`, `feedback_surveys`, `missed_followups`, `all`).
+
+---
+
+## Security & Verification Standards
+- **Meta Webhook Signatures**: SHA-256 HMAC verification via `x-hub-signature-256` matching `process.env.WHATSAPP_APP_SECRET`.
+- **Razorpay Signatures**: SHA-256 HMAC verification via `x-razorpay-signature` matching `process.env.RAZORPAY_KEY_SECRET`.
+- **Tenant Isolation**: Strict UUID verification in `requireBusiness.ts` guaranteeing that tenant queries never cross data boundaries.
+- **Opt-Out Compliance**: Immediate handling of "STOP", "UNSUBSCRIBE", and "CANCEL" keywords adhering to WhatsApp Business messaging policies.
+
+---
+
+## Contact & Governance
+- Parent Organization: WebCore Studio
+- Support: support@webcorestudios.in
+- Phone: +91 87798 41346
+- Address: WebCore Studio Tech Hub, Mumbai, Maharashtra 400001, India
+- License: Proprietary SaaS (All Rights Reserved)
