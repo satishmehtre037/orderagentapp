@@ -34,9 +34,12 @@ export default function HospitalAutomationTab({ businessId }: HospitalAutomation
   const handleTriggerJob = async (jobName: string) => {
     try {
       setRunningJob(jobName);
-      const res = await fetch(`/api/hospital/cron/trigger/${jobName}`, {
+      const res = await fetch(`/api/hospital/cron/trigger/${jobName}?${businessId ? `business_id=${businessId}` : ''}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(businessId ? { 'x-business-id': businessId } : {}),
+        },
         body: JSON.stringify({ business_id: businessId }),
       });
       const data = await res.json();

@@ -11,8 +11,8 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ jobName: string }> }
 ) {
-  // Enforce shared secret authorization
-  const auth = requireCronAuth(req);
+  // Enforce shared secret or business session authorization
+  const auth = await requireCronAuth(req);
   if (!auth.authorized && auth.errorResponse) {
     return auth.errorResponse;
   }

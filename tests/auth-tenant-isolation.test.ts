@@ -13,7 +13,7 @@ describe('Authentication & Tenant Isolation Engine', () => {
   });
 
   describe('requireCronAuth', () => {
-    it('should authorize requests with valid x-cron-secret header', () => {
+    it('should authorize requests with valid x-cron-secret header', async () => {
       const req = new Request('http://localhost:3000/api/hospital/cron/trigger/all', {
         method: 'POST',
         headers: {
@@ -21,12 +21,12 @@ describe('Authentication & Tenant Isolation Engine', () => {
         },
       });
 
-      const auth = requireCronAuth(req);
+      const auth = await requireCronAuth(req);
       expect(auth.authorized).toBe(true);
       expect(auth.errorResponse).toBeNull();
     });
 
-    it('should authorize requests with valid Bearer token matching cron secret', () => {
+    it('should authorize requests with valid Bearer token matching cron secret', async () => {
       const req = new Request('http://localhost:3000/api/hospital/cron/trigger/all', {
         method: 'POST',
         headers: {
@@ -34,7 +34,7 @@ describe('Authentication & Tenant Isolation Engine', () => {
         },
       });
 
-      const auth = requireCronAuth(req);
+      const auth = await requireCronAuth(req);
       expect(auth.authorized).toBe(true);
       expect(auth.errorResponse).toBeNull();
     });
@@ -43,7 +43,7 @@ describe('Authentication & Tenant Isolation Engine', () => {
       const reqNoSecret = new Request('http://localhost:3000/api/hospital/cron/trigger/all', {
         method: 'POST',
       });
-      const authNoSecret = requireCronAuth(reqNoSecret);
+      const authNoSecret = await requireCronAuth(reqNoSecret);
       expect(authNoSecret.authorized).toBe(false);
       expect(authNoSecret.errorResponse?.status).toBe(401);
 
@@ -53,7 +53,7 @@ describe('Authentication & Tenant Isolation Engine', () => {
           'x-cron-secret': 'wrong_secret_attacker',
         },
       });
-      const authWrongSecret = requireCronAuth(reqWrongSecret);
+      const authWrongSecret = await requireCronAuth(reqWrongSecret);
       expect(authWrongSecret.authorized).toBe(false);
       expect(authWrongSecret.errorResponse?.status).toBe(401);
     });

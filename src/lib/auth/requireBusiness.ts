@@ -97,8 +97,9 @@ export async function requireBusiness(req: Request): Promise<RequireBusinessResu
       new URL(req.url, 'http://localhost').searchParams.get('businessId') ||
       new URL(req.url, 'http://localhost').searchParams.get('id');
 
-    // If method is POST/PUT/PATCH/DELETE and explicitId was not found in headers or URL, inspect body
-    if (!explicitId && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    // If method is POST/PUT/PATCH/DELETE and explicitId was not found in headers or URL, inspect body if json
+    const contentType = req.headers.get('content-type') || '';
+    if (!explicitId && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && contentType.includes('application/json') && req.body) {
       try {
         const clonedReq = req.clone();
         const jsonBody = await clonedReq.json().catch(() => null);
@@ -146,7 +147,7 @@ export async function requireBusiness(req: Request): Promise<RequireBusinessResu
     }
 
     // 5. In local development only, if single business exists, fallback gracefully
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isDev = process.env.NODE_ENV === 'development';
     if (isDev) {
       const { data: fallbackBiz } = await supabaseAdmin
         .from('businesses')
@@ -194,29 +195,45 @@ export async function requireBusiness(req: Request): Promise<RequireBusinessResu
 }
 
 /**
- * Shared secret verification for cron triggers and background system jobs.
+ * Shared secret verification for cron triggers and background system jobs,
+ * OR authorized dashboard user session / verified business context.
  * Prevents unauthorized mass WhatsApp broadcasts and API quota drainage.
  */
-export function requireCronAuth(req: Request): { authorized: boolean; errorResponse: NextResponse | null } {
+export async function requireCronAuth(req: Request): Promise<{ authorized: boolean; businessId?: string | null; errorResponse: NextResponse | null }> {
   const secret = process.env.CRON_SECRET || 'bizbot_cron_secret_2026';
   const headerSecret = req.headers.get('x-cron-secret') || '';
   const authHeader = req.headers.get('authorization') || '';
   const bearerSecret = authHeader.startsWith('Bearer ') ? authHeader.replace('Bearer ', '').trim() : '';
 
-  const isValid = headerSecret === secret || bearerSecret === secret;
+  const isValidSecret = headerSecret === secret || (bearerSecret && bearerSecret === secret);
 
-  if (!isValid) {
-    return {
-      authorized: false,
-      errorResponse: NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized: Invalid or missing cron execution secret (x-cron-secret header required).',
-        },
-        { status: 401 }
-      ),
-    };
+  if (isValidSecret) {
+    return { authorized: true, errorResponse: null };
   }
 
-  return { authorized: true, errorResponse: null };
+  // If request carries business credentials or headers, verify business owner authorization
+  const hasAuth =
+    authHeader.startsWith('Bearer ') ||
+    req.headers.has('x-business-id') ||
+    req.headers.has('cookie') ||
+    new URL(req.url, 'http://localhost').searchParams.has('business_id') ||
+    new URL(req.url, 'http://localhost').searchParams.has('businessId');
+
+  if (hasAuth) {
+    const bizAuth = await requireBusiness(req);
+    if (!bizAuth.errorResponse && bizAuth.businessId) {
+      return { authorized: true, businessId: bizAuth.businessId, errorResponse: null };
+    }
+  }
+
+  return {
+    authorized: false,
+    errorResponse: NextResponse.json(
+      {
+        success: false,
+        error: 'Unauthorized: Invalid or missing cron execution secret (x-cron-secret header required).',
+      },
+      { status: 401 }
+    ),
+  };
 }

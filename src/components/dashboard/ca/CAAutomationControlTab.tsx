@@ -27,8 +27,13 @@ export default function CAAutomationControlTab({ businessId, businessName }: CAA
     setRunningJob(jobName);
     setTestResult(null);
     try {
-      const res = await fetch(`/api/ca/cron/trigger/${jobName}`, {
+      const res = await fetch(`/api/ca/cron/trigger/${jobName}?${businessId ? `business_id=${businessId}` : ''}`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(businessId ? { 'x-business-id': businessId } : {}),
+        },
+        body: JSON.stringify({ business_id: businessId }),
       });
       const data = await res.json();
       setTestResult({ jobName, data });
