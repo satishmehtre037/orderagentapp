@@ -87,10 +87,13 @@ export default function HospitalAppointmentsTab({
 
   const handleStatusUpdate = async (id: string, newStatus: HospitalAppointmentStatus) => {
     try {
-      const res = await fetch('/api/hospital/appointments', {
+      const res = await fetch(`/api/hospital/appointments?${businessId ? `business_id=${businessId}` : ''}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: newStatus }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(businessId ? { 'x-business-id': businessId } : {}),
+        },
+        body: JSON.stringify({ id, business_id: businessId, status: newStatus }),
       });
       const data = await res.json();
       if (data.success) {

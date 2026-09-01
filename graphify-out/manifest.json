@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "src/components/dashboard/hospital/HospitalAppointmentsTab.tsx": {
-    "mtime": 1788258518.033143,
-    "seen": 1788258710.957583,
-    "ast_hash": "ee911255a0864a462371325fa29eca55",
+    "mtime": 1788258962.10126,
+    "seen": 1788259041.2089963,
+    "ast_hash": "69fe76b8688074ff45a770dc4bf2f314",
     "semantic_hash": ""
   },
   "src/components/dashboard/hospital/HospitalAutomationTab.tsx": {
@@ -1302,9 +1302,9 @@
     "semantic_hash": ""
   },
   "src/lib/auth/requireBusiness.ts": {
-    "mtime": 1788258270.3575468,
-    "seen": 1788258710.9655397,
-    "ast_hash": "4ef724bbca88abb593cb4e5e020c50b2",
+    "mtime": 1788258944.029783,
+    "seen": 1788259041.2198715,
+    "ast_hash": "778f589bac1481b3d6006dd6069652b0",
     "semantic_hash": ""
   },
   "src/lib/constants/categoryPresets.ts": {

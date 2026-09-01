@@ -90,12 +90,43 @@ export async function requireBusiness(req: Request): Promise<RequireBusinessResu
       }
     }
 
-    // 4. Resolve via explicit verified business ID (header or query param)
-    const explicitId =
+    // 4. Resolve via explicit verified business ID (header, query param, or JSON body)
+    let explicitId =
       req.headers.get('x-business-id') ||
       new URL(req.url, 'http://localhost').searchParams.get('business_id') ||
       new URL(req.url, 'http://localhost').searchParams.get('businessId') ||
       new URL(req.url, 'http://localhost').searchParams.get('id');
+
+    // If method is POST/PUT/PATCH/DELETE and explicitId was not found in headers or URL, inspect body
+    if (!explicitId && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      try {
+        const clonedReq = req.clone();
+        const jsonBody = await clonedReq.json().catch(() => null);
+        if (jsonBody && typeof jsonBody === 'object') {
+          explicitId = jsonBody.business_id || jsonBody.businessId;
+
+          // If body has an entity ID (e.g. appointment id), resolve the business ID from the entity
+          if (!explicitId && jsonBody.id && UUID_RE.test(jsonBody.id)) {
+            const { data: b } = await supabaseAdmin.from('businesses').select('*').eq('id', jsonBody.id).maybeSingle();
+            if (b) {
+              return {
+                business: b,
+                businessId: b.id,
+                user: user || { id: b.id, email: b.owner_email || 'owner@business.com' },
+                errorResponse: null,
+              };
+            }
+
+            const { data: appt } = await supabaseAdmin.from('hospital_appointments').select('business_id').eq('id', jsonBody.id).maybeSingle();
+            if (appt?.business_id) {
+              explicitId = appt.business_id;
+            }
+          }
+        }
+      } catch (bodyErr) {
+        // Ignored
+      }
+    }
 
     if (explicitId && UUID_RE.test(explicitId)) {
       const { data: matchedBusiness } = await supabaseAdmin
