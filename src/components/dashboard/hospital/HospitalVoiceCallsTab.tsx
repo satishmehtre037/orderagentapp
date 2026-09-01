@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { HospitalVoiceCall } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
+import { supabaseClient } from '@/lib/supabase/client';
 import {
   Button,
   Card,
@@ -42,23 +43,41 @@ export default function HospitalVoiceCallsTab({ businessId }: HospitalVoiceCalls
 
   const { showToast } = useToast();
 
-  const fetchCalls = async () => {
+  const fetchCalls = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await fetch(`/api/hospital/voice-calls?${businessId ? `business_id=${businessId}` : ''}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.calls)) {
+      const data = await res.json().catch(() => ({}));
+      if (data?.success && Array.isArray(data.calls)) {
         setCalls(data.calls);
       }
     } catch (e) {
       console.error('Error fetching voice calls:', e);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCalls();
+    fetchCalls(true);
+
+    const interval = setInterval(() => {
+      fetchCalls(false);
+    }, 3500);
+
+    const channel = supabaseClient
+      .channel(`hospital-voice-live-${businessId || 'global'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hospital_voice_calls' },
+        () => fetchCalls(false)
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabaseClient.removeChannel(channel);
+    };
   }, [businessId]);
 
   const handleTriggerManualCall = async (e: React.FormEvent) => {
@@ -166,7 +185,7 @@ export default function HospitalVoiceCallsTab({ businessId }: HospitalVoiceCalls
           <Button
             variant="secondary"
             size="sm"
-            onClick={fetchCalls}
+            onClick={() => fetchCalls(true)}
             title="Refresh Call Log"
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >

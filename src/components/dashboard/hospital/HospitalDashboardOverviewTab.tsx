@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { HospitalAppointment, HospitalReport, HospitalVoiceCall, HospitalFeedback, DashboardTab } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
+import { supabaseClient } from '@/lib/supabase/client';
 import {
   Button,
   Card,
@@ -64,9 +65,9 @@ export default function HospitalDashboardOverviewTab({
 
   const { showToast } = useToast();
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const todayStr = new Date().toISOString().split('T')[0];
       const bizParam = businessId ? `business_id=${encodeURIComponent(businessId)}` : '';
 
@@ -81,20 +82,20 @@ export default function HospitalDashboardOverviewTab({
       ]);
 
       const [apptData, allApptData, reportsData, voiceData, feedbackData, convData] = await Promise.all([
-        apptRes.json(),
-        allApptRes.json(),
-        reportsRes.json(),
-        voiceRes.json(),
-        feedbackRes.json(),
+        apptRes.json().catch(() => ({})),
+        allApptRes.json().catch(() => ({})),
+        reportsRes.json().catch(() => ({})),
+        voiceRes.json().catch(() => ({})),
+        feedbackRes.json().catch(() => ({})),
         convRes.json().catch(() => ({})),
       ]);
 
-      const allAppts: HospitalAppointment[] = allApptData.appointments || [];
-      const todayAppts: HospitalAppointment[] = apptData.appointments || [];
-      const allReports: HospitalReport[] = reportsData.reports || [];
-      const allCalls: HospitalVoiceCall[] = voiceData.calls || [];
-      const allFeedback: HospitalFeedback[] = feedbackData.feedback || [];
-      const totalConversations: number = Array.isArray(convData.conversations) ? convData.conversations.length : 0;
+      const allAppts: HospitalAppointment[] = Array.isArray(allApptData?.appointments) ? allApptData.appointments : [];
+      const todayAppts: HospitalAppointment[] = Array.isArray(apptData?.appointments) ? apptData.appointments : [];
+      const allReports: HospitalReport[] = Array.isArray(reportsData?.reports) ? reportsData.reports : [];
+      const allCalls: HospitalVoiceCall[] = Array.isArray(voiceData?.calls) ? voiceData.calls : [];
+      const allFeedback: HospitalFeedback[] = Array.isArray(feedbackData?.feedback) ? feedbackData.feedback : [];
+      const totalConversations: number = Array.isArray(convData?.conversations) ? convData.conversations.length : 0;
 
       setAppointments(todayAppts.length > 0 ? todayAppts : allAppts.slice(0, 5));
       setReports(allReports.slice(0, 4));
@@ -127,12 +128,45 @@ export default function HospitalDashboardOverviewTab({
     } catch (e) {
       console.error('Error fetching hospital dashboard overview data:', e);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(true);
+
+    const interval = setInterval(() => {
+      fetchDashboardData(false);
+    }, 3500);
+
+    const channel = supabaseClient
+      .channel(`hospital-overview-live-${businessId || 'global'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hospital_appointments' },
+        () => fetchDashboardData(false)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hospital_reports' },
+        () => fetchDashboardData(false)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hospital_voice_calls' },
+        () => fetchDashboardData(false)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hospital_feedback' },
+        () => fetchDashboardData(false)
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabaseClient.removeChannel(channel);
+    };
   }, [businessId]);
 
   const apptColumns: Column<HospitalAppointment>[] = [
@@ -250,7 +284,7 @@ export default function HospitalDashboardOverviewTab({
               variant="secondary"
               size="sm"
               onClick={() => {
-                fetchDashboardData();
+                fetchDashboardData(true);
                 showToast({ title: 'Refreshing', message: 'Clinical data synced with Supabase.', type: 'info' });
               }}
               title="Refresh Ledger"
@@ -264,7 +298,7 @@ export default function HospitalDashboardOverviewTab({
               onClick={onOpenNewAppointment}
               leftIcon={<Plus className="w-4 h-4" />}
             >
-              + Book Consultation
+              Book Consultation
             </Button>
           </div>
         </CardHeader>

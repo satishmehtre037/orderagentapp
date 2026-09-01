@@ -192,7 +192,7 @@ export default function HospitalPatientsTab({
               onClick={onOpenNewPatient}
               leftIcon={<Plus className="w-4 h-4" />}
             >
-              + Register Patient
+              Register Patient
             </Button>
           </div>
         </CardHeader>

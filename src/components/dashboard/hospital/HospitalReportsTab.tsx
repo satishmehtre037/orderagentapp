@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { HospitalReport } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
+import { supabaseClient } from '@/lib/supabase/client';
 import {
   Button,
   Card,
@@ -43,23 +44,41 @@ export default function HospitalReportsTab({
 
   const { showToast } = useToast();
 
-  const fetchReports = async () => {
+  const fetchReports = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await fetch(`/api/hospital/reports?${businessId ? `business_id=${businessId}` : ''}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.reports)) {
+      const data = await res.json().catch(() => ({}));
+      if (data?.success && Array.isArray(data.reports)) {
         setReports(data.reports);
       }
     } catch (e) {
       console.error('Error fetching hospital reports:', e);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchReports();
+    fetchReports(true);
+
+    const interval = setInterval(() => {
+      fetchReports(false);
+    }, 3500);
+
+    const channel = supabaseClient
+      .channel(`hospital-reports-live-${businessId || 'global'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hospital_reports' },
+        () => fetchReports(false)
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabaseClient.removeChannel(channel);
+    };
   }, [businessId]);
 
   const handleDeliverReport = async (report: HospitalReport) => {
@@ -208,7 +227,7 @@ export default function HospitalReportsTab({
             <Button
               variant="secondary"
               size="sm"
-              onClick={fetchReports}
+              onClick={() => fetchReports(true)}
               title="Refresh Reports"
               leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
             >
@@ -220,7 +239,7 @@ export default function HospitalReportsTab({
               onClick={onOpenUploadReport}
               leftIcon={<Plus className="w-4 h-4" />}
             >
-              + Publish Lab Report
+              Publish Lab Report
             </Button>
           </div>
         </CardHeader>

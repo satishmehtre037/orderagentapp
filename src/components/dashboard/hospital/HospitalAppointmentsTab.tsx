@@ -286,7 +286,7 @@ export default function HospitalAppointmentsTab({
               onClick={onOpenNewAppointment}
               leftIcon={<Plus className="w-4 h-4" />}
             >
-              + Book Consultation
+              Book Consultation
             </Button>
           </div>
         </CardHeader>

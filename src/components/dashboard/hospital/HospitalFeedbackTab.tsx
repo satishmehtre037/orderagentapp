@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { HospitalFeedback } from '@/types';
 import { useToast } from '@/components/ui/ToastProvider';
+import { supabaseClient } from '@/lib/supabase/client';
 import {
   Button,
   Card,
@@ -31,23 +32,41 @@ export default function HospitalFeedbackTab({ businessId }: HospitalFeedbackTabP
 
   const { showToast } = useToast();
 
-  const fetchFeedback = async () => {
+  const fetchFeedback = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await fetch(`/api/hospital/feedback?${businessId ? `business_id=${businessId}` : ''}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.feedback)) {
+      const data = await res.json().catch(() => ({}));
+      if (data?.success && Array.isArray(data.feedback)) {
         setFeedbackList(data.feedback);
       }
     } catch (e) {
       console.error('Error fetching feedback:', e);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFeedback();
+    fetchFeedback(true);
+
+    const interval = setInterval(() => {
+      fetchFeedback(false);
+    }, 3500);
+
+    const channel = supabaseClient
+      .channel(`hospital-feedback-live-${businessId || 'global'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hospital_feedback' },
+        () => fetchFeedback(false)
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabaseClient.removeChannel(channel);
+    };
   }, [businessId]);
 
   const unhappyCount = feedbackList.filter((f) => (f.rating || 5) <= 3).length;
@@ -134,7 +153,7 @@ export default function HospitalFeedbackTab({ businessId }: HospitalFeedbackTabP
           <Button
             variant="secondary"
             size="sm"
-            onClick={fetchFeedback}
+            onClick={() => fetchFeedback(true)}
             title="Refresh Feedback"
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >
