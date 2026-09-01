@@ -5,9 +5,9 @@ import { ThemeToggle } from '../../components/ui/ThemeContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui';
 
 export const metadata = {
-  title: 'Developer API & Integration Guide | Agento AI by WebCore Studio',
+  title: 'Agento AI by WebCore Studio — Developer API Documentation & OpenAPI Spec',
   description:
-    'Complete REST API documentation, OpenAPI 3.1 specification, Webhook specifications, and LLM agent integration guide for Agento AI.',
+    'Official Developer API Documentation and OpenAPI 3.1 Specification for Agento AI by WebCore Studio. Integrate 24/7 WhatsApp AI staff, OPD appointment bookings, and automated business workflows.',
   alternates: {
     canonical: 'https://orderagentapp.webcorestudio.dev/api-docs',
   },

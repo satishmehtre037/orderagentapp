@@ -56,6 +56,11 @@
               }
             }
           },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
@@ -85,6 +90,11 @@
               }
             }
           },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }

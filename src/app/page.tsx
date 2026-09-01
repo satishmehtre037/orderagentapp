@@ -81,7 +81,7 @@ export default function Home() {
       {/* Semantic, accessible content for AI crawlers, search engines, and No-JS agents */}
       <section className="sr-only p-8 max-w-4xl mx-auto space-y-6 text-slate-300">
         <h1 className="text-3xl font-bold text-white">
-          Agento AI — 24/7 Autonomous WhatsApp AI Staff & Business Operating System
+          Agento AI by WebCore Studio — 24/7 Autonomous WhatsApp AI Staff & Business Operating System
         </h1>
         <p>
           Agento AI by WebCore Studio is an autonomous multi-tenant AI business operating system that deploys intelligent 24/7 AI agents across WhatsApp, Voice, and Web. Designed specifically for Indian and global SMBs, clinics, hospitals, CA firms, salons, and retail commerce.
@@ -113,6 +113,7 @@ export default function Home() {
           <li><a href="/llms-full.txt" className="text-blue-400 underline">/llms-full.txt</a> — Full architectural context, API endpoints, and agent instructions</li>
           <li><a href="/openapi.json" className="text-blue-400 underline">/openapi.json</a> — OpenAPI 3.1 specification for WhatsApp and Business APIs</li>
           <li><a href="/api-docs" className="text-blue-400 underline">/api-docs</a> — Interactive developer documentation and guide</li>
+          <li><a href="/cli" className="text-blue-400 underline">/cli</a> — Official Agento AI CLI tool documentation</li>
           <li><a href="/sitemap.xml" className="text-blue-400 underline">/sitemap.xml</a> — XML Sitemap</li>
           <li><a href="/about" className="text-blue-400 underline">/about</a> — About WebCore Studio & Agento AI</li>
           <li><a href="/contact" className="text-blue-400 underline">/contact</a> — Contact & Support</li>
@@ -126,7 +127,7 @@ export default function Home() {
         <div className="absolute inset-0 z-50 bg-slate-950 text-slate-100 p-8 overflow-y-auto font-sans">
           <div className="max-w-3xl mx-auto space-y-6">
             <h1 className="text-3xl font-extrabold text-white">
-              Agento AI — 24/7 Autonomous WhatsApp AI Staff & Business Operating System
+              Agento AI by WebCore Studio — 24/7 Autonomous WhatsApp AI Staff & Business Operating System
             </h1>
             <p className="text-sm leading-relaxed text-slate-300">
               Welcome to Agento AI by WebCore Studio. Agento AI automates WhatsApp appointment bookings for hospitals, document chasing for CA firms, and catalog order management for retail businesses.
@@ -141,8 +142,8 @@ export default function Home() {
               <a href="/about" className="px-5 py-2.5 text-slate-300 hover:text-white">
                 About Us
               </a>
-              <a href="/contact" className="px-5 py-2.5 text-slate-300 hover:text-white">
-                Contact
+              <a href="/cli" className="px-5 py-2.5 text-slate-300 hover:text-white">
+                CLI Tool
               </a>
               <a href="/api-docs" className="px-5 py-2.5 text-slate-300 hover:text-white">
                 API Docs

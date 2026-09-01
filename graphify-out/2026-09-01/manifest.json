@@ -456,9 +456,9 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1788097072.9822857,
-    "seen": 1788247813.8920155,
-    "ast_hash": "ca808e229e3cbdb82706820182819cd0",
+    "mtime": 1788270109.000909,
+    "seen": 1788270285.750256,
+    "ast_hash": "b26a5c010e3fcdadc1b24d1f7171e0f2",
     "semantic_hash": ""
   },
   "postcss.config.js": {
@@ -3912,9 +3912,9 @@
     "semantic_hash": ""
   },
   "public/openapi.json": {
-    "mtime": 1788269834.516645,
-    "seen": 1788269894.375147,
-    "ast_hash": "4d493d08277ec1410c9dea85aa98967b",
+    "mtime": 1788270157.9281213,
+    "seen": 1788270285.7506177,
+    "ast_hash": "34d2a0928592b811c5af18f0a587805d",
     "semantic_hash": ""
   },
   "src/app/about/page.tsx": {
@@ -3948,21 +3948,21 @@
     "semantic_hash": ""
   },
   "src/app/sitemap.ts": {
-    "mtime": 1788268901.4849248,
-    "seen": 1788269151.4024353,
-    "ast_hash": "57ab456092c3002b1ae50f860537da5d",
+    "mtime": 1788270204.0657606,
+    "seen": 1788270285.765547,
+    "ast_hash": "15c9f6af45d4f9e50bfa1e776c54a205",
     "semantic_hash": ""
   },
   "src/lib/markdown/pagesMarkdown.ts": {
-    "mtime": 1788268988.7154593,
-    "seen": 1788269151.4132152,
-    "ast_hash": "2429a681e366e4b97f7f20364d78cd82",
+    "mtime": 1788270191.7546704,
+    "seen": 1788270285.7793605,
+    "ast_hash": "0830937e2e2637c3715887e363b1aa23",
     "semantic_hash": ""
   },
   "tests/agent-readiness-and-markdown.test.ts": {
-    "mtime": 1788269473.9107747,
-    "seen": 1788269582.2461872,
-    "ast_hash": "a9fd79131f3db92e60bec1010d95fa0d",
+    "mtime": 1788270220.7557557,
+    "seen": 1788270285.7886443,
+    "ast_hash": "1f17733fb877652d19bb012b52c22776",
     "semantic_hash": ""
   },
   "public/llms-full.txt": {
@@ -3996,15 +3996,45 @@
     "semantic_hash": ""
   },
   "src/app/api/[...catchall]/route.ts": {
-    "mtime": 1788269806.6240273,
-    "seen": 1788269894.3762171,
-    "ast_hash": "fae94ac0e6b7311dee6da3b3c2303531",
+    "mtime": 1788270136.0367103,
+    "seen": 1788270285.7518737,
+    "ast_hash": "b71f026f4cb1d7d8531ad1e37c9abef0",
     "semantic_hash": ""
   },
   "src/app/openapi.json/route.ts": {
     "mtime": 1788269815.914606,
     "seen": 1788269894.3892927,
     "ast_hash": "e84907d1a942ff393135821cec634058",
+    "semantic_hash": ""
+  },
+  "bin/agento-cli.js": {
+    "mtime": 1788270102.1298833,
+    "seen": 1788270285.7497308,
+    "ast_hash": "0db6b62d960b9e9b7b907b7de780755a",
+    "semantic_hash": ""
+  },
+  "src/app/api/health/route.ts": {
+    "mtime": 1788270124.12593,
+    "seen": 1788270285.7575934,
+    "ast_hash": "752d552278c923e1fe54f9d58db18bf3",
+    "semantic_hash": ""
+  },
+  "src/app/api/route.ts": {
+    "mtime": 1788270115.9670658,
+    "seen": 1788270285.76053,
+    "ast_hash": "88bee019deb0c390ada3f4e39f8d581a",
+    "semantic_hash": ""
+  },
+  "src/app/cli/page.tsx": {
+    "mtime": 1788270168.3763764,
+    "seen": 1788270285.76182,
+    "ast_hash": "2a745a74f5c7aa0db02c439b7099496d",
+    "semantic_hash": ""
+  },
+  "src/app/healthz/route.ts": {
+    "mtime": 1788270130.3031034,
+    "seen": 1788270285.7625139,
+    "ast_hash": "0729bdf81e8db33c68c6eed748c2282d",
     "semantic_hash": ""
   }
 }
