@@ -146,6 +146,57 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
       expect(content).toContain('@webcorestudio/agento-cli');
     });
 
+    it('should handle MCP JSON-RPC 2.0 protocol initialize and tools/list handshake at /api/mcp', async () => {
+      const { POST: mcpPost, GET: mcpGet } = await import('@/app/api/mcp/route');
+
+      // 1. GET discovery
+      const getReq = new NextRequest('http://localhost:3000/api/mcp');
+      const getRes = await mcpGet(getReq);
+      expect(getRes.status).toBe(200);
+      const getJson = await getRes.json();
+      expect(getJson.name).toBe('agento-ai-mcp');
+      expect(getJson.protocolVersion).toBe('2024-11-05');
+      expect(getJson.capabilities.tools).toBeDefined();
+
+      // 2. POST initialize
+      const initReq = new NextRequest('http://localhost:3000/api/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'test-client', version: '1.0' },
+          },
+        }),
+      });
+      const initRes = await mcpPost(initReq);
+      expect(initRes.status).toBe(200);
+      const initJson = await initRes.json();
+      expect(initJson.jsonrpc).toBe('2.0');
+      expect(initJson.id).toBe(1);
+      expect(initJson.result.protocolVersion).toBe('2024-11-05');
+      expect(initJson.result.serverInfo.name).toBe('agento-ai-mcp');
+
+      // 3. POST tools/list
+      const toolsReq = new NextRequest('http://localhost:3000/api/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'tools/list',
+        }),
+      });
+      const toolsRes = await mcpPost(toolsReq);
+      expect(toolsRes.status).toBe(200);
+      const toolsJson = await toolsRes.json();
+      expect(toolsJson.result.tools.length).toBeGreaterThanOrEqual(3);
+    });
+
     it('should have valid sitemap.xml and robots.txt', () => {
       const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
       expect(fs.existsSync(sitemapPath)).toBe(true);

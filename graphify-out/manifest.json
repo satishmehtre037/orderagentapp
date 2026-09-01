@@ -3960,9 +3960,9 @@
     "semantic_hash": ""
   },
   "tests/agent-readiness-and-markdown.test.ts": {
-    "mtime": 1788271464.9291131,
-    "seen": 1788271524.4544387,
-    "ast_hash": "b35aecf32f90fd5c9f84296270198480",
+    "mtime": 1788272227.3253255,
+    "seen": 1788272289.6150618,
+    "ast_hash": "516aaf655553e9007536daaaa297df2b",
     "semantic_hash": ""
   },
   "public/llms-full.txt": {
