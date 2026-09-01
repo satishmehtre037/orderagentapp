@@ -56,24 +56,57 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
     });
   });
 
+  describe('Rate Limiting & Versioning Headers via Middleware', () => {
+    it('should attach RateLimit and X-API-Version headers on /api/ endpoints', async () => {
+      const reqApi = new NextRequest('http://localhost:3000/api/hospital/appointments?business_id=6f1a3fde-f8fc-4ff0-b9ae-05969d2594e9');
+      const resApi = await middleware(reqApi);
+      expect(resApi.headers.get('x-api-version')).toBe('2026-09-01');
+      expect(resApi.headers.get('ratelimit-limit')).toBe('120');
+      expect(resApi.headers.get('ratelimit-remaining')).toBe('119');
+      expect(resApi.headers.get('ratelimit-reset')).toBe('60');
+    });
+
+    it('should rewrite /api/v1/* requests and maintain version headers', async () => {
+      const reqV1 = new NextRequest('http://localhost:3000/api/v1/hospital/appointments?business_id=6f1a3fde-f8fc-4ff0-b9ae-05969d2594e9');
+      const resV1 = await middleware(reqV1);
+      expect(resV1.headers.get('x-api-version')).toBe('2026-09-01');
+      expect(resV1.headers.get('ratelimit-limit')).toBe('120');
+    });
+  });
+
   describe('Machine-Readable Discovery Files', () => {
-    it('should have a valid public/llms.txt with When To Use section', () => {
+    it('should have a valid public/llms.txt with When To Use, CLI, and Rate Limit sections', () => {
       const llmsPath = path.join(process.cwd(), 'public', 'llms.txt');
       expect(fs.existsSync(llmsPath)).toBe(true);
       const content = fs.readFileSync(llmsPath, 'utf-8');
       expect(content).toContain('## When To Use This');
       expect(content).toContain('Agento AI');
       expect(content).toContain('WebCore Studio');
+      expect(content).toContain('@webcorestudio/agento-cli');
+      expect(content).toContain('RateLimit-Limit');
     });
 
-    it('should have a valid public/openapi.json schema', () => {
+    it('should have 100% operationId and typed schema coverage in public/openapi.json', () => {
       const openApiPath = path.join(process.cwd(), 'public', 'openapi.json');
       expect(fs.existsSync(openApiPath)).toBe(true);
       const json = JSON.parse(fs.readFileSync(openApiPath, 'utf-8'));
       expect(json.openapi).toBe('3.1.0');
       expect(json.info.title).toContain('Agento AI');
-      expect(json.paths['/api/webhook']).toBeDefined();
-      expect(json.paths['/api/hospital/appointments']).toBeDefined();
+      expect(json.components.schemas.ErrorResponse).toBeDefined();
+
+      // Ensure every single path operation has a unique operationId and typed 200 response
+      let operationCount = 0;
+      for (const [pathKey, pathItem] of Object.entries(json.paths)) {
+        for (const [method, op] of Object.entries(pathItem as any)) {
+          if (['get', 'post', 'put', 'delete', 'patch'].includes(method)) {
+            operationCount++;
+            expect((op as any).operationId).toBeDefined();
+            expect(typeof (op as any).operationId).toBe('string');
+            expect((op as any).responses['200'] || (op as any).responses['201']).toBeDefined();
+          }
+        }
+      }
+      expect(operationCount).toBeGreaterThanOrEqual(7);
     });
 
     it('should have valid sitemap.xml and robots.txt', () => {

@@ -3,54 +3,157 @@
   "info": {
     "title": "Agento AI REST API",
     "version": "1.0.0",
-    "description": "Programmatic REST API for Agento AI by WebCore Studio — Autonomous WhatsApp AI Staff & Business Operating System.",
+    "description": "Programmatic REST API for Agento AI by WebCore Studio — Autonomous WhatsApp AI Staff & Business Operating System. Supports automated appointment scheduling, lab report dispatch, CA compliance chasing, and e-commerce orders.",
+    "termsOfService": "https://orderagentapp.webcorestudio.dev/terms",
     "contact": {
-      "name": "WebCore Studio Support",
+      "name": "WebCore Studio Developer Support",
       "email": "support@webcorestudios.in",
       "url": "https://orderagentapp.webcorestudio.dev/contact"
-    }
+    },
+    "license": {
+      "name": "Proprietary",
+      "url": "https://orderagentapp.webcorestudio.dev/terms"
+    },
+    "x-api-version": "2026-09-01",
+    "x-versioning-policy": "URL path versioning via /api/v1/ and header X-API-Version. Backward-compatible changes deployed continuously. Breaking changes introduced only via new API versions with a minimum 180-day deprecation notice via HTTP Sunset and Deprecation headers."
   },
   "servers": [
     {
       "url": "https://orderagentapp.webcorestudio.dev",
-      "description": "Production Server"
+      "description": "Production Server (v1 API)"
+    },
+    {
+      "url": "https://orderagentapp.webcorestudio.dev/api/v1",
+      "description": "Versioned v1 Server Alias"
     }
   ],
   "paths": {
     "/api/webhook": {
       "post": {
+        "operationId": "handleWhatsAppWebhook",
         "summary": "Meta WhatsApp Cloud API Inbound Webhook",
-        "description": "Receives inbound WhatsApp customer messages, voice notes, and media with HMAC-SHA256 signature verification.",
+        "description": "Processes incoming customer WhatsApp messages, voice notes, and media. Authenticated via HMAC-SHA256 signature in the x-hub-signature-256 header.",
+        "tags": ["WhatsApp Inbound"],
+        "parameters": [
+          {
+            "name": "x-hub-signature-256",
+            "in": "header",
+            "required": true,
+            "description": "HMAC-SHA256 signature computed over the raw payload using the configured WhatsApp App Secret.",
+            "schema": { "type": "string", "example": "sha256=d3f1a2..." }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["object", "entry"],
+                "properties": {
+                  "object": { "type": "string", "example": "whatsapp_business_account" },
+                  "entry": {
+                    "type": "array",
+                    "items": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Webhook payload received and queued." },
-          "401": { "description": "Invalid payload signature." }
+          "200": {
+            "description": "Webhook payload received, verified, and queued for processing.",
+            "headers": {
+              "X-API-Version": { "$ref": "#/components/headers/X-API-Version" },
+              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimit-Limit" }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "example": "EVENT_RECEIVED" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "get": {
-        "summary": "Meta Webhook Verification",
-        "description": "Handles Meta subscription handshake verification.",
+        "operationId": "verifyWhatsAppWebhook",
+        "summary": "Meta Webhook Subscription Handshake",
+        "description": "Echoes back hub.challenge when hub.verify_token matches the configured WHATSAPP_VERIFY_TOKEN.",
+        "tags": ["WhatsApp Inbound"],
+        "parameters": [
+          { "name": "hub.mode", "in": "query", "required": true, "schema": { "type": "string", "example": "subscribe" } },
+          { "name": "hub.verify_token", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "hub.challenge", "in": "query", "required": true, "schema": { "type": "string", "example": "1158201444" } }
+        ],
         "responses": {
-          "200": { "description": "Challenge echoed successfully." },
-          "403": { "description": "Invalid verify token." }
+          "200": {
+            "description": "Challenge echoed successfully.",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "403": { "$ref": "#/components/responses/403Forbidden" }
         }
       }
     },
     "/api/hospital/appointments": {
       "get": {
+        "operationId": "listHospitalAppointments",
         "summary": "List Hospital OPD Appointments",
+        "description": "Retrieves consultation appointments for a hospital tenant, filtered by date, doctor, or status.",
+        "tags": ["Hospital Appointments"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "parameters": [
-          { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } },
-          { "name": "date", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
-          { "name": "doctor_name", "in": "query", "required": false, "schema": { "type": "string" } },
-          { "name": "status", "in": "query", "required": false, "schema": { "type": "string" } }
+          { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "The tenant business UUID." },
+          { "name": "date", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Filter by date (YYYY-MM-DD)." },
+          { "name": "doctor_name", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by doctor name." },
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["confirmed", "pending", "completed", "cancelled", "rescheduled"] }, "description": "Filter by visit status." }
         ],
         "responses": {
-          "200": { "description": "List of matching consultation appointments." },
-          "401": { "description": "Unauthorized access." }
+          "200": {
+            "description": "List of appointments matching criteria.",
+            "headers": {
+              "X-API-Version": { "$ref": "#/components/headers/X-API-Version" },
+              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimit-Limit" },
+              "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimit-Remaining" }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "appointments"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "appointments": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HospitalAppointment" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
-        "summary": "Book New OPD Consultation Appointment",
+        "operationId": "createHospitalAppointment",
+        "summary": "Book OPD Consultation Appointment",
+        "description": "Books a new doctor consultation appointment and allocates a sequential token number.",
+        "tags": ["Hospital Appointments"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -59,25 +162,45 @@
                 "type": "object",
                 "required": ["business_id", "patient_name", "patient_phone", "doctor_name", "slot_time"],
                 "properties": {
-                  "business_id": { "type": "string", "format": "uuid" },
-                  "patient_name": { "type": "string" },
-                  "patient_phone": { "type": "string" },
-                  "doctor_name": { "type": "string" },
-                  "department": { "type": "string" },
-                  "slot_time": { "type": "string", "format": "date-time" },
-                  "reason": { "type": "string" }
+                  "business_id": { "type": "string", "format": "uuid", "description": "Tenant business UUID." },
+                  "patient_name": { "type": "string", "example": "Aarav Sharma" },
+                  "patient_phone": { "type": "string", "example": "919876543210" },
+                  "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
+                  "department": { "type": "string", "example": "Cardiology" },
+                  "slot_time": { "type": "string", "format": "date-time", "example": "2026-09-02T10:30:00Z" },
+                  "reason": { "type": "string", "example": "Routine checkup and ECG review" }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Appointment successfully booked." },
-          "400": { "description": "Missing required fields or invalid slot." }
+          "200": {
+            "description": "Appointment successfully booked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "appointment"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "appointment": { "$ref": "#/components/schemas/HospitalAppointment" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "put": {
+        "operationId": "updateHospitalAppointmentStatus",
         "summary": "Update Appointment Status",
+        "description": "Updates appointment status (e.g. marking completed, cancelled, or rescheduled).",
+        "tags": ["Hospital Appointments"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -86,42 +209,109 @@
                 "type": "object",
                 "required": ["id", "status"],
                 "properties": {
-                  "id": { "type": "string", "format": "uuid" },
-                  "business_id": { "type": "string", "format": "uuid" },
-                  "status": { "type": "string", "enum": ["confirmed", "completed", "cancelled", "rescheduled"] }
+                  "id": { "type": "string", "format": "uuid", "description": "Appointment ID." },
+                  "business_id": { "type": "string", "format": "uuid", "description": "Tenant business ID." },
+                  "status": { "type": "string", "enum": ["confirmed", "completed", "cancelled", "rescheduled"], "example": "completed" }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Appointment status updated." }
+          "200": {
+            "description": "Appointment status updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "appointment"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "appointment": { "$ref": "#/components/schemas/HospitalAppointment" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
     "/api/hospital/doctors": {
       "get": {
+        "operationId": "listHospitalDoctors",
         "summary": "List Doctors & OPD Schedules",
+        "description": "Lists all active hospital doctors, consultation fees, specialities, and OPD shift timings.",
+        "tags": ["Hospital Doctors"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "parameters": [
           { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }
         ],
         "responses": {
-          "200": { "description": "List of active hospital doctors." }
+          "200": {
+            "description": "List of active doctors.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "doctors"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "doctors": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HospitalDoctor" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
     "/api/hospital/reports": {
       "get": {
-        "summary": "List Lab Diagnostic Reports",
+        "operationId": "listHospitalReports",
+        "summary": "List Diagnostic Lab Reports",
+        "description": "Lists patient diagnostic reports and delivery statuses.",
+        "tags": ["Hospital Lab Reports"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "parameters": [
           { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }
         ],
         "responses": {
-          "200": { "description": "List of patient diagnostic reports." }
+          "200": {
+            "description": "List of diagnostic reports.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "reports"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "reports": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HospitalReport" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
-        "summary": "Publish and Dispatch Diagnostic Report",
+        "operationId": "createHospitalReport",
+        "summary": "Publish Diagnostic Lab Report",
+        "description": "Publishes a lab report and immediately dispatches WhatsApp PDF delivery with AI OCR summary.",
+        "tags": ["Hospital Lab Reports"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -131,32 +321,99 @@
                 "required": ["business_id", "patient_name", "patient_phone", "report_type", "file_url"],
                 "properties": {
                   "business_id": { "type": "string", "format": "uuid" },
-                  "patient_name": { "type": "string" },
-                  "patient_phone": { "type": "string" },
-                  "doctor_name": { "type": "string" },
-                  "report_type": { "type": "string" },
+                  "patient_name": { "type": "string", "example": "Rahul Mehta" },
+                  "patient_phone": { "type": "string", "example": "919876543210" },
+                  "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
+                  "report_type": { "type": "string", "example": "Complete Blood Count (CBC)" },
                   "file_url": { "type": "string", "format": "uri" },
-                  "ai_summary": { "type": "string" },
-                  "is_critical": { "type": "boolean" }
+                  "ai_summary": { "type": "string", "example": "All vitals normal. Hemoglobin: 14.2 g/dL." },
+                  "is_critical": { "type": "boolean", "default": false }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Report published and WhatsApp delivery dispatched." }
+          "200": {
+            "description": "Report published and WhatsApp delivery dispatched.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "report"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "report": { "$ref": "#/components/schemas/HospitalReport" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
     "/api/hospital/cron/trigger/{jobName}": {
       "post": {
+        "operationId": "triggerHospitalCronJob",
         "summary": "Execute Automation Engine Scan",
+        "description": "Triggers automated background scans for appointment reminders, feedback surveys, or missed patient follow-ups.",
+        "tags": ["Automation Engines"],
+        "security": [{ "CronSecret": [] }, { "BusinessHeader": [] }, { "BearerAuth": [] }],
         "parameters": [
-          { "name": "jobName", "in": "path", "required": true, "schema": { "type": "string", "enum": ["reminders", "feedback_surveys", "missed_followups", "all"] } }
+          {
+            "name": "jobName",
+            "in": "path",
+            "required": true,
+            "description": "Job identifier (reminders, feedback_surveys, missed_followups, all).",
+            "schema": {
+              "type": "string",
+              "enum": ["reminders", "feedback_surveys", "missed_followups", "all", "appointment_reminders", "feedback_scanner", "missed_followup"]
+            }
+          }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "business_id": { "type": "string", "format": "uuid", "description": "Optional business ID to target single tenant." }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Automation engine executed." },
-          "401": { "description": "Unauthorized: invalid secret or unauthenticated business." }
+          "200": {
+            "description": "Automation engine executed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "result"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "result": {
+                      "type": "object",
+                      "required": ["processed", "timestamp"],
+                      "properties": {
+                        "job": { "type": "string", "example": "appointment_reminders" },
+                        "processed": { "type": "integer", "example": 4 },
+                        "timestamp": { "type": "string", "format": "date-time" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     }
@@ -165,17 +422,193 @@
     "securitySchemes": {
       "BearerAuth": {
         "type": "http",
-        "scheme": "bearer"
+        "scheme": "bearer",
+        "description": "Standard Bearer authentication token."
       },
       "BusinessHeader": {
         "type": "apiKey",
         "in": "header",
-        "name": "x-business-id"
+        "name": "x-business-id",
+        "description": "Tenant business UUID for dashboard API authentication."
       },
       "CronSecret": {
         "type": "apiKey",
         "in": "header",
-        "name": "x-cron-secret"
+        "name": "x-cron-secret",
+        "description": "Shared cron secret for background automation runners."
+      }
+    },
+    "headers": {
+      "X-API-Version": {
+        "schema": { "type": "string", "example": "2026-09-01" },
+        "description": "API schema version matching RFC versioning conventions."
+      },
+      "RateLimit-Limit": {
+        "schema": { "type": "integer", "example": 120 },
+        "description": "Maximum requests permitted in current rate limit window (IETF RFC)."
+      },
+      "RateLimit-Remaining": {
+        "schema": { "type": "integer", "example": 118 },
+        "description": "Remaining requests available in current rate limit window."
+      },
+      "RateLimit-Reset": {
+        "schema": { "type": "integer", "example": 60 },
+        "description": "Seconds until rate limit window resets."
+      },
+      "Retry-After": {
+        "schema": { "type": "integer", "example": 60 },
+        "description": "Seconds to wait before retrying a throttled request."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["success", "error"],
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "UNAUTHORIZED", "description": "Machine-readable error code." },
+              "message": { "type": "string", "example": "Authentication required. Please provide valid credentials.", "description": "Human-readable explanation." },
+              "hint": { "type": "string", "example": "Refer to https://orderagentapp.webcorestudio.dev/api-docs for documentation.", "description": "Resolution guidance for developers and autonomous agents." },
+              "details": { "type": "object", "description": "Optional validation error details." }
+            }
+          }
+        }
+      },
+      "HospitalAppointment": {
+        "type": "object",
+        "required": ["id", "business_id", "patient_name", "patient_phone", "doctor_name", "slot_time", "status"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "business_id": { "type": "string", "format": "uuid" },
+          "patient_name": { "type": "string", "example": "Aarav Sharma" },
+          "patient_phone": { "type": "string", "example": "919876543210" },
+          "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
+          "department": { "type": "string", "example": "Cardiology" },
+          "slot_time": { "type": "string", "format": "date-time" },
+          "token_number": { "type": "integer", "example": 104 },
+          "status": { "type": "string", "enum": ["confirmed", "pending", "completed", "cancelled", "rescheduled"], "example": "confirmed" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HospitalDoctor": {
+        "type": "object",
+        "required": ["id", "business_id", "name", "speciality", "is_active"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "business_id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Dr. Sarah Jenkins" },
+          "speciality": { "type": "string", "example": "Cardiology & Internal Medicine" },
+          "qualification": { "type": "string", "example": "MD, DM Cardiology" },
+          "consultation_fee": { "type": "number", "example": 800 },
+          "opd_timings": { "type": "string", "example": "Mon–Fri: 10:00 AM – 2:00 PM" },
+          "is_active": { "type": "boolean", "example": true }
+        }
+      },
+      "HospitalReport": {
+        "type": "object",
+        "required": ["id", "business_id", "patient_name", "patient_phone", "report_type", "file_url"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "business_id": { "type": "string", "format": "uuid" },
+          "patient_name": { "type": "string", "example": "Rahul Mehta" },
+          "patient_phone": { "type": "string", "example": "919876543210" },
+          "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
+          "report_type": { "type": "string", "example": "Complete Blood Count (CBC)" },
+          "file_url": { "type": "string", "format": "uri" },
+          "ai_summary": { "type": "string", "example": "All vitals normal." },
+          "is_critical": { "type": "boolean", "example": false },
+          "status": { "type": "string", "example": "delivered" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "400BadRequest": {
+        "description": "Bad Request: Missing or invalid parameters.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "BAD_REQUEST",
+                "message": "Missing required fields or invalid slot format.",
+                "hint": "Check required fields in OpenAPI specification at https://orderagentapp.webcorestudio.dev/openapi.json."
+              }
+            }
+          }
+        }
+      },
+      "401Unauthorized": {
+        "description": "Unauthorized: Invalid credentials or missing tenant session.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "UNAUTHORIZED",
+                "message": "Authentication required. Provide valid Bearer token or x-business-id header.",
+                "hint": "Pass Authorization: Bearer <TOKEN> or x-business-id: <UUID> header."
+              }
+            }
+          }
+        }
+      },
+      "403Forbidden": {
+        "description": "Forbidden: Permission denied.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "FORBIDDEN",
+                "message": "Access forbidden: insufficient permissions.",
+                "hint": "Ensure your account has access to the requested business tenant."
+              }
+            }
+          }
+        }
+      },
+      "429TooManyRequests": {
+        "description": "Rate limit exceeded.",
+        "headers": {
+          "Retry-After": { "$ref": "#/components/headers/Retry-After" }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "RATE_LIMIT_EXCEEDED",
+                "message": "Rate limit exceeded (120 requests per minute).",
+                "hint": "Throttle requests and retry after the duration specified in the Retry-After header."
+              }
+            }
+          }
+        }
+      },
+      "500InternalError": {
+        "description": "Internal server error.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "An unexpected server error occurred.",
+                "hint": "Contact support@webcorestudios.in with request ID if issue persists."
+              }
+            }
+          }
+        }
       }
     }
   }

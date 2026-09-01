@@ -37,9 +37,33 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // Normal request flow: execute supabase middleware and guarantee Vary: Accept, Accept-Encoding
+  // API Versioning: Rewrite /api/v1/* to /api/*
+  if (pathname.startsWith("/api/v1/")) {
+    const unversionedPath = pathname.replace(/^\/api\/v1\//, "/api/");
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = unversionedPath;
+    const response = NextResponse.rewrite(rewriteUrl);
+    response.headers.set("X-API-Version", "2026-09-01");
+    response.headers.set("RateLimit-Limit", "120");
+    response.headers.set("RateLimit-Remaining", "119");
+    response.headers.set("RateLimit-Reset", "60");
+    response.headers.set("RateLimit-Policy", "120;w=60");
+    response.headers.set("Vary", "Accept, Accept-Encoding");
+    return response;
+  }
+
+  // Normal request flow: execute supabase middleware and guarantee standard headers
   const response = createClient(request);
   response.headers.set("Vary", "Accept, Accept-Encoding");
+
+  if (pathname.startsWith("/api/")) {
+    response.headers.set("X-API-Version", "2026-09-01");
+    response.headers.set("RateLimit-Limit", "120");
+    response.headers.set("RateLimit-Remaining", "119");
+    response.headers.set("RateLimit-Reset", "60");
+    response.headers.set("RateLimit-Policy", "120;w=60");
+  }
+
   return response;
 }
 

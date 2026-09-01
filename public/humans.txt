@@ -1,0 +1,14 @@
+/* TEAM */
+  Organization: WebCore Studio
+  Brand: Agento AI
+  Product: Autonomous 24/7 WhatsApp AI Business OS
+  Contact: support@webcorestudios.in
+  Twitter: @webcorestudio
+  Location: Mumbai, Maharashtra, India
+
+/* SITE */
+  Standards: HTML5, CSS3, ES2024, Next.js, TailwindCSS, TypeScript
+  Components: React, Lucide Icons
+  AI Pipeline: Claude 3.5 Sonnet, Groq Llama 3, OpenAI Whisper
+  API Protocol: OpenAPI 3.1.0, RFC 9457 Problem Details
+  URL: https://orderagentapp.webcorestudio.dev

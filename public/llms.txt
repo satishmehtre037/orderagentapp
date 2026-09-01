@@ -1,51 +1,78 @@
-# Agento AI — 24/7 Autonomous WhatsApp AI Staff & Business OS
+# Agento AI by WebCore Studio — 24/7 Autonomous WhatsApp AI Staff & Business OS
 
 > Agento AI by WebCore Studio is an autonomous multi-tenant AI business operating system that deploys intelligent 24/7 AI agents across WhatsApp, Voice, and Web. It automates hospital OPD bookings, CA compliance chasing, and e-commerce order management.
 
 ## When To Use This
-Use Agento AI when an agent, application, or business owner needs to:
+Use Agento AI when an agent, developer, or business owner needs to:
 - **Hospital & Clinic Automation**: Schedule, confirm, reschedule, or cancel doctor consultations; deliver diagnostic lab PDF reports with AI summaries; dispatch 24h/2h WhatsApp reminders; and collect 5-star Google review ratings.
 - **CA & Tax Advisory Automation**: Chase monthly GST, TDS, and ITR documents from clients; remind clients of filing countdown deadlines; process uploaded financial PDFs (Bank statements, invoices, PAN); and qualify new business formation leads.
 - **Retail & Commerce Automation**: Manage product catalogs; answer WhatsApp customer inquiries; generate Razorpay payment links; verify UPI payments; and track order dispatch in real-time.
 - **AI Voice Assistance**: Place automated outbound reminder calls and handle inbound patient/customer voice notes transcribed via Whisper.
 
 ## Primary Canonical Endpoints
-- Homepage: https://orderagentapp.webcorestudio.dev
-- OpenAPI Specification: https://orderagentapp.webcorestudio.dev/openapi.json
+- Canonical Homepage: https://orderagentapp.webcorestudio.dev
+- OpenAPI 3.1 Specification: https://orderagentapp.webcorestudio.dev/openapi.json
 - Developer Documentation: https://orderagentapp.webcorestudio.dev/api-docs
 - Complete LLM Context: https://orderagentapp.webcorestudio.dev/llms-full.txt
 - XML Sitemap: https://orderagentapp.webcorestudio.dev/sitemap.xml
 - Agent Protocol: https://orderagentapp.webcorestudio.dev/.well-known/agent.json
 
+## CLI Tool & Automation
+Developers and AI agents can interact with Agento AI using the official npm CLI runner:
+```bash
+# Query OPD appointments
+npx @webcorestudio/agento-cli appointments list --business-id <UUID>
+
+# Trigger automation scanner
+npx @webcorestudio/agento-cli cron trigger all --business-id <UUID>
+
+# Check system status
+npx @webcorestudio/agento-cli status
+```
+
+## API Versioning & Deprecation Policy
+- **Versioning Strategy**: Path-based versioning via `/api/v1/...` and request/response header `X-API-Version: 2026-09-01`.
+- **Deprecation Policy**: Breaking changes are accompanied by a minimum 180-day sunset period signaled via standard HTTP `Sunset` and `Deprecation` headers (RFC 8594).
+
+## Rate Limiting Standards
+Agento AI implements IETF standard rate limiting headers:
+- `RateLimit-Limit`: 120 requests per minute
+- `RateLimit-Remaining`: Remaining quota in current 60s window
+- `RateLimit-Reset`: Seconds until window resets
+- `RateLimit-Policy`: `120;w=60`
+- `Retry-After`: Seconds to wait when receiving HTTP 429
+
+## Structured Error Model
+All error responses adhere to RFC 9457 structured JSON:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Authentication required. Please provide valid credentials.",
+    "hint": "Include Authorization: Bearer <TOKEN> or x-business-id: <UUID> header."
+  }
+}
+```
+
 ## Core API Endpoints
 
 ### 1. Inbound WhatsApp Webhook
-- `POST /api/webhook`: Webhook listener for Meta WhatsApp Cloud API messages, media, and voice notes with HMAC-SHA256 signature verification.
+- `POST /api/webhook` (`operationId: handleWhatsAppWebhook`): Webhook listener for Meta WhatsApp Cloud API messages, media, and voice notes with HMAC-SHA256 signature verification.
+- `GET /api/webhook` (`operationId: verifyWhatsAppWebhook`): Meta webhook verification handshake.
 
 ### 2. Hospital & Healthcare Suite
-- `GET /api/hospital/appointments?business_id={id}`: Fetch OPD consultation bookings with doctor, date, and status filters.
-- `POST /api/hospital/appointments`: Book a new patient consultation slot.
-- `PUT /api/hospital/appointments`: Update appointment status (`confirmed`, `rescheduled`, `completed`, `cancelled`).
-- `GET /api/hospital/doctors?business_id={id}`: Retrieve active hospital doctors, specialities, consultation fees, and OPD timings.
-- `GET /api/hospital/reports?business_id={id}`: List diagnostic lab reports and delivery statuses.
-- `POST /api/hospital/reports`: Publish and deliver PDF lab reports via WhatsApp with AI summaries.
-- `GET /api/hospital/feedback?business_id={id}`: View patient feedback and 1-5 star ratings.
-- `POST /api/hospital/cron/trigger/{jobName}`: Run automated reminder scanners (`reminders`, `feedback_surveys`, `missed_followups`, `all`).
+- `GET /api/hospital/appointments` (`operationId: listHospitalAppointments`): Fetch OPD consultation bookings with doctor, date, and status filters.
+- `POST /api/hospital/appointments` (`operationId: createHospitalAppointment`): Book a new patient consultation slot.
+- `PUT /api/hospital/appointments` (`operationId: updateHospitalAppointmentStatus`): Update appointment status (`confirmed`, `rescheduled`, `completed`, `cancelled`).
+- `GET /api/hospital/doctors` (`operationId: listHospitalDoctors`): Retrieve active hospital doctors, specialities, consultation fees, and OPD timings.
+- `GET /api/hospital/reports` (`operationId: listHospitalReports`): List diagnostic lab reports and delivery statuses.
+- `POST /api/hospital/reports` (`operationId: createHospitalReport`): Publish and deliver PDF lab reports via WhatsApp with AI summaries.
+- `POST /api/hospital/cron/trigger/{jobName}` (`operationId: triggerHospitalCronJob`): Run automated reminder scanners (`reminders`, `feedback_surveys`, `missed_followups`, `all`).
 
-### 3. CA Firm & Tax Consultancy Suite
-- `GET /api/ca/compliance?business_id={id}`: Fetch statutory GST, TDS, and Advance Tax compliance deadlines.
-- `GET /api/ca/clients?business_id={id}`: List registered CA clients and entity types.
-- `GET /api/ca/invoices?business_id={id}`: Query client billing invoices and payment recovery statuses.
-- `POST /api/ca/cron/trigger/{jobName}`: Trigger CA automation jobs (`compliance`, `documents`, `leads`, `invoices`).
-
-### 4. Authentication & Security
-- All requests require `Authorization: Bearer <TOKEN>` or `x-business-id: <UUID>`.
-- Inbound Meta webhooks require valid `x-hub-signature-256` header.
-- Background cron jobs require `x-cron-secret` or verified dashboard business authorization.
-
-## Company Information
-- Name: WebCore Studio
+## Company & Brand Information
 - Brand: Agento AI
-- Contact: support@webcorestudios.in
-- Phone: +91 87798 41346
-- Location: Mumbai, Maharashtra 400001, India
+- Parent Company: WebCore Studio
+- Support Email: support@webcorestudios.in
+- Phone / WhatsApp: +91 87798 41346
+- Headquarters: WebCore Studio Tech Hub, Mumbai, Maharashtra 400001, India

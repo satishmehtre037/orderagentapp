@@ -173,7 +173,11 @@ export async function requireBusiness(req: Request): Promise<RequireBusinessResu
       errorResponse: NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized: Authentication required. Please log in to access this business.',
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required. Please log in or provide valid API credentials.',
+            hint: 'Include Authorization: Bearer <TOKEN> or x-business-id: <UUID> header in your request.',
+          },
         },
         { status: 401 }
       ),
@@ -186,7 +190,11 @@ export async function requireBusiness(req: Request): Promise<RequireBusinessResu
       errorResponse: NextResponse.json(
         {
           success: false,
-          error: `Authentication verification failed: ${err.message}`,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Authentication verification failed: ${err.message}`,
+            hint: 'Contact support@webcorestudios.in if issue persists.',
+          },
         },
         { status: 500 }
       ),
@@ -231,7 +239,11 @@ export async function requireCronAuth(req: Request): Promise<{ authorized: boole
     errorResponse: NextResponse.json(
       {
         success: false,
-        error: 'Unauthorized: Invalid or missing cron execution secret (x-cron-secret header required).',
+        error: {
+          code: 'UNAUTHORIZED_CRON',
+          message: 'Unauthorized: Invalid or missing cron execution secret.',
+          hint: 'Pass x-cron-secret: <SECRET> or an authorized dashboard business session header.',
+        },
       },
       { status: 401 }
     ),

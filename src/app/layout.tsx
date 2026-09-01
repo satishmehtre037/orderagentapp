@@ -142,6 +142,30 @@ const jsonLdSoftware = {
   },
 };
 
+const jsonLdBrand = {
+  '@context': 'https://schema.org',
+  '@type': 'Brand',
+  name: 'Agento AI by WebCore Studio',
+  alternateName: ['Agento AI', 'WebCore Studio Agento', 'OrderAgentAPP'],
+  url: 'https://orderagentapp.webcorestudio.dev',
+  logo: 'https://orderagentapp.webcorestudio.dev/logo.png',
+  slogan: '24/7 Autonomous WhatsApp AI Staff & Business Operating System',
+  description: 'Enterprise WhatsApp AI agents for clinics, hospitals, CA firms, salons, and retail commerce.',
+};
+
+const jsonLdWebSite = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Agento AI by WebCore Studio',
+  alternateName: 'Agento AI',
+  url: 'https://orderagentapp.webcorestudio.dev',
+  publisher: {
+    '@type': 'Organization',
+    name: 'WebCore Studio',
+    url: 'https://orderagentapp.webcorestudio.dev',
+  },
+};
+
 /**
  * Applies the persisted theme before first paint.
  *
@@ -182,6 +206,14 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSoftware) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBrand) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }}
         />
       </head>
       <body className="min-h-screen bg-base font-sans text-fg antialiased selection:bg-accent selection:text-accent-fg">

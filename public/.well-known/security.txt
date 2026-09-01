@@ -1,0 +1,7 @@
+Contact: mailto:security@webcorestudios.in
+Contact: mailto:support@webcorestudios.in
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en, hi
+Canonical: https://orderagentapp.webcorestudio.dev/.well-known/security.txt
+Policy: https://orderagentapp.webcorestudio.dev/privacy
+Acknowledgments: https://orderagentapp.webcorestudio.dev/about
