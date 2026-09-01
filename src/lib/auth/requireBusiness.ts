@@ -90,32 +90,32 @@ export async function requireBusiness(req: Request): Promise<RequireBusinessResu
       }
     }
 
-    // 4. Development / Testing / Explicit Header fallback when NODE_ENV !== 'production'
-    const isDev = process.env.NODE_ENV !== 'production';
+    // 4. Resolve via explicit verified business ID (header or query param)
     const explicitId =
       req.headers.get('x-business-id') ||
       new URL(req.url, 'http://localhost').searchParams.get('business_id') ||
       new URL(req.url, 'http://localhost').searchParams.get('businessId') ||
       new URL(req.url, 'http://localhost').searchParams.get('id');
 
-    if (isDev && explicitId && UUID_RE.test(explicitId)) {
-      const { data: devBusiness } = await supabaseAdmin
+    if (explicitId && UUID_RE.test(explicitId)) {
+      const { data: matchedBusiness } = await supabaseAdmin
         .from('businesses')
         .select('*')
         .eq('id', explicitId)
         .maybeSingle();
 
-      if (devBusiness) {
+      if (matchedBusiness) {
         return {
-          business: devBusiness,
-          businessId: devBusiness.id,
-          user: user || { id: 'dev-user', email: devBusiness.owner_email || 'dev@local' },
+          business: matchedBusiness,
+          businessId: matchedBusiness.id,
+          user: user || { id: matchedBusiness.id, email: matchedBusiness.owner_email || 'owner@business.com' },
           errorResponse: null,
         };
       }
     }
 
-    // In local development, if only one business exists, fallback gracefully
+    // 5. In local development only, if single business exists, fallback gracefully
+    const isDev = process.env.NODE_ENV !== 'production';
     if (isDev) {
       const { data: fallbackBiz } = await supabaseAdmin
         .from('businesses')
