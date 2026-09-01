@@ -25,25 +25,43 @@ export async function POST(
 
     switch (jobName?.toLowerCase()) {
       case 'appointment_reminders':
+      case 'appointment_reminder':
       case 'appointments':
+      case 'appointment':
       case 'reminders':
+      case 'reminder':
       case 'deadline_reminders':
         result = await runHospitalAppointmentReminderScanner(businessId);
         break;
 
       case 'feedback_scanner':
+      case 'feedback_surveys':
+      case 'feedback_survey':
       case 'feedback':
+      case 'feedbacks':
+      case 'surveys':
+      case 'survey':
+      case 'ratings':
+      case 'rating':
         result = await runHospitalFeedbackScanner(businessId);
         break;
 
       case 'missed_followup':
+      case 'missed_followups':
       case 'missed':
+      case 'no_shows':
+      case 'no_show':
       case 'voice_calls':
+      case 'voice_call':
       case 'lead_nurture':
+      case 'followup':
+      case 'followups':
         result = await runHospitalMissedFollowupScanner(businessId);
         break;
 
-      case 'all': {
+      case 'all':
+      case 'all_jobs':
+      case 'run_all': {
         const [appts, feed, miss] = await Promise.all([
           runHospitalAppointmentReminderScanner(businessId),
           runHospitalFeedbackScanner(businessId),
