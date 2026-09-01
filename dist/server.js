@@ -2646,11 +2646,26 @@ Our automated AI assistant trial has ended. Please contact our team directly, or
   if (isHospitalOrClinic) {
     const handledAction = await handleHospitalAppointmentAction(inbound, business);
     if (handledAction) return;
-    const isExplicitRating = /\b(star|stars|\/5|rating|review|⭐)\b/i.test(messageText);
-    const ratingDigitMatch = messageText.trim().match(/^([1-5])(\s*(star|stars|\/5|\.0|⭐)?)?$/i);
-    if (ratingDigitMatch && isExplicitRating) {
-      await handleFeedbackRating(inbound, business, parseInt(ratingDigitMatch[1], 10));
+    const cleanTrimmed = messageText.trim();
+    const starEmojiMatch = cleanTrimmed.match(/^(⭐|🌟){1,5}$/);
+    const ratingDigitMatch = cleanTrimmed.match(/^([1-5])(\s*(\/5|stars?|\.0|⭐)?)?$/i);
+    const isExplicitRating = /\b(star|stars|\/5|rating|review|feedback|⭐)\b/i.test(cleanTrimmed);
+    if (starEmojiMatch) {
+      const starCount = Array.from(cleanTrimmed).filter((c) => c === "\u2B50" || c === "\u{1F31F}").length;
+      await handleFeedbackRating(inbound, business, Math.min(5, Math.max(1, starCount)));
       return;
+    }
+    if (ratingDigitMatch) {
+      const rating = parseInt(ratingDigitMatch[1], 10);
+      if (rating >= 4 || isExplicitRating) {
+        await handleFeedbackRating(inbound, business, rating);
+        return;
+      }
+      const { data: recentCompleted } = await supabase.from("hospital_appointments").select("id, status").eq("business_id", business.id).eq("patient_phone", customerNumber).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (recentCompleted && recentCompleted.status === "completed") {
+        await handleFeedbackRating(inbound, business, rating);
+        return;
+      }
     }
   }
   await handleStandardAIReply(inbound, business, configs);

@@ -1,7 +1,7 @@
 # Graph Report - OrderAgentAPP  (2026-09-01)
 
 ## Corpus Check
-- 622 files · ~692,378 words
+- 622 files · ~692,527 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4025c7c9`
+- Built from commit: `57ca5a83`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

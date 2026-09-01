@@ -459,13 +459,40 @@ async function executeInboundMessage(inbound: ParsedInbound): Promise<void> {
     const handledAction = await handleHospitalAppointmentAction(inbound, business);
     if (handledAction) return;
 
-    // Strict Feedback Rating Check: Must contain star/rating keyword OR explicit rating format
-    const isExplicitRating = /\b(star|stars|\/5|rating|review|⭐)\b/i.test(messageText);
-    const ratingDigitMatch = messageText.trim().match(/^([1-5])(\s*(star|stars|\/5|\.0|⭐)?)?$/i);
+    // Feedback Rating Check: 1-5 numbers, star emojis, or rating keywords
+    const cleanTrimmed = messageText.trim();
+    const starEmojiMatch = cleanTrimmed.match(/^(⭐|🌟){1,5}$/);
+    const ratingDigitMatch = cleanTrimmed.match(/^([1-5])(\s*(\/5|stars?|\.0|⭐)?)?$/i);
+    const isExplicitRating = /\b(star|stars|\/5|rating|review|feedback|⭐)\b/i.test(cleanTrimmed);
 
-    if (ratingDigitMatch && isExplicitRating) {
-      await handleFeedbackRating(inbound, business, parseInt(ratingDigitMatch[1], 10));
+    if (starEmojiMatch) {
+      const starCount = Array.from(cleanTrimmed).filter((c) => c === '⭐' || c === '🌟').length;
+      await handleFeedbackRating(inbound, business, Math.min(5, Math.max(1, starCount)));
       return;
+    }
+
+    if (ratingDigitMatch) {
+      const rating = parseInt(ratingDigitMatch[1], 10);
+      // Ratings of 4 or 5, or messages with explicit keywords, are always feedback
+      if (rating >= 4 || isExplicitRating) {
+        await handleFeedbackRating(inbound, business, rating);
+        return;
+      }
+
+      // For digits 1-3 when no active reminder action was matched, check if customer was recently asked for feedback
+      const { data: recentCompleted } = await supabase
+        .from('hospital_appointments')
+        .select('id, status')
+        .eq('business_id', business.id)
+        .eq('patient_phone', customerNumber)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentCompleted && recentCompleted.status === 'completed') {
+        await handleFeedbackRating(inbound, business, rating);
+        return;
+      }
     }
   }
 
