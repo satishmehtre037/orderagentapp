@@ -35,7 +35,7 @@ export type { StatCardProps } from './StatCard';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 
-export { Skeleton, SkeletonText, SkeletonCard } from './Skeleton';
+export { Skeleton, SkeletonText, SkeletonCard, ConversationThreadSkeleton, LedgerRowSkeleton, FormSkeleton } from './Skeleton';
 
 export { Spinner } from './Spinner';
 export type { SpinnerProps } from './Spinner';
@@ -47,3 +47,12 @@ export type { AppShellProps, BottomNavProps, BottomNavItem } from './AppShell';
 export { ToastProvider, useToast } from './ToastContext';
 
 export { ThemeProvider, useTheme, ThemeToggle } from './ThemeContext';
+
+export { Avatar } from './Avatar';
+export type { AvatarProps } from './Avatar';
+
+export { UserMenu } from './UserMenu';
+export type { UserMenuProps } from './UserMenu';
+
+export { CommandPalette } from './CommandPalette';
+export type { CommandPaletteProps, CommandItem } from './CommandPalette';

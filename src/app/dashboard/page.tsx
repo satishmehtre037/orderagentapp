@@ -42,6 +42,8 @@ import {
   StatCard,
   Tabs,
   Modal,
+  UserMenu,
+  CommandPalette,
   type TabItem,
 } from "../../components/ui";
 import {
@@ -74,6 +76,8 @@ import {
   Plus,
   BarChart3,
   LayoutGrid,
+  Search,
+  Command as CommandIcon,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -82,6 +86,7 @@ export default function DashboardPage() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>("orders");
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
   const [isMobileAllTabsOpen, setIsMobileAllTabsOpen] = useState(false);
   const [isNewHospitalApptModalOpen, setIsNewHospitalApptModalOpen] =
@@ -95,6 +100,18 @@ export default function DashboardPage() {
   const [pauseLoading, setPauseLoading] = useState(false);
 
   const { showToast } = useToast();
+
+  // Global ⌘K / Ctrl+K keyboard shortcut listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const toggleBotPause = async () => {
     try {
@@ -358,38 +375,51 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-base text-fg flex flex-col antialiased font-sans transition-colors duration-150">
       {/* Sleek Top Navigation Bar */}
       <header className="sticky top-0 z-30 shrink-0 border-b border-line bg-surface/85 backdrop-blur-xl pt-safe transition-colors duration-150">
-        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-3">
+          {/* Left: Logo + Business Brand */}
+          <div className="flex items-center space-x-2.5 min-w-0">
             <img
               src="/logo.png"
               alt="Agento AI"
-              className="w-10 h-10 rounded-lg object-contain bg-slate-900 border border-white/20 shadow-xs p-1 flex-shrink-0"
+              className="w-9 h-9 rounded-lg object-contain bg-slate-900 border border-white/20 shadow-xs p-1 flex-shrink-0"
             />
             <div className="min-w-0">
               <h1
                 suppressHydrationWarning
-                className="text-sm font-bold text-fg leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[280px]"
+                className="text-sm font-bold text-fg leading-tight truncate max-w-[140px] xs:max-w-[200px] sm:max-w-[280px]"
               >
                 {business?.name || (mounted && typeof window !== 'undefined' ? localStorage.getItem('biz_name') : '') || "Business"}
               </h1>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-surface-subtle border border-line text-fg-muted rounded font-bold tracking-wider">
                   {effectiveCategory === "ca_firm"
-                    ? "Chartered Accountant"
+                    ? "CA Practice OS"
                     : isHospital
-                      ? "Hospital & Clinic CRM"
+                      ? "Hospital CRM"
                       : effectiveCategory}
                 </span>
-                <span className="text-[11px] text-fg-muted font-medium whitespace-nowrap">
-                  24/7 AI Practice
+                <span className="text-[10px] text-success flex items-center gap-1 font-medium whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  <span>24/7 AI Autonomous</span>
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-1.5 sm:space-x-2">
-            {/* Dark / Light Mode Switch */}
-            <ThemeToggle />
+          {/* Right: ⌘K Search, Primary Action & User Menu */}
+          <div className="flex items-center space-x-2">
+            {/* ⌘K / Ctrl+K Search Palette Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="hidden sm:flex items-center gap-2 rounded-lg border border-line bg-surface-subtle px-2.5 py-1.5 text-xs text-fg-muted hover:border-line-strong hover:bg-surface-hover transition-colors"
+            >
+              <Search className="h-3.5 w-3.5 text-fg-subtle" />
+              <span className="text-fg-subtle">Quick actions</span>
+              <kbd className="inline-flex items-center gap-0.5 rounded border border-line bg-surface px-1 py-0.5 font-mono text-[10px] text-fg-subtle">
+                ⌘K
+              </kbd>
+            </button>
 
             {/* Quick + New Client button for CA Firm */}
             {effectiveCategory === "ca_firm" && (
@@ -415,60 +445,20 @@ export default function DashboardPage() {
               </Button>
             )}
 
-            {/* Quick Bot Toggle */}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={toggleBotPause}
-              disabled={pauseLoading}
-              title="Click to pause or activate 24/7 AI agent replies"
-              leftIcon={
-                <span
-                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    isBotPaused
-                      ? "bg-amber-500"
-                      : "bg-emerald-500 animate-pulse"
-                  }`}
-                />
-              }
-            >
-              <span className="whitespace-nowrap">
-                {pauseLoading
-                  ? "Updating..."
-                  : isBotPaused
-                    ? "AI Paused"
-                    : "AI Active"}
-              </span>
-            </Button>
-
-            {/* WhatsApp Web Link */}
-            <ButtonLink
-              variant="ghost"
-              size="sm"
-              href="https://web.whatsapp.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:inline-flex"
-              leftIcon={<Phone className="w-3.5 h-3.5 text-accent" />}
-              rightIcon={<ExternalLink className="w-3 h-3 opacity-60" />}
-            >
-              WhatsApp Web
-            </ButtonLink>
-
-            {/* Logout Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              leftIcon={<LogOut className="w-3.5 h-3.5" />}
-            >
-              <span className="hidden sm:inline">Log out</span>
-            </Button>
+            {/* Consolidated User Profile Menu */}
+            <UserMenu
+              businessName={business?.name || "Business"}
+              email={business?.owner_email || (mounted && typeof window !== 'undefined' ? localStorage.getItem('biz_email') : '') || "owner@business.com"}
+              category={effectiveCategory}
+              plan={business?.plan || "Pro Trial"}
+              isAiActive={!isBotPaused}
+              onToggleAi={toggleBotPause}
+              onSignOut={handleLogout}
+              onNavigateTab={(tabKey) => setActiveTab(tabKey as DashboardTab)}
+            />
           </div>
         </div>
       </header>
-
-
 
       {/* Trial Expired Alert Banner */}
       {isTrialEnded && business?.subscription_status !== "active" && (
@@ -490,7 +480,7 @@ export default function DashboardPage() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 pb-safe-gutter">
         {/* Top 3 Quick Stats Widgets */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {/* Card 1: Live Plan / Trial Countdown */}
           <div
             onClick={() => setActiveTab("billing")}
@@ -514,148 +504,212 @@ export default function DashboardPage() {
 
           {/* Card 2: 24/7 WhatsApp AI Bot Active Status */}
           <StatCard
-            label="WhatsApp Automation"
+            label="24/7 AI Autonomous Agent"
             value={
-              isBotPaused ? "AI Paused" : isTrialEnded ? "Paused" : "Active"
+              isBotPaused ? "Paused" : isTrialEnded ? "Paused" : "Active"
             }
+            delta={isBotPaused ? "Manual Reply" : "Auto Answering"}
             deltaTone={isBotPaused || isTrialEnded ? "negative" : "positive"}
             icon={renderCategoryIcon("w-4 h-4")}
             hint={
               isBotPaused
-                ? "Replies stopped"
-                : "Auto taking orders & inquiries 24/7"
+                ? "Replies paused. Click User Menu to activate"
+                : "Capturing customer inquiries & orders on WhatsApp"
             }
           />
 
           {/* Card 3: Business Vertical Category */}
           <div className="sm:col-span-2 lg:col-span-1">
             <StatCard
-              label="Operating Category"
+              label="Operating Module"
               value={effectiveCategory.replace("_", " ").toUpperCase()}
               icon={<Sparkles />}
-              hint={`AI customized for ${effectiveCategory.replace("_", " ")} workflow`}
+              hint={`Autonomous workflow configured for ${effectiveCategory.replace("_", " ")}`}
             />
           </div>
         </div>
 
-        {/* Unified Accessible Tabs Strip */}
-        <Tabs
-          items={tabItems}
-          value={activeTab}
-          onChange={(key) => setActiveTab(key as DashboardTab)}
-        />
+        {/* Hybrid Layout for Multi-Module Practice (Hospital / CA Firm) */}
+        {isHospital || isCA ? (
+          <div className="space-y-4">
+            {/* Mobile / Tablet Horizontal Tabs (< lg) */}
+            <div className="lg:hidden">
+              <Tabs
+                items={tabItems}
+                value={activeTab}
+                onChange={(key) => setActiveTab(key as DashboardTab)}
+              />
+            </div>
 
-        {/* Tab Content Body */}
-        <div className="transition-all duration-150">
-          {activeTab === "orders" && (
-            <OrdersLedgerTab
-              businessId={business?.id || ""}
-              category={business?.category || "bakery"}
-              businessName={business?.name || "Agento AI Store"}
+            {/* Desktop 2-Column Sidebar Layout (lg+) */}
+            <div className="lg:grid lg:grid-cols-12 lg:gap-6 items-start">
+              {/* Left Sidebar Navigation (3 cols on lg, 2.5 on xl) */}
+              <aside className="hidden lg:block lg:col-span-3 xl:col-span-3 rounded-xl border border-line bg-surface p-2 shadow-xs space-y-1 sticky top-16">
+                <div className="px-3 py-2 text-[11px] font-semibold text-fg-subtle uppercase tracking-wider">
+                  {isHospital ? "Hospital Modules" : "Practice Modules"}
+                </div>
+                {tabItems.map((item) => {
+                  const isActive = activeTab === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setActiveTab(item.key as DashboardTab)}
+                      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors text-left ${
+                        isActive
+                          ? "bg-accent-subtle text-accent font-semibold border-l-2 border-accent"
+                          : "text-fg-muted hover:bg-surface-hover hover:text-fg"
+                      }`}
+                    >
+                      <span className={`shrink-0 [&>svg]:h-4 [&>svg]:w-4 ${isActive ? "text-accent" : "text-fg-subtle"}`}>
+                        {item.icon}
+                      </span>
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </aside>
+
+              {/* Right Main Content (9 cols on lg, 9.5 on xl) */}
+              <div className="lg:col-span-9 xl:col-span-9 tab-content-enter">
+                {activeTab === "hospital_dashboard" && (
+                  <HospitalDashboardOverviewTab
+                    businessId={business?.id}
+                    onNavigateTab={(tab) => setActiveTab(tab as DashboardTab)}
+                    onOpenNewAppointment={() => setIsNewHospitalApptModalOpen(true)}
+                  />
+                )}
+
+                {activeTab === "hospital_appointments" && (
+                  <HospitalAppointmentsTab
+                    businessId={business?.id}
+                    onOpenNewAppointment={() => setIsNewHospitalApptModalOpen(true)}
+                  />
+                )}
+
+                {activeTab === "hospital_patients" && (
+                  <HospitalPatientsTab
+                    businessId={business?.id}
+                    onOpenNewPatient={() => setIsNewHospitalPatientModalOpen(true)}
+                  />
+                )}
+
+                {activeTab === "hospital_reports" && (
+                  <HospitalReportsTab
+                    businessId={business?.id}
+                    onOpenUploadReport={() =>
+                      setIsUploadHospitalReportModalOpen(true)
+                    }
+                  />
+                )}
+
+                {activeTab === "hospital_voice" && (
+                  <HospitalVoiceCallsTab businessId={business?.id} />
+                )}
+
+                {activeTab === "hospital_feedback" && (
+                  <HospitalFeedbackTab businessId={business?.id} />
+                )}
+
+                {activeTab === "hospital_agent" && (
+                  <HospitalAIAgentTab businessId={business?.id} />
+                )}
+
+                {activeTab === "ca_dashboard" && (
+                  <CADashboardOverviewTab
+                    businessId={business?.id}
+                    businessName={business?.name}
+                    onNavigateTab={(tab) => setActiveTab(tab as DashboardTab)}
+                    onOpenNewClientModal={() => setIsNewClientModalOpen(true)}
+                  />
+                )}
+
+                {activeTab === "ca_compliance" && (
+                  <CAComplianceTab businessId={business?.id} />
+                )}
+
+                {activeTab === "ca_documents" && (
+                  <CADocumentsTab businessId={business?.id} />
+                )}
+
+                {activeTab === "ca_leads" && <CALeadsTab businessId={business?.id} />}
+
+                {activeTab === "ca_invoices" && (
+                  <CAInvoicesTab businessId={business?.id} />
+                )}
+
+                {activeTab === "ca_agent" && (
+                  <CAAIAgentTab businessId={business?.id} />
+                )}
+
+                {activeTab === "ca_automation" && (
+                  <CAAutomationControlTab businessId={business?.id} />
+                )}
+
+                {activeTab === "hospital_automation" && (
+                  <HospitalAutomationTab businessId={business?.id} />
+                )}
+
+                {activeTab === "conversations" && (
+                  <ConversationsTab businessId={business?.id || ""} />
+                )}
+
+                {activeTab === "billing" && (
+                  <BillingTab
+                    businessId={business?.id || ""}
+                    category={business?.category || "bakery"}
+                    trialEndDateStr={business?.trial_end_date}
+                    subscriptionStatus={business?.subscription_status || "trial"}
+                    plan={business?.plan || "trial"}
+                    onSubscriptionUpdated={loadDashboardData}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Standard Single-Vertical Layout */
+          <div className="space-y-4">
+            <Tabs
+              items={tabItems}
+              value={activeTab}
+              onChange={(key) => setActiveTab(key as DashboardTab)}
             />
-          )}
 
-          {activeTab === "hospital_dashboard" && (
-            <HospitalDashboardOverviewTab
-              businessId={business?.id}
-              onNavigateTab={(tab) => setActiveTab(tab as DashboardTab)}
-              onOpenNewAppointment={() => setIsNewHospitalApptModalOpen(true)}
-            />
-          )}
+            <div className="tab-content-enter">
+              {activeTab === "orders" && (
+                <OrdersLedgerTab
+                  businessId={business?.id || ""}
+                  category={business?.category || "bakery"}
+                  businessName={business?.name || "Agento AI Store"}
+                />
+              )}
 
-          {activeTab === "hospital_appointments" && (
-            <HospitalAppointmentsTab
-              businessId={business?.id}
-              onOpenNewAppointment={() => setIsNewHospitalApptModalOpen(true)}
-            />
-          )}
+              {activeTab === "conversations" && (
+                <ConversationsTab businessId={business?.id || ""} />
+              )}
 
-          {activeTab === "hospital_patients" && (
-            <HospitalPatientsTab
-              businessId={business?.id}
-              onOpenNewPatient={() => setIsNewHospitalPatientModalOpen(true)}
-            />
-          )}
+              {activeTab === "edit_info" && (
+                <EditBusinessInfoTab
+                  businessId={business?.id || ""}
+                  category={business?.category || "bakery"}
+                  onUpdated={loadDashboardData}
+                />
+              )}
 
-          {activeTab === "hospital_reports" && (
-            <HospitalReportsTab
-              businessId={business?.id}
-              onOpenUploadReport={() =>
-                setIsUploadHospitalReportModalOpen(true)
-              }
-            />
-          )}
-
-          {activeTab === "hospital_voice" && (
-            <HospitalVoiceCallsTab businessId={business?.id} />
-          )}
-
-          {activeTab === "hospital_feedback" && (
-            <HospitalFeedbackTab businessId={business?.id} />
-          )}
-
-          {activeTab === "hospital_agent" && (
-            <HospitalAIAgentTab businessId={business?.id} />
-          )}
-
-          {activeTab === "ca_dashboard" && (
-            <CADashboardOverviewTab
-              businessId={business?.id}
-              businessName={business?.name}
-              onNavigateTab={(tab) => setActiveTab(tab as DashboardTab)}
-              onOpenNewClientModal={() => setIsNewClientModalOpen(true)}
-            />
-          )}
-
-          {activeTab === "ca_compliance" && (
-            <CAComplianceTab businessId={business?.id} />
-          )}
-
-          {activeTab === "ca_documents" && (
-            <CADocumentsTab businessId={business?.id} />
-          )}
-
-          {activeTab === "ca_leads" && <CALeadsTab businessId={business?.id} />}
-
-          {activeTab === "ca_invoices" && (
-            <CAInvoicesTab businessId={business?.id} />
-          )}
-
-          {activeTab === "ca_agent" && (
-            <CAAIAgentTab businessId={business?.id} />
-          )}
-
-          {activeTab === "ca_automation" && (
-            <CAAutomationControlTab businessId={business?.id} />
-          )}
-
-          {activeTab === "hospital_automation" && (
-            <HospitalAutomationTab businessId={business?.id} />
-          )}
-
-          {activeTab === "conversations" && (
-            <ConversationsTab businessId={business?.id || ""} />
-          )}
-
-          {activeTab === "edit_info" && (
-            <EditBusinessInfoTab
-              businessId={business?.id || ""}
-              category={business?.category || "bakery"}
-              onUpdated={loadDashboardData}
-            />
-          )}
-
-          {activeTab === "billing" && (
-            <BillingTab
-              businessId={business?.id || ""}
-              category={business?.category || "bakery"}
-              trialEndDateStr={business?.trial_end_date}
-              subscriptionStatus={business?.subscription_status || "trial"}
-              plan={business?.plan || "trial"}
-              onSubscriptionUpdated={loadDashboardData}
-            />
-          )}
-        </div>
+              {activeTab === "billing" && (
+                <BillingTab
+                  businessId={business?.id || ""}
+                  category={business?.category || "bakery"}
+                  trialEndDateStr={business?.trial_end_date}
+                  subscriptionStatus={business?.subscription_status || "trial"}
+                  plan={business?.plan || "trial"}
+                  onSubscriptionUpdated={loadDashboardData}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
         {/* New Client Modal for CA Firm */}
         <CANewClientModal
@@ -719,7 +773,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("hospital_appointments")}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "hospital_appointments"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -744,7 +798,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("conversations")}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "conversations"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -757,7 +811,7 @@ export default function DashboardPage() {
             {/* All Tabs / Menu Drawer Trigger */}
             <button
               onClick={() => setIsMobileAllTabsOpen(true)}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[48px] ${
                 isMobileAllTabsOpen
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -773,7 +827,7 @@ export default function DashboardPage() {
           <>
             <button
               onClick={() => setActiveTab("ca_dashboard")}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "ca_dashboard"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -785,7 +839,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("ca_documents")}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "ca_documents"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -810,7 +864,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("conversations")}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "conversations"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -823,7 +877,7 @@ export default function DashboardPage() {
             {/* All Tabs / Menu Drawer Trigger */}
             <button
               onClick={() => setIsMobileAllTabsOpen(true)}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-colors min-h-[48px] ${
                 isMobileAllTabsOpen
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -839,7 +893,7 @@ export default function DashboardPage() {
           <>
             <button
               onClick={() => setActiveTab("orders")}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "orders"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -855,7 +909,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("conversations")}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "conversations"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -869,7 +923,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("edit_info")}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "edit_info"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -883,7 +937,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("billing")}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[48px] ${
                 activeTab === "billing"
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -898,7 +952,7 @@ export default function DashboardPage() {
             {/* All Tabs Drawer Trigger for retail too! */}
             <button
               onClick={() => setIsMobileAllTabsOpen(true)}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-md transition-colors min-h-[48px] ${
                 isMobileAllTabsOpen
                   ? "text-accent font-bold"
                   : "text-fg-muted hover:text-fg"
@@ -989,6 +1043,22 @@ export default function DashboardPage() {
           </div>
         </div>
       </footer>
+
+      {/* Global ⌘K / Ctrl+K Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigateTab={(tabKey) => setActiveTab(tabKey as DashboardTab)}
+        onToggleAiStaff={toggleBotPause}
+        category={effectiveCategory}
+        onNewOrder={
+          effectiveCategory === "ca_firm"
+            ? () => setIsNewClientModalOpen(true)
+            : isHospital
+              ? () => setIsNewHospitalApptModalOpen(true)
+              : undefined
+        }
+      />
     </div>
   );
 }

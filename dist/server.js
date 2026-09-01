@@ -16,15 +16,15 @@ var __export = (target, all) => {
 // src/config/env.ts
 var env_exports = {};
 __export(env_exports, {
-  ENV: () => ENV2
+  ENV: () => ENV
 });
 import dotenv from "dotenv";
-var ENV2, requiredEnvVars, missingVars;
+var ENV, requiredEnvVars, missingVars;
 var init_env = __esm({
   "src/config/env.ts"() {
     dotenv.config({ path: ".env", override: true });
     dotenv.config({ path: ".env.local", override: true });
-    ENV2 = {
+    ENV = {
       SUPABASE_URL: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "",
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || "",
@@ -58,21 +58,23 @@ var init_env = __esm({
       ANTHROPIC_BASE_URL: (process.env.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, ""),
       /** AgentRouter / Model slug (e.g. glm-5.3, claude-3-5-sonnet-20241022) */
       ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || "glm-5.3",
-      /** Preferred AI Provider: 'agentrouter', 'claude', 'groq', or 'auto' */
-      AI_PROVIDER: process.env.AI_PROVIDER || "agentrouter",
+      /** Preferred AI Provider: 'groq', 'agentrouter', 'claude', or 'auto' */
+      AI_PROVIDER: process.env.AI_PROVIDER || "groq",
+      /** Fast2SMS API Key for real-time Indian SMS OTP delivery */
+      FAST2SMS_API_KEY: process.env.FAST2SMS_API_KEY || "",
       PORT: parseInt(process.env.PORT || "3001", 10)
     };
     requiredEnvVars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
-    missingVars = requiredEnvVars.filter((key) => !ENV2[key]);
-    if (!ENV2.GROQ_API_KEY) {
+    missingVars = requiredEnvVars.filter((key) => !ENV[key]);
+    if (!ENV.GROQ_API_KEY) {
       console.warn(`\u26A0\uFE0F [Config Warning] GROQ_API_KEY is not set in .env.`);
     }
-    if (!ENV2.WHATSAPP_VERIFY_TOKEN) {
+    if (!ENV.WHATSAPP_VERIFY_TOKEN) {
       console.warn(
         `\u26A0\uFE0F [Config Warning] WHATSAPP_VERIFY_TOKEN is not set. Meta webhook verification will be REJECTED until it is.`
       );
     }
-    if (!ENV2.WHATSAPP_APP_SECRET) {
+    if (!ENV.WHATSAPP_APP_SECRET) {
       console.warn(
         `\u26A0\uFE0F [Config Warning] WHATSAPP_APP_SECRET is not set. Inbound webhook payload signatures cannot be verified.`
       );
@@ -91,7 +93,7 @@ __export(groq_exports, {
 });
 import { Groq } from "groq-sdk";
 function getGroqClient() {
-  const apiKey = process.env.GROQ_API_KEY || ENV2.GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY || ENV.GROQ_API_KEY;
   if (!apiKey || apiKey === "placeholder-api-key") {
     return null;
   }
@@ -102,7 +104,7 @@ var init_groq = __esm({
   "src/config/groq.ts"() {
     init_env();
     groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY || ENV2.GROQ_API_KEY || "placeholder-api-key"
+      apiKey: process.env.GROQ_API_KEY || ENV.GROQ_API_KEY || "placeholder-api-key"
     });
   }
 });
@@ -113,6 +115,7 @@ import express from "express";
 import cors from "cors";
 
 // src/routes/health.ts
+init_env();
 import { Router } from "express";
 var router = Router();
 router.get("/health", (_req, res) => {
@@ -188,10 +191,10 @@ router.get("/test-groq", async (_req, res) => {
 });
 router.get("/test-agentrouter", async (_req, res) => {
   try {
-    const { ENV: ENV3 } = await Promise.resolve().then(() => (init_env(), env_exports));
-    const token = ENV3.ANTHROPIC_AUTH_TOKEN || "sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s";
-    const baseUrl = (ENV3.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
-    const model = ENV3.ANTHROPIC_MODEL || "glm-5.3";
+    const { ENV: ENV2 } = await Promise.resolve().then(() => (init_env(), env_exports));
+    const token = ENV2.ANTHROPIC_AUTH_TOKEN || "sk-YC1gMWBHv5joaFyRGVJ0TGedqQjmcYQ3F1IO1uQnssJSIi3s";
+    const baseUrl = (ENV2.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
+    const model = ENV2.ANTHROPIC_MODEL || "glm-5.3";
     const testPayload = {
       model,
       messages: [
@@ -362,12 +365,12 @@ import crypto from "crypto";
 init_env();
 import { createClient } from "@supabase/supabase-js";
 import WebSocket from "ws";
-if (!ENV2.SUPABASE_URL || !ENV2.SUPABASE_SERVICE_ROLE_KEY) {
+if (!ENV.SUPABASE_URL || !ENV.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn("\u26A0\uFE0F [Supabase] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing in .env");
 }
 var supabase = createClient(
-  ENV2.SUPABASE_URL || "https://placeholder.supabase.co",
-  ENV2.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key",
+  ENV.SUPABASE_URL || "https://placeholder.supabase.co",
+  ENV.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key",
   {
     auth: {
       persistSession: false,
@@ -416,7 +419,7 @@ async function getBusinessByWhatsappNumber(whatsappNumber) {
   return data;
 }
 async function resolveOperatorBusinessId() {
-  const configured = ENV2.WHATSAPP_BUSINESS_NUMBER;
+  const configured = ENV.WHATSAPP_BUSINESS_NUMBER;
   if (!configured) {
     console.warn(
       "[DB Service] WHATSAPP_BUSINESS_NUMBER is not set \u2014 cannot attribute admin activity to a business. Rows will be written with business_id = null."
@@ -1160,7 +1163,7 @@ var GROQ_MODEL_CASCADE = [
   "groq/compound-mini"
 ];
 function modelCascade() {
-  const configured = ENV2.GROQ_MODEL || process.env.GROQ_MODEL || "";
+  const configured = ENV.GROQ_MODEL || process.env.GROQ_MODEL || "";
   const models = configured ? [configured, ...GROQ_MODEL_CASCADE] : [...GROQ_MODEL_CASCADE];
   return [...new Set(models)];
 }
@@ -1376,12 +1379,12 @@ async function getGroqChatCompletion(messages, options = {}) {
 
 // src/services/claudeService.ts
 async function callAgentRouterAPI(systemPrompt, messages, options = {}) {
-  const token = ENV2.ANTHROPIC_AUTH_TOKEN;
+  const token = ENV.ANTHROPIC_AUTH_TOKEN;
   if (!token) {
     throw new Error("ANTHROPIC_AUTH_TOKEN / AgentRouter token is not configured in environment.");
   }
-  const baseUrl = (ENV2.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
-  const model = options.model || ENV2.ANTHROPIC_MODEL || "glm-5.3";
+  const baseUrl = (ENV.ANTHROPIC_BASE_URL || "https://agentrouter.org").replace(/\/+$/, "");
+  const model = options.model || ENV.ANTHROPIC_MODEL || "glm-5.3";
   const sanitizedMessages = [];
   for (const m of messages) {
     if (!m.content || !m.content.trim()) continue;
@@ -1493,8 +1496,8 @@ ${m.content}`;
   return cleanLLMOutput(textContent);
 }
 async function getResponse2(systemPrompt, conversationHistory, newMessage, business, configs) {
-  const provider = (ENV2.AI_PROVIDER || "auto").toLowerCase();
-  if (provider === "groq") {
+  const provider = (ENV.AI_PROVIDER || "auto").toLowerCase();
+  if (provider === "groq" || provider === "auto" || provider === "fast") {
     return getResponse(systemPrompt, conversationHistory, newMessage, business, configs);
   }
   const formattedHistory = [];
@@ -1522,7 +1525,7 @@ ${newMessage}`;
 2. When user provides date/time (e.g. "20 august 2 pm"), CONFIRM the appointment warmly and append the JSON capture block.
 3. NEVER INVENT FACTS: do not state a phone number, token number, address, price, or timing that is not present in the business information above. If you don't have it, say you'll have the team confirm.
 4. STRICT DOMAIN GUARDRAIL: Never write code (Python, JS, etc.), do homework, or answer unrelated general queries. Politely refuse and state that you are exclusively the virtual assistant for this business.`;
-  if (ENV2.ANTHROPIC_AUTH_TOKEN) {
+  if (ENV.ANTHROPIC_AUTH_TOKEN) {
     try {
       const response = await callAgentRouterAPI(fullSystemPrompt, formattedHistory);
       console.log(`[AgentRouter] \u2705 Response generated successfully (${response.length} chars).`);
@@ -1546,8 +1549,8 @@ function formatWhatsAppMessage(text) {
   return text.replace(/```(?:json)?[\s\S]*?```/gi, "").replace(/\{[\s\S]*?"(?:type|capture|details|items)"[\s\S]*?\}/gi, "").replace(/^[\s]*\*\s+\*([^*]+)\*/gm, "\u2022 *$1*").replace(/^[\s]*\*\s+/gm, "\u2022 ").replace(/\*\*([^*]+)\*\*/g, "*$1*").replace(/\n{3,}/g, "\n\n").trim();
 }
 function credentials() {
-  const token = ENV2.WHATSAPP_CLOUD_API_TOKEN || process.env.WHATSAPP_CLOUD_API_TOKEN || "";
-  const phoneNumberId = ENV2.WHATSAPP_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+  const token = ENV.WHATSAPP_CLOUD_API_TOKEN || process.env.WHATSAPP_CLOUD_API_TOKEN || "";
+  const phoneNumberId = ENV.WHATSAPP_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
   if (!token || !phoneNumberId) return null;
   return { token, phoneNumberId };
 }
@@ -1635,7 +1638,7 @@ async function sendInteractiveButtonsMessage(toNumber, businessWhatsappNumber, b
   console.warn(`[WhatsApp Service] Retrying ${cleanToNumber} as plain text after interactive rejection.`);
   return sendMessage(toNumber, businessWhatsappNumber, formattedMessage);
 }
-async function sendWhatsAppMessage(toNumber, message, businessWhatsappNumber = ENV2.WHATSAPP_BUSINESS_NUMBER) {
+async function sendWhatsAppMessage(toNumber, message, businessWhatsappNumber = ENV.WHATSAPP_BUSINESS_NUMBER) {
   return sendMessage(toNumber, businessWhatsappNumber, message);
 }
 
@@ -2373,7 +2376,7 @@ You will not receive any further messages from us. Sorry for the interruption.`;
 
 // src/services/inboundPipeline.ts
 function verifySubscription(params) {
-  const expected = ENV2.WHATSAPP_VERIFY_TOKEN;
+  const expected = ENV.WHATSAPP_VERIFY_TOKEN;
   if (!expected) {
     return { ok: false, reason: "WHATSAPP_VERIFY_TOKEN is not configured on the server." };
   }
@@ -2393,29 +2396,89 @@ function verifySubscription(params) {
   return { ok: true, challenge: String(params.challenge) };
 }
 function verifyPayloadSignature(rawBody, signatureHeader) {
-  const secret = process.env.WHATSAPP_APP_SECRET || ENV2.WHATSAPP_APP_SECRET;
-  if (!secret) {
+  const secrets = Array.from(/* @__PURE__ */ new Set([
+    process.env.WHATSAPP_APP_SECRET || ENV.WHATSAPP_APP_SECRET,
+    process.env.AGENTIC_AGENCY_APP_SECRET,
+    process.env.WEBCORE_STUDIO_APP_SECRET
+  ])).filter(Boolean);
+  if (secrets.length === 0) {
     if (process.env.NODE_ENV === "production") {
-      console.error("[Webhook] \u274C WHATSAPP_APP_SECRET is not configured in production. Rejecting unverified webhook payload.");
+      console.error("[Webhook] \u274C No Meta App Secrets configured in production. Rejecting unverified webhook payload.");
       return false;
     }
-    console.warn("[Webhook] \u26A0\uFE0F WHATSAPP_APP_SECRET not set in development \u2014 accepting payload WITHOUT signature verification.");
+    console.warn("[Webhook] \u26A0\uFE0F No Meta App Secrets set in development \u2014 accepting payload WITHOUT signature verification.");
     return true;
   }
   if (!signatureHeader) {
     console.error("[Webhook] \u274C Missing x-hub-signature-256 header. Rejecting payload.");
     return false;
   }
-  const expected = "sha256=" + crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
   const a = Buffer.from(signatureHeader);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) {
-    console.error("[Webhook] \u274C Signature length mismatch. Rejecting payload.");
-    return false;
+  for (const secret of secrets) {
+    const expected = "sha256=" + crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+    const b = Buffer.from(expected);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+      return true;
+    }
   }
-  const valid = crypto.timingSafeEqual(a, b);
-  if (!valid) console.error("[Webhook] \u274C Invalid x-hub-signature-256. Rejecting payload.");
-  return valid;
+  console.error("[Webhook] \u274C Invalid x-hub-signature-256. Rejecting payload.");
+  return false;
+}
+var PROCESSED_MSG_TTL_MS = 10 * 60 * 1e3;
+var processedMessageIds = /* @__PURE__ */ new Map();
+var inFlightMessageIds = /* @__PURE__ */ new Set();
+function isMessageProcessed(messageId, customerNumber, messageText) {
+  const now = Date.now();
+  if (processedMessageIds.size > 2e3) {
+    for (const [id, ts] of processedMessageIds.entries()) {
+      if (now - ts > PROCESSED_MSG_TTL_MS) {
+        processedMessageIds.delete(id);
+      }
+    }
+  }
+  if (messageId) {
+    if (inFlightMessageIds.has(messageId)) {
+      console.log(`[Webhook Deduplication] \u{1F6E1}\uFE0F Skipping duplicate in-flight message ID: ${messageId}`);
+      return true;
+    }
+    const ts = processedMessageIds.get(messageId);
+    if (ts && now - ts < PROCESSED_MSG_TTL_MS) {
+      console.log(`[Webhook Deduplication] \u{1F6E1}\uFE0F Skipping duplicate already-processed message ID: ${messageId}`);
+      return true;
+    }
+  }
+  if (customerNumber && messageText) {
+    const semanticKey = `sem_${customerNumber}_${messageText.trim().slice(0, 40)}`;
+    if (inFlightMessageIds.has(semanticKey)) {
+      console.log(`[Webhook Deduplication] \u{1F6E1}\uFE0F Skipping duplicate in-flight message content from ${customerNumber}`);
+      return true;
+    }
+    const semTs = processedMessageIds.get(semanticKey);
+    if (semTs && now - semTs < 5e3) {
+      console.log(`[Webhook Deduplication] \u{1F6E1}\uFE0F Skipping duplicate rapid delivery from ${customerNumber}`);
+      return true;
+    }
+  }
+  return false;
+}
+function markMessageInFlight(messageId, customerNumber, messageText) {
+  if (messageId) inFlightMessageIds.add(messageId);
+  if (customerNumber && messageText) {
+    const semanticKey = `sem_${customerNumber}_${messageText.trim().slice(0, 40)}`;
+    inFlightMessageIds.add(semanticKey);
+  }
+}
+function markMessageDone(messageId, customerNumber, messageText) {
+  const now = Date.now();
+  if (messageId) {
+    inFlightMessageIds.delete(messageId);
+    processedMessageIds.set(messageId, now);
+  }
+  if (customerNumber && messageText) {
+    const semanticKey = `sem_${customerNumber}_${messageText.trim().slice(0, 40)}`;
+    inFlightMessageIds.delete(semanticKey);
+    processedMessageIds.set(semanticKey, now);
+  }
 }
 async function parseInboundWebhook(body) {
   if (body?.object !== "whatsapp_business_account") return [];
@@ -2426,6 +2489,7 @@ async function parseInboundWebhook(body) {
       const businessNumber = value?.metadata?.display_phone_number || "";
       const contactProfile = value?.contacts?.[0];
       for (const message of value?.messages || []) {
+        const messageId = message.id || "";
         const customerNumber = message.from;
         let messageText = "";
         let isVoiceNote = false;
@@ -2476,6 +2540,7 @@ async function parseInboundWebhook(body) {
         }
         if (!messageText.trim() && !isMediaDocument) continue;
         parsed.push({
+          messageId,
           businessNumber,
           customerNumber,
           messageText,
@@ -2501,6 +2566,19 @@ async function processWebhookPayload(body) {
   }
 }
 async function handleInboundMessage(inbound) {
+  const { messageId, businessNumber, customerNumber, messageText, isVoiceNote, isMediaDocument, mediaPayload } = inbound;
+  if (isMessageProcessed(messageId, customerNumber, messageText)) {
+    console.log(`[Webhook] \u{1F6E1}\uFE0F Dropped duplicate webhook message from ${customerNumber}`);
+    return;
+  }
+  markMessageInFlight(messageId, customerNumber, messageText);
+  try {
+    await executeInboundMessage(inbound);
+  } finally {
+    markMessageDone(messageId, customerNumber, messageText);
+  }
+}
+async function executeInboundMessage(inbound) {
   const { businessNumber, customerNumber, messageText, isVoiceNote, isMediaDocument, mediaPayload } = inbound;
   console.log(`
 ======================================================`);
@@ -2540,11 +2618,13 @@ async function handleInboundMessage(inbound) {
   const handledAsProspect = await handleProspectReply(inbound, business);
   if (handledAsProspect) return;
   const configs = await getBusinessConfigs(business.id);
-  const isBotPaused = configs.some(
-    (c) => c.config_key === "bot_paused" && (c.config_value === true || c.config_value === "true")
+  const isBotPaused = business.is_bot_paused === true || String(business.is_bot_paused) === "true" || configs.some(
+    (c) => (c.config_key === "is_bot_paused" || c.config_key === "bot_paused" || c.config_key === "is_paused" || c.config_key === "ai_paused") && (c.config_value === true || c.config_value === "true" || c.config_value === "1")
   );
   if (isBotPaused) {
-    console.log(`[Webhook Pipeline] \u23F8\uFE0F AI agent paused by owner for "${business.name}". Logged, not answered.`);
+    console.log(
+      `[Webhook Pipeline] \u23F8\uFE0F AI agent is PAUSED for "${business.name}" (${business.id}). Inbound message logged to conversations, but automated AI reply is withheld.`
+    );
     return;
   }
   const isTrialExpired = business.subscription_status === "expired" || business.subscription_status === "trial" && business.trial_end_date && new Date(business.trial_end_date).getTime() < Date.now();
@@ -2589,7 +2669,7 @@ async function handleProspectReply(inbound, business) {
   );
   const isNegative = /(not now|not interested|no thanks|nahi|btn_not_now)/i.test(messageText);
   await supabase.from("lead_hunter_leads").update({ status: "replied", updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", lead.id);
-  if (ENV2.ADMIN_ALERT_NUMBER) {
+  if (ENV.ADMIN_ALERT_NUMBER) {
     const alertHeader = isPositive ? `\u{1F525} *HOT LEAD REPLY*` : isNegative ? `\u2139\uFE0F *Prospect declined*` : `\u{1F4AC} *New prospect reply*`;
     const adminAlertText = `${alertHeader}
 
@@ -2600,7 +2680,7 @@ async function handleProspectReply(inbound, business) {
 \u23F0 *Time*: ${(/* @__PURE__ */ new Date()).toLocaleTimeString("en-IN")}
 
 \u{1F449} https://wa.me/${cleanSender}`;
-    await sendMessage(ENV2.ADMIN_ALERT_NUMBER, businessNumber, adminAlertText);
+    await sendMessage(ENV.ADMIN_ALERT_NUMBER, businessNumber, adminAlertText);
   } else {
     console.warn("[Webhook] ADMIN_ALERT_NUMBER not configured \u2014 prospect alert not sent.");
   }
@@ -2621,9 +2701,9 @@ We won't message you again. If you ever want to look at a website, app, or Whats
   if (isPositive) {
     const confirmText = `\u{1F64F} *Thank you for your interest!*
 
-Our team has received your response and will connect with you shortly with a live custom demo and pricing.` + (ENV2.ADMIN_ALERT_NUMBER ? `
+Our team has received your response and will connect with you shortly with a live custom demo and pricing.` + (ENV.ADMIN_ALERT_NUMBER ? `
 
-Need us sooner? Call or WhatsApp *+${ENV2.ADMIN_ALERT_NUMBER}*. \u{1F680}` : "");
+Need us sooner? Call or WhatsApp *+${ENV.ADMIN_ALERT_NUMBER}*. \u{1F680}` : "");
     await sendMessage(customerNumber, businessNumber, confirmText);
     await saveConversationMessage(business.id, customerNumber, "outbound", confirmText);
     return true;
@@ -2862,7 +2942,7 @@ async function handleStandardAIReply(inbound, business, configs) {
 
 // src/routes/webhook.ts
 var router2 = Router2();
-router2.get("/webhook", (req, res) => {
+router2.get(["/webhook", "/api/webhook"], (req, res) => {
   const result = verifySubscription({
     mode: req.query["hub.mode"],
     token: req.query["hub.verify_token"],
@@ -2876,7 +2956,7 @@ router2.get("/webhook", (req, res) => {
   res.setHeader("Content-Type", "text/plain");
   return res.status(200).send(result.challenge);
 });
-router2.post("/webhook", async (req, res) => {
+router2.post(["/webhook", "/api/webhook"], async (req, res) => {
   const rawBody = req.rawBody ?? JSON.stringify(req.body ?? {});
   if (!verifyPayloadSignature(rawBody, req.header("x-hub-signature-256"))) {
     return res.sendStatus(403);
@@ -2920,7 +3000,8 @@ var LEGACY_PLAN_KEYS = {
   monthly_1: "monthly_999",
   annual_10: "annual_9990",
   monthly: "monthly_999",
-  annual: "annual_9990"
+  annual: "annual_9990",
+  annual_9999: "annual_9990"
 };
 function resolvePlan(key) {
   if (typeof key !== "string") return null;
@@ -2937,8 +3018,8 @@ function accessEndDate(plan, from = /* @__PURE__ */ new Date()) {
 var router3 = Router3();
 var MONTHLY = PLANS[DEFAULT_PLAN_KEY];
 function razorpayClient() {
-  if (!ENV2.RAZORPAY_KEY_ID || !ENV2.RAZORPAY_KEY_SECRET) return null;
-  return new Razorpay({ key_id: ENV2.RAZORPAY_KEY_ID, key_secret: ENV2.RAZORPAY_KEY_SECRET });
+  if (!ENV.RAZORPAY_KEY_ID || !ENV.RAZORPAY_KEY_SECRET) return null;
+  return new Razorpay({ key_id: ENV.RAZORPAY_KEY_ID, key_secret: ENV.RAZORPAY_KEY_SECRET });
 }
 router3.post("/create-subscription", async (req, res) => {
   try {
@@ -2947,7 +3028,7 @@ router3.post("/create-subscription", async (req, res) => {
       return res.status(400).json({ error: "business_id is required" });
     }
     const razorpay = razorpayClient();
-    if (!razorpay || !ENV2.RAZORPAY_PLAN_ID) {
+    if (!razorpay || !ENV.RAZORPAY_PLAN_ID) {
       console.error("[Billing API] RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET / RAZORPAY_PLAN_ID are not configured.");
       return res.status(503).json({
         error: "Subscriptions are not configured on this server.",
@@ -2987,7 +3068,7 @@ router3.post("/create-subscription", async (req, res) => {
     let subscriptionId;
     try {
       const subscription = await razorpay.subscriptions.create({
-        plan_id: ENV2.RAZORPAY_PLAN_ID,
+        plan_id: ENV.RAZORPAY_PLAN_ID,
         customer_notify: 1,
         total_count: 12,
         notes: { business_id: business.id, plan: MONTHLY.key }
@@ -3007,11 +3088,11 @@ router3.post("/create-subscription", async (req, res) => {
     }
     return res.json({
       subscription_id: subscriptionId,
-      razorpay_key_id: ENV2.RAZORPAY_KEY_ID,
+      razorpay_key_id: ENV.RAZORPAY_KEY_ID,
       amount: MONTHLY.amountPaise,
       currency: MONTHLY.currency,
       plan: MONTHLY.key,
-      plan_id: ENV2.RAZORPAY_PLAN_ID
+      plan_id: ENV.RAZORPAY_PLAN_ID
     });
   } catch (err) {
     console.error("[Billing API Exception] create-subscription:", err);
@@ -3021,7 +3102,7 @@ router3.post("/create-subscription", async (req, res) => {
 router3.post("/webhook", async (req, res) => {
   try {
     const signature = req.headers["x-razorpay-signature"];
-    if (!ENV2.RAZORPAY_WEBHOOK_SECRET) {
+    if (!ENV.RAZORPAY_WEBHOOK_SECRET) {
       console.error("[Billing Webhook] RAZORPAY_WEBHOOK_SECRET is not set \u2014 refusing unverifiable webhooks.");
       return res.status(503).json({ error: "Webhook secret is not configured on this server." });
     }
@@ -3030,7 +3111,7 @@ router3.post("/webhook", async (req, res) => {
       return res.status(401).json({ error: "Missing x-razorpay-signature." });
     }
     const rawBody = req.rawBody ?? JSON.stringify(req.body);
-    const expected = crypto2.createHmac("sha256", ENV2.RAZORPAY_WEBHOOK_SECRET).update(rawBody).digest("hex");
+    const expected = crypto2.createHmac("sha256", ENV.RAZORPAY_WEBHOOK_SECRET).update(rawBody).digest("hex");
     const a = Buffer.from(expected, "utf8");
     const b = Buffer.from(signature, "utf8");
     if (a.length !== b.length || !crypto2.timingSafeEqual(a, b)) {
@@ -3401,8 +3482,8 @@ import crypto3 from "crypto";
 var router5 = Router5();
 router5.post("/api/create-order", async (req, res) => {
   try {
-    const key_id = process.env.RAZORPAY_KEY_ID || ENV2.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV2.RAZORPAY_KEY_SECRET;
+    const key_id = process.env.RAZORPAY_KEY_ID || ENV.RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV.RAZORPAY_KEY_SECRET;
     if (!key_id || !key_secret) {
       return res.status(401).json({ error: "Razorpay API credentials not configured" });
     }
@@ -3432,7 +3513,7 @@ router5.post("/api/create-order", async (req, res) => {
 });
 router5.post("/api/verify-payment", (req, res) => {
   try {
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV2.RAZORPAY_KEY_SECRET;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || ENV.RAZORPAY_KEY_SECRET;
     if (!key_secret) {
       return res.status(401).json({ error: "Razorpay secret key not configured" });
     }
@@ -4391,7 +4472,7 @@ async function recordCall(req, result) {
 
 // src/services/hospitalCronService.ts
 async function send(phone, message) {
-  const result = await sendMessage(phone, ENV2.WHATSAPP_BUSINESS_NUMBER, message);
+  const result = await sendMessage(phone, ENV.WHATSAPP_BUSINESS_NUMBER, message);
   if (!result.success) {
     console.error(`[Hospital Cron] WhatsApp send to ${phone} failed: ${result.error}`);
   }
@@ -5052,7 +5133,7 @@ async function dispatchTarget(campaign, target) {
   await appendLog(campaign.id, `${label} \u{1F4E4} Pitching ${businessName} (${target.phone_number})...`, "info");
   const sendResult = await sendInteractiveButtonsMessage(
     target.phone_number,
-    ENV2.WHATSAPP_BUSINESS_NUMBER,
+    ENV.WHATSAPP_BUSINESS_NUMBER,
     pitchText,
     PITCH_BUTTONS.map((b) => ({ id: b.id, title: b.title }))
   );
@@ -5170,7 +5251,7 @@ initHospitalCronScheduler();
 startCampaignWorker(5e3);
 setInterval(async () => {
   try {
-    await fetch(`http://localhost:${ENV2.PORT}/billing/check-trials`, { method: "POST" });
+    await fetch(`http://localhost:${ENV.PORT}/billing/check-trials`, { method: "POST" });
   } catch (err) {
     console.error("[Periodic Trial Check Error]:", err.message);
   }
@@ -5185,14 +5266,14 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason, promise) => {
   console.error("\u{1F525} Unhandled Rejection at:", promise, "reason:", reason);
 });
-app.listen(ENV2.PORT, () => {
+app.listen(ENV.PORT, () => {
   console.log(`
 ======================================================`);
   console.log(`\u{1F680} Agento AI Backend Engine Live!`);
-  console.log(`\u{1F4E1} Listening on Port        : http://localhost:${ENV2.PORT}`);
-  console.log(`\u{1F4E5} WhatsApp Webhook         : http://localhost:${ENV2.PORT}/webhook`);
-  console.log(`\u{1F4B3} Create Order Endpoint    : http://localhost:${ENV2.PORT}/api/create-order`);
-  console.log(`\u{1F510} Verify Payment Endpoint  : http://localhost:${ENV2.PORT}/api/verify-payment`);
+  console.log(`\u{1F4E1} Listening on Port        : http://localhost:${ENV.PORT}`);
+  console.log(`\u{1F4E5} WhatsApp Webhook         : http://localhost:${ENV.PORT}/webhook`);
+  console.log(`\u{1F4B3} Create Order Endpoint    : http://localhost:${ENV.PORT}/api/create-order`);
+  console.log(`\u{1F510} Verify Payment Endpoint  : http://localhost:${ENV.PORT}/api/verify-payment`);
   console.log(`======================================================
 `);
 });

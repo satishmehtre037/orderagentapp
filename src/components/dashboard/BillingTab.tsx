@@ -379,13 +379,47 @@ export const BillingTab: React.FC<BillingTabProps> = ({
               </CardDescription>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              {/* Billing Cycle Switch */}
+              <div className="flex items-center gap-1 bg-surface-subtle p-1 rounded-lg border border-line">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBillingCycle('monthly')}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
+                    selectedBillingCycle === 'monthly'
+                      ? 'bg-surface text-fg shadow-xs'
+                      : 'text-fg-muted hover:text-fg'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBillingCycle('annual')}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                    selectedBillingCycle === 'annual'
+                      ? 'bg-surface text-fg shadow-xs'
+                      : 'text-fg-muted hover:text-fg'
+                  }`}
+                >
+                  <span>Annual</span>
+                  <span className="text-[9px] bg-accent text-accent-fg px-1 py-0.2 rounded font-bold">
+                    Save 17%
+                  </span>
+                </button>
+              </div>
+
               <div className="text-right">
                 <div className="text-2xl font-bold text-fg font-mono">
-                  ₹{PLANS.monthly_999.amountPaise / 100}
+                  {selectedBillingCycle === 'annual'
+                    ? `₹${(PLANS.annual_9990.amountPaise / 100).toLocaleString('en-IN')}`
+                    : `₹${(PLANS.monthly_999.amountPaise / 100).toLocaleString('en-IN')}`}
                 </div>
-                <div className="text-[10px] text-fg-muted">per month • cancel anytime</div>
+                <div className="text-[10px] text-fg-muted">
+                  {selectedBillingCycle === 'annual' ? 'per year (2 months free)' : 'per month • cancel anytime'}
+                </div>
               </div>
+
               <Button
                 variant="primary"
                 size="md"

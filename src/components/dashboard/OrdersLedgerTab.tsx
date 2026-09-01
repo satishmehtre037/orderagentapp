@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabaseClient } from '../../lib/supabase/client';
 import { OrderBookingLead, OrderStatus, BusinessCategory } from '../../types';
-import { LedgerRowSkeleton } from './SkeletonLoaders';
 import {
   ShoppingBag,
   Coffee,
@@ -47,6 +46,7 @@ import {
   Modal,
   Input,
   Label,
+  LedgerRowSkeleton,
 } from '../ui';
 
 interface OrdersLedgerTabProps {

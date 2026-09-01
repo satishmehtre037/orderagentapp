@@ -19,7 +19,6 @@ import { RetailForm } from '../ledger/RetailForm';
 import { RealEstateForm } from '../ledger/RealEstateForm';
 import { CAForm } from '../ledger/CAForm';
 import { CATEGORY_PRESETS, resolveCategoryFromNameOrType } from '../../lib/constants/categoryPresets';
-import { FormSkeleton } from './SkeletonLoaders';
 import {
   Save,
   CheckCircle2,
@@ -44,6 +43,7 @@ import {
   CardContent,
   Input,
   Label,
+  FormSkeleton,
 } from '../ui';
 
 interface EditBusinessInfoTabProps {

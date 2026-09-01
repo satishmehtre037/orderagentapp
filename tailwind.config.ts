@@ -12,7 +12,6 @@ import type { Config } from 'tailwindcss';
 const config: Config = {
   darkMode: 'class',
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
@@ -28,6 +27,7 @@ const config: Config = {
         base: 'var(--bg-base)',
         surface: {
           DEFAULT: 'var(--bg-surface)',
+          raised: 'var(--bg-surface-raised)',
           elevated: 'var(--bg-elevated)',
           subtle: 'var(--bg-subtle)',
           hover: 'var(--bg-hover)',

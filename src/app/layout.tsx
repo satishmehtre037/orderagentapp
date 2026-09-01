@@ -28,8 +28,8 @@ export const viewport: Viewport = {
   // 'cover' is required for env(safe-area-inset-*) to report real values.
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f7f8f9' },
-    { media: '(prefers-color-scheme: dark)', color: '#0a0c0e' },
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
+    { media: '(prefers-color-scheme: dark)', color: '#090b0e' },
   ],
 };
 

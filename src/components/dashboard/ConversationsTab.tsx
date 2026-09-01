@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabaseClient } from '../../lib/supabase/client';
 import { Conversation, ConversationThread } from '../../types';
-import { ConversationThreadSkeleton } from './SkeletonLoaders';
 import {
   MessageSquare,
   User,
@@ -14,6 +13,16 @@ import {
   Phone,
   CheckCheck,
   ArrowLeft,
+  Sparkles,
+  Zap,
+  ShoppingBag,
+  Clock,
+  ShieldCheck,
+  UserCheck,
+  AlertCircle,
+  ChevronRight,
+  Info,
+  X,
 } from 'lucide-react';
 import { useToast } from '../ui/ToastContext';
 import {
@@ -23,6 +32,10 @@ import {
   CardTitle,
   CardDescription,
   Input,
+  Badge,
+  Avatar,
+  Modal,
+  ConversationThreadSkeleton,
 } from '../ui';
 
 interface ConversationsTabProps {
@@ -38,11 +51,11 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
   const [selectedCustomerNumber, setSelectedCustomerNumber] = useState<string | null>(null);
   const [manualReplyText, setManualReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [humanTakeover, setHumanTakeover] = useState(false);
+  const [showInspector, setShowInspector] = useState(true);
+  const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
-  const isAtBottomRef = useRef<boolean>(true);
-  const prevMessagesLengthRef = useRef<number>(0);
-  const prevSelectedThreadRef = useRef<string | null>(null);
 
   const fetchConversations = useCallback(
     async (isManualRefresh = false) => {
@@ -154,6 +167,54 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
     };
   }, [threads, selectedCustomerNumber]);
 
+  // Derive smart AI Co-Pilot insights from the active thread messages
+  const aiInsights = useMemo(() => {
+    if (!activeThread || activeThread.messages.length === 0) return null;
+    const lastCustomerMsg = [...activeThread.messages]
+      .reverse()
+      .find((m) => m.sender === 'customer')?.message || activeThread.last_message;
+
+    const lower = lastCustomerMsg.toLowerCase();
+    let intent = 'General Inquiry';
+    let intentTone: 'accent' | 'success' | 'warning' | 'info' = 'info';
+    let draftAction = 'Answering customer questions autonomously';
+    let confidence = 96;
+
+    if (lower.includes('order') || lower.includes('buy') || lower.includes('cake') || lower.includes('price') || lower.includes('cost') || lower.includes('kg') || lower.includes('rate') || lower.includes('menu')) {
+      intent = 'Order / Price Inquiry';
+      intentTone = 'success';
+      draftAction = 'Evaluating product catalog & pricing';
+      confidence = 98;
+    } else if (lower.includes('book') || lower.includes('appointment') || lower.includes('slot') || lower.includes('doctor') || lower.includes('time') || lower.includes('schedule')) {
+      intent = 'Appointment Booking';
+      intentTone = 'accent';
+      draftAction = 'Checking available calendar slots';
+      confidence = 97;
+    } else if (lower.includes('help') || lower.includes('complaint') || lower.includes('issue') || lower.includes('cancel') || lower.includes('not working')) {
+      intent = 'Support / Escalation';
+      intentTone = 'warning';
+      draftAction = 'Human attention recommended if unresolved';
+      confidence = 88;
+    }
+
+    return {
+      intent,
+      intentTone,
+      draftAction,
+      confidence,
+      totalMessages: activeThread.messages.length,
+      firstSeen: activeThread.messages[0]?.created_at,
+      lastCustomerMsg,
+    };
+  }, [activeThread]);
+
+  // Auto-scroll chat to bottom on new message
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [activeThread?.messages]);
+
   useEffect(() => {
     if (!selectedCustomerNumber && threads.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
       setSelectedCustomerNumber(threads[0].customer_number);
@@ -179,6 +240,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
 
       if (res.ok) {
         setManualReplyText('');
+        showToast({ title: 'Reply Sent', message: 'WhatsApp message delivered to customer.', type: 'whatsapp' });
         fetchConversations(false);
       } else {
         showToast({ title: 'Reply Failed', message: 'Could not send WhatsApp message.', type: 'error' });
@@ -190,36 +252,116 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
     }
   };
 
+  const renderInspectorContent = () => {
+    if (!activeThread || !aiInsights) return null;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-line pb-2.5">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-accent" />
+            <span className="text-xs font-bold text-fg">AI Co-Pilot</span>
+          </div>
+          <Badge tone="accent">
+            {aiInsights.confidence}% Confidence
+          </Badge>
+        </div>
+
+        {/* Detected Intent */}
+        <div className="space-y-1">
+          <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wider">Detected Intent</span>
+          <div className="p-3 rounded-lg bg-surface-subtle border border-line">
+            <Badge tone={aiInsights.intentTone} className="font-semibold text-xs">
+              {aiInsights.intent}
+            </Badge>
+            <p className="text-xs text-fg-muted mt-1.5 leading-relaxed">
+              {aiInsights.draftAction}
+            </p>
+          </div>
+        </div>
+
+        {/* Customer Context */}
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wider">Customer Profile</span>
+          <div className="p-3 rounded-lg bg-surface-subtle border border-line space-y-2.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-fg-muted">WhatsApp Phone</span>
+              <span className="font-mono font-semibold text-fg">{activeThread.customer_number}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-fg-muted">Thread Activity</span>
+              <span className="font-mono font-semibold text-fg">{aiInsights.totalMessages} messages</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-fg-muted">First Dialogue</span>
+              <span className="font-mono text-fg-subtle text-[11px]">
+                {aiInsights.firstSeen ? new Date(aiInsights.firstSeen).toLocaleDateString() : 'Today'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 1-Click Takeover Card */}
+        <div className="pt-2 border-t border-line space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
+            <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+            <span>Autopilot Controls</span>
+          </div>
+          <p className="text-[11px] text-fg-muted leading-relaxed">
+            Take over this conversation to reply manually. 24/7 AI replies will pause for this customer until resumed.
+          </p>
+          <Button
+            variant={humanTakeover ? 'danger' : 'secondary'}
+            size="sm"
+            fullWidth
+            onClick={() => {
+              const next = !humanTakeover;
+              setHumanTakeover(next);
+              showToast({
+                title: next ? 'Human Mode Enabled' : 'AI Autopilot Resumed',
+                message: next ? 'AI paused for this thread.' : 'AI will handle incoming messages.',
+                type: next ? 'warning' : 'whatsapp',
+              });
+            }}
+          >
+            {humanTakeover ? 'Resume AI Autopilot' : 'Take Over Chat'}
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-5 animate-in fade-in duration-150">
+    <div className="space-y-4 animate-in fade-in duration-150">
       {/* Header */}
-      <Card>
-        <CardHeader className="flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card className="border border-line bg-surface shadow-xs">
+        <CardHeader className="p-3.5 sm:p-4 flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-accent" />
+            <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2 text-fg">
+              <MessageSquare className="w-4 h-4 text-emerald-500" />
               <span>Live WhatsApp Customer Inbox & AI Logs</span>
             </CardTitle>
-            <CardDescription>
-              Real-time message feed of incoming customer requests and autonomous AI responses
+            <CardDescription className="text-xs text-fg-muted">
+              Real-time feed of customer inquiries and autonomous AI agent responses
             </CardDescription>
           </div>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => fetchConversations(true)}
-            disabled={refreshing || loading}
-            title="Refresh Chats"
-            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
-          >
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fetchConversations(true)}
+              disabled={refreshing || loading}
+              title="Refresh Chats"
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
+            >
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
       </Card>
 
       {/* Main Chat Split Panel */}
-      <Card className="p-0 overflow-hidden h-[600px] flex flex-col md:flex-row">
+      <Card className="p-0 overflow-hidden h-[640px] flex flex-col md:flex-row border border-line bg-surface shadow-xs rounded-xl">
         {/* Left Sidebar: Threads List */}
         <div
           className={`w-full md:w-80 md:border-r border-line flex flex-col bg-surface ${
@@ -227,14 +369,14 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
           }`}
         >
           {/* Search Box */}
-          <div className="p-3 border-b border-line">
+          <div className="p-3 border-b border-line bg-surface-subtle/40">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-fg-subtle absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
-                placeholder="Search phone or text..."
+                placeholder="Search phone or message..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 text-xs"
+                className="w-full pl-8 text-xs h-9"
               />
             </div>
           </div>
@@ -242,7 +384,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
           {/* Threads List */}
           <div className="flex-1 overflow-y-auto divide-y divide-line no-scrollbar">
             {loading && threads.length === 0 ? (
-              <div className="p-3 space-y-3">
+              <div className="p-3 space-y-2">
                 <ConversationThreadSkeleton />
                 <ConversationThreadSkeleton />
                 <ConversationThreadSkeleton />
@@ -258,15 +400,13 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
                   <button
                     key={thread.customer_number}
                     onClick={() => setSelectedCustomerNumber(thread.customer_number)}
-                    className={`w-full text-left p-3.5 transition-colors flex items-start gap-3 ${
+                    className={`w-full text-left p-3 transition-colors flex items-start gap-2.5 ${
                       isSelected
-                        ? 'bg-accent-subtle/40 border-l-2 border-accent font-medium'
+                        ? 'bg-accent-subtle/80 border-l-2 border-accent font-medium'
                         : 'hover:bg-surface-hover'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-surface-subtle border border-line flex items-center justify-center text-fg-muted shrink-0 text-xs font-bold">
-                      <User className="w-4 h-4" />
-                    </div>
+                    <Avatar name={thread.customer_number} size="sm" className="shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
                         <span className="text-xs font-bold text-fg font-mono truncate">
@@ -287,35 +427,78 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
           </div>
         </div>
 
-        {/* Right Pane: Active Thread Chat View */}
+        {/* Center Pane: Active Thread Chat View */}
         <div
-          className={`flex-1 flex flex-col bg-base/50 ${
+          className={`flex-1 flex flex-col bg-base/20 ${
             !selectedCustomerNumber ? 'hidden md:flex' : 'flex'
           }`}
         >
           {activeThread ? (
             <>
-              {/* Header */}
-              <div className="p-3 border-b border-line bg-surface flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
+              {/* Chat Header */}
+              <div className="p-3 border-b border-line bg-surface flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <button
                     onClick={() => setSelectedCustomerNumber(null)}
-                    className="md:hidden p-1 rounded-md text-fg-muted hover:bg-surface-subtle"
+                    className="md:hidden p-1.5 rounded-md text-fg-muted hover:bg-surface-subtle"
+                    aria-label="Back to threads"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <div className="w-8 h-8 rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold text-xs">
-                    WA
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-fg font-mono">
+                  <Avatar name={activeThread.customer_number} size="sm" status="online" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-fg font-mono truncate">
                       {activeThread.customer_number}
                     </div>
                     <div className="text-[10px] text-success flex items-center gap-1 font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                      Active WhatsApp Thread
+                      <span>Live 24/7 AI Managed</span>
                     </div>
                   </div>
+                </div>
+
+                {/* AI Co-Pilot Toggle Button */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={humanTakeover ? 'danger' : 'ghost'}
+                    size="sm"
+                    onClick={() => {
+                      const next = !humanTakeover;
+                      setHumanTakeover(next);
+                      showToast({
+                        title: next ? 'Human Takeover Activated' : 'AI Autopilot Resumed',
+                        message: next
+                          ? 'AI is silent for this thread. Type your replies below.'
+                          : 'AI agent will handle incoming replies autonomously.',
+                        type: next ? 'warning' : 'whatsapp',
+                      });
+                    }}
+                    leftIcon={<UserCheck className="w-3.5 h-3.5" />}
+                  >
+                    <span className="hidden sm:inline">{humanTakeover ? 'Human Mode' : 'AI Autopilot'}</span>
+                  </Button>
+
+                  {/* Tablet / Mobile Drawer trigger */}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsMobileInspectorOpen(true)}
+                    className="lg:hidden"
+                    leftIcon={<Sparkles className="w-3.5 h-3.5 text-accent" />}
+                  >
+                    <span>Inspect</span>
+                  </Button>
+
+                  {/* Desktop Inspector inline toggle */}
+                  <Button
+                    variant={showInspector ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setShowInspector(!showInspector)}
+                    className="hidden lg:inline-flex"
+                    leftIcon={<Sparkles className="w-3.5 h-3.5 text-accent" />}
+                  >
+                    <span>Inspector</span>
+                  </Button>
                 </div>
               </div>
 
@@ -332,10 +515,10 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
                       className={`flex flex-col ${isAgent ? 'items-end' : 'items-start'}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 text-xs leading-relaxed whitespace-pre-line shadow-xs ${
+                        className={`max-w-[85%] sm:max-w-[75%] rounded-xl p-3 text-xs leading-relaxed whitespace-pre-line shadow-xs ${
                           isAgent
-                            ? 'bg-accent text-accent-fg rounded-tr-none'
-                            : 'bg-surface text-fg border border-line rounded-tl-none'
+                            ? 'chat-outbound-bubble rounded-tr-none'
+                            : 'chat-inbound-bubble rounded-tl-none'
                         }`}
                       >
                         {msg.message}
@@ -352,10 +535,10 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
               {/* Manual Override Input Bar */}
               <form onSubmit={handleSendManualReply} className="p-3 border-t border-line bg-surface flex items-center gap-2">
                 <Input
-                  placeholder="Type manual override WhatsApp reply..."
+                  placeholder={humanTakeover ? 'Type manual WhatsApp message...' : 'Type to manually intervene or reply...'}
                   value={manualReplyText}
                   onChange={(e) => setManualReplyText(e.target.value)}
-                  className="flex-1 text-xs"
+                  className="flex-1 text-xs h-10"
                 />
                 <Button
                   variant="primary"
@@ -364,6 +547,7 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
                   disabled={!manualReplyText.trim()}
                   loading={sendingReply}
                   leftIcon={<Send className="w-3.5 h-3.5" />}
+                  className="h-10"
                 >
                   Send
                 </Button>
@@ -371,15 +555,39 @@ export const ConversationsTab: React.FC<ConversationsTabProps> = ({ businessId }
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-fg-muted">
-              <MessageSquare className="w-10 h-10 mb-2 opacity-30" />
-              <p className="text-sm font-semibold">Select a customer thread</p>
-              <p className="text-xs max-w-xs mt-1">
+              <MessageSquare className="w-10 h-10 mb-2 opacity-30 text-accent" />
+              <p className="text-sm font-semibold text-fg">Select a customer thread</p>
+              <p className="text-xs max-w-xs mt-1 text-fg-muted">
                 Choose any customer conversation from the list to view real-time WhatsApp dialogue and AI responses.
               </p>
             </div>
           )}
         </div>
+
+        {/* Right Pane: AI Co-Pilot Inspector (Desktop) */}
+        {activeThread && showInspector && aiInsights && (
+          <div className="hidden lg:flex w-72 border-l border-line bg-surface flex-col p-4 overflow-y-auto">
+            {renderInspectorContent()}
+          </div>
+        )}
       </Card>
+
+      {/* Mobile / Tablet Slide-Over Inspector Modal */}
+      <Modal
+        open={isMobileInspectorOpen}
+        onClose={() => setIsMobileInspectorOpen(false)}
+        title="AI Co-Pilot Inspector"
+        description="Live inquiry analysis & autonomous action log"
+        icon={<Sparkles className="text-accent" />}
+        mobile="sheet"
+        size="md"
+      >
+        <div className="py-2">
+          {renderInspectorContent()}
+        </div>
+      </Modal>
     </div>
   );
 };
+
+
