@@ -136,6 +136,33 @@ Meta WhatsApp Cloud API webhook receiver. Requires valid \`x-hub-signature-256\`
 \`POST /api/hospital/cron/trigger/{jobName}\`  
 Jobs: \`reminders\`, \`feedback_surveys\`, \`missed_followups\`, \`all\`.
 `,
+
+  '/cli': `# Agento AI CLI — Command Line Tool Reference
+
+Official CLI tool for Agento AI by WebCore Studio. Automate WhatsApp business operations, appointments, and background cron scans from your terminal.
+
+## Quick Execution
+\`\`\`bash
+# Check production health & status
+npx @webcorestudio/agento-cli status
+
+# Query OPD appointments
+npx @webcorestudio/agento-cli appointments list --business-id <UUID>
+
+# Trigger background automation scanners
+npx @webcorestudio/agento-cli cron trigger all --business-id <UUID>
+\`\`\`
+
+## Commands
+- \`status\`, \`health\`: System connectivity and response latency.
+- \`appointments list\`: Fetch active consultations for a tenant.
+- \`cron trigger <job>\`: Run background scans (\`reminders\`, \`feedback_surveys\`, \`all\`).
+- \`version\`: Print CLI package version.
+
+## Documentation
+- Web Portal: https://orderagentapp.webcorestudio.dev/cli
+- OpenAPI Spec: https://orderagentapp.webcorestudio.dev/openapi.json
+`,
 };
 
 export const NOT_FOUND_MARKDOWN = `# 404 — Resource Not Found

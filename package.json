@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Agento AI - 24/7 Autonomous WhatsApp AI Mobile App & Business OS",
   "main": "dist/server.js",
+  "bin": {
+    "agento-cli": "./bin/agento-cli.js",
+    "agento": "./bin/agento-cli.js"
+  },
   "type": "module",
   "scripts": {
     "dev:backend": "tsx watch src/server.ts",

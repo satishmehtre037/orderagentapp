@@ -3912,9 +3912,9 @@
     "semantic_hash": ""
   },
   "public/openapi.json": {
-    "mtime": 1788269381.4269316,
-    "seen": 1788269582.2117226,
-    "ast_hash": "9783e329b1fbcda305d3bbbdf1e2cab9",
+    "mtime": 1788269834.516645,
+    "seen": 1788269894.375147,
+    "ast_hash": "4d493d08277ec1410c9dea85aa98967b",
     "semantic_hash": ""
   },
   "src/app/about/page.tsx": {
@@ -3993,6 +3993,18 @@
     "mtime": 1788269459.0496664,
     "seen": 1788269582.31456,
     "ast_hash": "bd2673beab1938638ff1d93d78ee75cf",
+    "semantic_hash": ""
+  },
+  "src/app/api/[...catchall]/route.ts": {
+    "mtime": 1788269806.6240273,
+    "seen": 1788269894.3762171,
+    "ast_hash": "fae94ac0e6b7311dee6da3b3c2303531",
+    "semantic_hash": ""
+  },
+  "src/app/openapi.json/route.ts": {
+    "mtime": 1788269815.914606,
+    "seen": 1788269894.3892927,
+    "ast_hash": "e84907d1a942ff393135821cec634058",
     "semantic_hash": ""
   }
 }

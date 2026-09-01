@@ -1,23 +1,23 @@
 # Graph Report - OrderAgentAPP  (2026-09-01)
 
 ## Corpus Check
-- 634 files · ~702,010 words
+- 639 files · ~703,849 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 7341 nodes · 8935 edges · 596 communities (530 shown, 66 thin omitted)
+- 7359 nodes · 8954 edges · 596 communities (528 shown, 68 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 16 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cf55ad77`
+- Built from commit: `e93dac56`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - ui/index.ts
 - requireBusiness
-- dashboard/page.tsx
+- types/index.ts
 - inboundPipeline.ts
 - statusline.cjs
 - [orderId]/route.ts
@@ -44,7 +44,7 @@
 - Workflow Automation - GitHub Actions Integration
 - Complete Guide
 - caService.ts
-- BillingTab.tsx
+- ToastContext.tsx
 - auto-memory-hook.mjs
 - promptBuilder.ts
 - subscriptionService.ts
@@ -98,7 +98,7 @@
 - matrix-optimizer.md
 - Core Capabilities
 - GitHub Release Manager
-- Switch Mode
+- otpService.ts
 - Load Balancing Coordinator Agent
 - SPARC Architecture Agent
 - GitHub Issue Tracker
@@ -118,7 +118,7 @@
 - neural-train
 - swarm-hooks.sh
 - V3 Deep Integration
-- send-pitch/route.ts
+- optOutService.ts
 - GitHub Sync Coordinator
 - Topology Optimizer Agent
 - SPARC Pseudocode Agent
@@ -180,9 +180,9 @@
 - swarm-comms.sh
 - Progressive Disclosure: Level 4 - Enterprise Features
 - scripts
-- Navigator Mode
+- Release Agents
 - StatusBadge
-- OrdersLedgerTab.tsx
+- dashboard/page.tsx
 - Modal
 - Backend API Developer v3.0.0-alpha.1
 - OpenAPI Documentation Specialist v3.0.0-alpha.1
@@ -309,8 +309,8 @@
 - Development Workflow
 - Pattern 3: Testing Swarm
 - claude-flow
-- types/index.ts
-- whatsappService.ts
+- CALeadsTab.tsx
+- sendMessage
 - Ruflo
 - Byzantine Consensus Coordinator
 - Gossip Protocol Coordinator
@@ -343,7 +343,7 @@
 - Creative and Support Modes
 - Best Practices
 - Advanced Techniques
-- Mode Selection Guide
+- Workspace Configuration
 - Supabase Postgres Best Practices
 - MainActivity.java
 - Code Quality Analyzer
@@ -358,7 +358,7 @@
 - React Native Mobile Developer
 - React Native Mobile Developer
 - Coordination Patterns
-- Specialized Modes
+- Examples
 - AI Partner Commands
 - Debugging Commands
 - ddd-tracker.sh
@@ -391,7 +391,7 @@
 - Learning Commands
 - Metrics Commands
 - [...catchall]/route.ts
-- Release Agents
+- Core Features
 - Features
 - Session Metrics
 - Session Templates
@@ -424,20 +424,20 @@
 - Available Pipelines
 - Advanced Use Cases
 - Real-World Examples
-- src/middleware.ts
+- Advanced Synchronization
 - fishAudioService.ts
 - gradlew
 - Advanced Swarm PR Coordination
-- Advanced Features
-- Advanced Swarm Synchronization Features
+- Examples
+- Visualization & Reporting
+- Board Commands
+- Release Validation
+- Integration Examples
+- Core Features
 - Use Cases
 - Best Practices
-- Performance Optimization
-- Troubleshooting
-- Orchestration Commands
-- Advanced Features
-- Driver Mode
-- Core Features
+- Communication Strategies
+- Automation Features
 - robots.ts
 - sitemap.ts
 - Integration Examples
@@ -447,20 +447,20 @@
 - Monitoring & Insights
 - Core Features
 - Best Practices
-- Advanced Features
-- Synchronization Patterns
-- Performance Optimization
+- Core Features
+- Advanced Synchronization
+- Board Commands
 - Troubleshooting
 - Monitoring & Visualization
 - Orchestration Commands
-- Advanced Features
+- Troubleshooting
 - Best Practices
-- Core Features
-- Best Practices
-- Release Validation
-- Integration Examples
-- Examples
-- Session Management
+- Workflow Integration
+- CLI Configuration
+- Mode-Specific Configuration
+- Modes
+- Quality Features
+- agento-cli.js
 - Session Lifecycle
 - Advanced Features
 - Background Sessions
@@ -503,8 +503,8 @@
 - Examples Repository
 - Integration with Claude Flow
 - Matrix Strategies
-- Integration
-- Modes Explained
+- Language-Specific Settings
+- cli/page.tsx
 - statusline-hook.sh
 - 💬 Intelligent Comment Generation
 - 🔐 Security Considerations
@@ -556,7 +556,7 @@
 - security-rls-performance.md
 - _template.md
 - capacitor.config.ts
-- @capacitor/status-bar
+- healthz/route.ts
 - github-setup.sh
 - guidance-hook.sh
 - guidance-hooks.sh
@@ -567,20 +567,20 @@
 - update-v3-progress.sh
 - v3.sh
 - v3-quick-status.sh
-- cors
+- @capacitor/android
 - dotenv
-- groq-sdk
+- @capacitor/cli
 - jspdf
 - lucide-react
 - next.config.mjs
 - next-env.d.ts
-- next
-- pdfkit
+- @capacitor/splash-screen
+- clsx
 - react
-- react-dom
+- express
 - react-hook-form
 - @supabase/supabase-js
-- zod
+- ws
 - tailwind.config.ts
 - token-and-booking.test.ts
 - openapi.json/route.ts
@@ -600,35 +600,35 @@
 ## Surprising Connections (you probably didn't know these)
 - `GET()` --calls--> `getCategoryReminderMessage()`  [EXTRACTED]
   src/app/api/reminders/route.ts → src/lib/constants/categoryPresets.ts
-- `CADashboardOverviewTabProps` --references--> `DashboardTab`  [EXTRACTED]
-  src/components/dashboard/ca/CADashboardOverviewTab.tsx → src/types/index.ts
 - `GET()` --calls--> `getStatus()`  [EXTRACTED]
   src/app/api/admin/lead-hunter/campaign/route.ts → src/services/campaignService.ts
 - `GET()` --calls--> `resolveOperatorBusinessId()`  [EXTRACTED]
   src/app/api/admin/lead-hunter/conversations/route.ts → src/services/businessService.ts
 - `POST()` --calls--> `sendWhatsAppTextMessage()`  [EXTRACTED]
   src/app/api/admin/lead-hunter/conversations/route.ts → src/lib/whatsapp.ts
+- `POST()` --calls--> `normalizeIndianPhone()`  [EXTRACTED]
+  src/app/api/admin/lead-hunter/leads/route.ts → src/services/optOutService.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (596 total, 66 thin omitted)
+## Communities (596 total, 68 thin omitted)
 
 ### Community 0 - "ui/index.ts"
 Cohesion: 0.06
-Nodes (66): StepIndicator(), StepIndicatorProps, STEPS, AppShell(), AppShellProps, BottomNav(), BottomNavItem, BottomNavProps (+58 more)
+Nodes (61): StepIndicator(), StepIndicatorProps, STEPS, AppShell(), AppShellProps, BottomNav(), BottomNavItem, BottomNavProps (+53 more)
 
 ### Community 1 - "requireBusiness"
 Cohesion: 0.07
 Nodes (51): DELETE(), dynamic, GET(), POST(), DELETE(), dynamic, GET(), GET() (+43 more)
 
-### Community 2 - "dashboard/page.tsx"
-Cohesion: 0.08
-Nodes (46): DashboardPage(), Home(), CAAutomationControlTab(), CAAutomationControlTabProps, CANewClientModal(), CANewClientModalProps, ChatMessage, HospitalAIAgentTab() (+38 more)
+### Community 2 - "types/index.ts"
+Cohesion: 0.06
+Nodes (53): metadata, metadata, Home(), CAAutomationControlTab(), CAAutomationControlTabProps, CAComplianceTab(), CAComplianceTabProps, CADashboardOverviewTab() (+45 more)
 
 ### Community 3 - "inboundPipeline.ts"
-Cohesion: 0.06
-Nodes (57): PATCH(), sendWhatsAppStatusNotification(), POST(), sendWhatsAppStatusNotification(), GET(), POST(), dynamic, GET() (+49 more)
+Cohesion: 0.07
+Nodes (42): dynamic, GET(), dynamic, GET(), POST(), groq, cancelLatestOrderForCustomer(), cancelOrdersForCustomer() (+34 more)
 
 ### Community 4 - "statusline.cjs"
 Cohesion: 0.06
@@ -651,16 +651,16 @@ Cohesion: 0.07
 Nodes (12): CONFIG, DATA_DIR, DB_PATH, __dirname, EmbeddingService, __filename, HNSWIndex, initializeDatabase() (+4 more)
 
 ### Community 9 - "Multi-Repo Swarm - Cross-Repository Swarm Orchestration"
-Cohesion: 0.08
-Nodes (24): 1. Cross-Repo Initialization, 1. Eventually Consistent, 1. Webhook-Based Coordination, 2. GraphQL Federation, 2. Repository Discovery, 2. Strong Consistency, 3. Event Streaming, 3. Hybrid Approach (+16 more)
+Cohesion: 0.04
+Nodes (48): 1. Cross-Repo Initialization, 1. Distributed Task Queue, 1. Eventually Consistent, 1. Microservices Coordination, 1. Repository Organization, 1. Webhook-Based Coordination, 2. Communication, 2. Cross-Repo Testing (+40 more)
 
 ### Community 10 - "Project Board Sync - GitHub Projects Integration"
-Cohesion: 0.04
-Nodes (48): 1. Auto-Assignment, 1. Board Initialization, 1. Board Organization, 1. Multi-Board Sync, 2. Cross-Organization Sync, 2. Data Integrity, 2. Progress Tracking, 2. Task Synchronization (+40 more)
+Cohesion: 0.08
+Nodes (24): 1. Board Organization, 2. Data Integrity, 3. Team Adoption, Agile Development Board, Best Practices, Board Analytics, Board Mapping Configuration, Configuration (+16 more)
 
 ### Community 11 - "onboarding/page.tsx"
-Cohesion: 0.09
-Nodes (33): OnboardingPage(), BillingTabProps, CATEGORY_OPTIONS, EditBusinessInfoTabProps, OrdersLedgerTabProps, BakeryForm(), CafeForm(), CAForm() (+25 more)
+Cohesion: 0.10
+Nodes (32): OnboardingPage(), BillingTabProps, CATEGORY_OPTIONS, EditBusinessInfoTabProps, OrdersLedgerTabProps, BakeryForm(), CafeForm(), CAForm() (+24 more)
 
 ### Community 12 - "agent.md"
 Cohesion: 0.04
@@ -676,7 +676,7 @@ Nodes (45): 1. Single-Node Neural Training, 2. Model Inference, 3. Template Mark
 
 ### Community 15 - "config/supabase.ts"
 Cohesion: 0.05
-Nodes (25): dynamic, dynamic, dynamic, dynamic, GET(), POST(), POST(), dynamic (+17 more)
+Nodes (27): dynamic, GET(), POST(), dynamic, dynamic, dynamic, dynamic, ENV (+19 more)
 
 ### Community 16 - "Project Management"
 Cohesion: 0.04
@@ -703,12 +703,12 @@ Cohesion: 0.05
 Nodes (43): 1. Choose the Right Topology, 1. Multi-Repo Development, 2. Optimize Agent Assignment, 2. Research Projects, 3. DevOps Automation, 3. Implement Proper Error Handling, 4. Code Quality Workflows, 4. Monitor and Scale (+35 more)
 
 ### Community 22 - "Release Swarm - Intelligent Release Automation"
-Cohesion: 0.05
-Nodes (43): 1. Progressive Deployment, 1. Release Planning, 1. Release Planning, 2. Automated Versioning, 2. Automation, 2. Multi-Repo Releases, 3. Documentation, 3. Hotfix Automation (+35 more)
+Cohesion: 0.07
+Nodes (29): 1. Progressive Deployment, 1. Release Planning, 1. Release Planning, 2. Automated Versioning, 2. Automation, 2. Multi-Repo Releases, 3. Documentation, 3. Hotfix Automation (+21 more)
 
 ### Community 23 - "Pair Programming Modes"
-Cohesion: 0.14
-Nodes (14): Best Practices by Mode, Debug-Focused, Driver Mode, Learning-Focused, Mode Combinations, Mode Comparison, Mode Persistence, Navigator Mode (+6 more)
+Cohesion: 0.05
+Nodes (43): Best For, Best For, Best For, Best Practices by Mode, Choose Driver Mode When:, Choose Navigator Mode When:, Choose Specialized Modes When:, Choose Switch Mode When: (+35 more)
 
 ### Community 24 - "intelligence.cjs"
 Cohesion: 0.10
@@ -728,11 +728,11 @@ Nodes (40): Adding a new guard, Additional Resources, Advanced Workflows, Automa
 
 ### Community 28 - "caService.ts"
 Cohesion: 0.15
-Nodes (21): POST(), dynamic, POST(), dynamic, POST(), findCAClient(), getClientCompliances(), getClientDocuments() (+13 more)
+Nodes (22): POST(), dynamic, POST(), dynamic, POST(), findCAClient(), getClientCompliances(), getClientDocuments() (+14 more)
 
-### Community 29 - "BillingTab.tsx"
-Cohesion: 0.19
-Nodes (10): BillingTab(), Window, DELTA_TONE, StatCard(), StatCardProps, TRIAL_DAYS, useCountUp(), UseCountUpOptions (+2 more)
+### Community 29 - "ToastContext.tsx"
+Cohesion: 0.12
+Nodes (14): inter, jetbrainsMono, jsonLdBrand, jsonLdOrg, jsonLdSoftware, jsonLdWebSite, metadata, viewport (+6 more)
 
 ### Community 30 - "auto-memory-hook.mjs"
 Cohesion: 0.09
@@ -740,19 +740,19 @@ Nodes (18): DATA_DIR, dim(), __dirname, doImport(), doStatus(), doSync(), __file
 
 ### Community 31 - "promptBuilder.ts"
 Cohesion: 0.08
-Nodes (48): getGroqClient(), getCategoryTemplate(), buildSafeFallbackReply(), cleanLLMOutput(), extractStructuredCapture(), getGroqChatCompletion(), getResponse(), GROQ_MODEL_CASCADE (+40 more)
+Nodes (49): getGroqClient(), getBusinessConfigs(), getCategoryTemplate(), buildSafeFallbackReply(), cleanLLMOutput(), extractStructuredCapture(), getGroqChatCompletion(), getResponse() (+41 more)
 
 ### Community 32 - "subscriptionService.ts"
-Cohesion: 0.10
-Nodes (25): GET(), POST(), POST(), POST(), POST(), POST(), POST(), accessEndDate() (+17 more)
+Cohesion: 0.12
+Nodes (20): GET(), POST(), POST(), POST(), POST(), POST(), POST(), accessEndDate() (+12 more)
 
 ### Community 33 - "AgentDB Learning Plugins"
 Cohesion: 0.05
 Nodes (36): 1. Collect Experiences, 1. Decision Transformer (Recommended), 2. Q-Learning, 2. Train Model, 3. Evaluate Performance, 3. SARSA, 4. Actor-Critic, 5. Active Learning (+28 more)
 
 ### Community 34 - "Swarm PR - Managing Swarms through Pull Requests"
-Cohesion: 0.08
-Nodes (24): 1. PR Templates, 2. Status Checks, 3. PR Merge Automation, Automatic Agent Assignment, Best Practices, Bug Fix PR, Code Review Integration, Dashboard Integration (+16 more)
+Cohesion: 0.06
+Nodes (32): 1. Multi-PR Swarm Coordination, 1. PR-Based Swarm Creation, 1. PR Templates, 2. PR Comment Commands, 2. PR Dependency Analysis, 2. Status Checks, 3. Automated PR Fixes, 3. Automated PR Workflows (+24 more)
 
 ### Community 35 - "pagerank-analyzer.md"
 Cohesion: 0.06
@@ -803,8 +803,8 @@ Cohesion: 0.06
 Nodes (33): Aggregate Root, Application Layer, Base Domain Classes, Complete Core Implementation, Container Configuration, Core Implementation Architecture, Dependency Injection Setup, Domain Services (+25 more)
 
 ### Community 47 - "Card"
-Cohesion: 0.07
-Nodes (20): inter, jetbrainsMono, jsonLdBrand, jsonLdOrg, jsonLdSoftware, jsonLdWebSite, metadata, viewport (+12 more)
+Cohesion: 0.09
+Nodes (14): ApiDocsPage(), metadata, Card, CardContent, Theme, ThemeContext, ThemeContextType, ThemeProvider() (+6 more)
 
 ### Community 48 - "GitHub Issue Tracker"
 Cohesion: 0.06
@@ -867,8 +867,8 @@ Cohesion: 0.07
 Nodes (29): 1. Task Management Domain, 2. Session Management Domain, 3. Health Monitoring Domain, Application Layer (Use Cases), Bounded Context Modules, Clean Architecture Layers, Complete Domain Extraction, Core Kernel (+21 more)
 
 ### Community 63 - "dependencies"
-Cohesion: 0.07
-Nodes (29): ai, @ai-sdk/gateway, @capacitor/android, @capacitor/cli, @capacitor/core, @capacitor/splash-screen, clsx, express (+21 more)
+Cohesion: 0.06
+Nodes (31): ai, @ai-sdk/gateway, @capacitor/core, @capacitor/status-bar, cors, groq-sdk, @hookform/resolvers, node-cron (+23 more)
 
 ### Community 64 - "GitHub PR Manager"
 Cohesion: 0.07
@@ -879,8 +879,8 @@ Cohesion: 0.07
 Nodes (25): agent-spawn, Examples, Options, Usage, Available Commands, Coordination Commands, Basic initialization, Examples (+17 more)
 
 ### Community 66 - "Project Board Sync - GitHub Projects Integration"
-Cohesion: 0.04
-Nodes (48): 1. Auto-Assignment, 1. Board Initialization, 1. Board Organization, 1. Multi-Board Sync, 2. Cross-Organization Sync, 2. Data Integrity, 2. Progress Tracking, 2. Task Synchronization (+40 more)
+Cohesion: 0.07
+Nodes (28): 1. Auto-Assignment, 1. Board Organization, 2. Data Integrity, 2. Progress Tracking, 3. Smart Card Movement, 3. Team Adoption, Automation Features, Best Practices (+20 more)
 
 ### Community 67 - "🐝 Claude-Flow Swarm Coordination"
 Cohesion: 0.07
@@ -899,8 +899,8 @@ Cohesion: 0.07
 Nodes (27): dom, dom.iterable, esnext, next-env.d.ts, .next/types/**/*.ts, node_modules, **/*.ts, **/*.tsx (+19 more)
 
 ### Community 71 - "caCronService.ts"
-Cohesion: 0.13
-Nodes (27): POST(), dynamic, POST(), POST(), PUT(), dynamic, POST(), caRouter (+19 more)
+Cohesion: 0.14
+Nodes (26): POST(), dynamic, POST(), POST(), PUT(), dynamic, POST(), CAEngineResult (+18 more)
 
 ### Community 72 - "Pull Request Manager Agent"
 Cohesion: 0.07
@@ -946,9 +946,9 @@ Nodes (24): 1. Flash Attention Optimization, 2. WASM SIMD Acceleration, 3. Perfo
 Cohesion: 0.08
 Nodes (24): 1. **Comprehensive Testing**, 1. Coordinated Release Preparation, 1. **Semantic Versioning Strategy**, 2. **Documentation Management**, 2. Multi-Package Version Coordination, 2. **Multi-Stage Validation**, 3. Automated Release Validation, 3. **Deployment Coordination** (+16 more)
 
-### Community 83 - "Switch Mode"
-Cohesion: 0.29
-Nodes (7): Best For, Configuration, Default Intervals, Example Session, Role Transitions, Switch Mode, Usage
+### Community 83 - "otpService.ts"
+Cohesion: 0.26
+Nodes (10): POST(), POST(), CACHE_FILE, generateAndStoreOtp(), readStore(), StoredOtp, verifyStoredOtp(), writeStore() (+2 more)
 
 ### Community 84 - "Load Balancing Coordinator Agent"
 Cohesion: 0.08
@@ -963,12 +963,12 @@ Cohesion: 0.08
 Nodes (23): 1. Create Coordinated Issue with Swarm Tracking, 1. **Swarm-Coordinated Issue Management**, 2. **Automated Progress Tracking**, 2. Automated Progress Updates, 3. Multi-Issue Project Coordination, 3. **Smart Labeling and Organization**, 4. **Batch Issue Operations**, Automatic tracking of: (+15 more)
 
 ### Community 87 - "Multi-Repo Swarm - Cross-Repository Swarm Orchestration"
-Cohesion: 0.08
-Nodes (24): 1. Cross-Repo Initialization, 1. Microservices Coordination, 1. Repository Organization, 1. Webhook-Based Coordination, 2. Communication, 2. GraphQL Federation, 2. Library Updates, 2. Repository Discovery (+16 more)
+Cohesion: 0.10
+Nodes (20): 1. Distributed Task Queue, 1. Eventually Consistent, 2. Cross-Repo Testing, 2. Strong Consistency, 3. Hybrid Approach, 3. Monorepo Migration, Advanced Features, Caching Strategy (+12 more)
 
 ### Community 88 - "Swarm PR - Managing Swarms through Pull Requests"
-Cohesion: 0.08
-Nodes (24): 1. Multi-PR Swarm Coordination, 1. PR-Based Swarm Creation, 2. PR Comment Commands, 2. PR Dependency Analysis, 3. Automated PR Fixes, 3. Automated PR Workflows, Advanced Features, Automatic Agent Assignment (+16 more)
+Cohesion: 0.07
+Nodes (28): 1. Multi-PR Swarm Coordination, 1. PR-Based Swarm Creation, 2. PR Comment Commands, 2. PR Dependency Analysis, 3. Automated PR Fixes, 3. Automated PR Workflows, Advanced Features, Automatic Agent Assignment (+20 more)
 
 ### Community 89 - "Browser Automation Skill"
 Cohesion: 0.08
@@ -1011,8 +1011,8 @@ Cohesion: 0.09
 Nodes (22): Batch Operations, branch-manager, ci-orchestrator, code-reviewer, Creating a coordinated pull request workflow:, gh-coordinator, GitHub Integration Modes, GitHub Workflow Modes (+14 more)
 
 ### Community 99 - "Pair Programming Configuration"
-Cohesion: 0.05
-Nodes (39): Agent Configuration, Basic Configuration, Best Practices, Built-in Agents, CLI Configuration, Complete Configuration, Configuration File, Configuration Not Loading (+31 more)
+Cohesion: 0.09
+Nodes (23): Agent Configuration, Basic Configuration, Best Practices, Built-in Agents, Complete Configuration, Configuration File, Configuration Not Loading, Configuration Validation (+15 more)
 
 ### Community 100 - "neural-train"
 Cohesion: 0.09
@@ -1026,13 +1026,13 @@ Nodes (22): accept_handoff(), broadcast_context(), broadcast_pattern(), complete
 Cohesion: 0.09
 Nodes (22): AgentDB Coordination, AgentDB Search Performance, agentic-flow@alpha Feature Integration, Backward Compatibility, Code Deduplication Strategy, Current Overlap → Integration, Flash Attention Integration, Flash Attention Targets (+14 more)
 
-### Community 103 - "send-pitch/route.ts"
-Cohesion: 0.08
-Nodes (36): dynamic, fetchCache, GET(), noStore, POST(), revalidate, dynamic, POST() (+28 more)
+### Community 103 - "optOutService.ts"
+Cohesion: 0.10
+Nodes (28): dynamic, fetchCache, GET(), noStore, POST(), revalidate, dynamic, POST() (+20 more)
 
 ### Community 104 - "GitHub Sync Coordinator"
-Cohesion: 0.08
-Nodes (26): 1. **Atomic Synchronization**, 1. Synchronize Package Dependencies, 1. **Version Alignment Strategy**, 2. **Documentation Sync Pattern**, 2. Documentation Synchronization, 2. **Version Management**, 3. Cross-Package Feature Integration, 3. **Documentation Consistency** (+18 more)
+Cohesion: 0.07
+Nodes (30): 1. **Atomic Synchronization**, 1. Synchronize Package Dependencies, 1. **Version Alignment Strategy**, 2. **Documentation Sync Pattern**, 2. Documentation Synchronization, 2. **Version Management**, 3. Cross-Package Feature Integration, 3. **Documentation Consistency** (+22 more)
 
 ### Community 105 - "Topology Optimizer Agent"
 Cohesion: 0.09
@@ -1116,7 +1116,7 @@ Nodes (14): cache-manage, Examples, Options, Usage, Examples, Options, parallel-
 
 ### Community 125 - "👥 Pair Programming Command"
 Cohesion: 0.11
-Nodes (19): Best Practices, Bug Fixing, Code Review Session, Configuration, Driver Mode, Examples, Modes, Navigator Mode (+11 more)
+Nodes (18): Best Practices, Configuration, During Session, End Session, Integration, Options, Overview, 👥 Pair Programming Command (+10 more)
 
 ### Community 126 - "Available Modes"
 Cohesion: 0.11
@@ -1151,12 +1151,12 @@ Cohesion: 0.12
 Nodes (16): [1.2.0](https://github.com/supabase/agent-skills/compare/v1.1.1...v1.2.0) (2026-06-02), [1.3.0](https://github.com/supabase/agent-skills/compare/v1.2.0...v1.3.0) (2026-06-05), [1.4.0](https://github.com/supabase/agent-skills/compare/v1.3.0...v1.4.0) (2026-07-10), [1.5.0](https://github.com/supabase/agent-skills/compare/supabase-postgres-best-practices-v1.4.0...supabase-postgres-best-practices-v1.5.0) (2026-07-30), [1.6.0](https://github.com/supabase/agent-skills/compare/supabase-postgres-best-practices-v1.5.0...supabase-postgres-best-practices-v1.6.0) (2026-07-30), Bug Fixes, Bug Fixes, Bug Fixes (+8 more)
 
 ### Community 134 - "Release Swarm - Intelligent Release Automation"
-Cohesion: 0.12
-Nodes (17): Auto-Generated Docs, Automated Rollback, Continuous Deployment, Documentation, Emergency Procedures, Hotfix Process, Monitoring & Rollback, Overview (+9 more)
+Cohesion: 0.05
+Nodes (43): 1. Progressive Deployment, 1. Release Planning, 1. Release Planning, 2. Automated Versioning, 2. Automation, 2. Multi-Repo Releases, 3. Documentation, 3. Hotfix Automation (+35 more)
 
 ### Community 135 - "pair --start"
 Cohesion: 0.12
-Nodes (16): Background Execution, Best Practices, Code Review, Integration, Options, pair --start, Quality Features, Related Commands (+8 more)
+Nodes (16): Background Execution, Best Practices, Driver Mode, Integration, Modes Explained, Navigator Mode, Options, pair --start (+8 more)
 
 ### Community 136 - "statusline.js"
 Cohesion: 0.21
@@ -1274,17 +1274,17 @@ Nodes (14): Advanced Testing Strategies, Automated Rollback Configuration, Backw
 Cohesion: 0.14
 Nodes (14): scripts, android:open, android:run, android:sync, build, build:backend, dev, dev:backend (+6 more)
 
-### Community 165 - "Navigator Mode"
+### Community 165 - "Release Agents"
 Cohesion: 0.33
-Nodes (6): Best For, Commands in Navigator Mode, Example Session, Navigator Mode, Responsibilities, Usage
+Nodes (6): Build Agent, Changelog Agent, Deploy Agent, Release Agents, Test Agent, Version Agent
 
 ### Community 166 - "StatusBadge"
 Cohesion: 0.28
 Nodes (8): BadgeProps, BadgeTone, humanize(), STATUS_TONE, StatusBadge(), StatusBadgeProps, statusTone(), TONE
 
-### Community 167 - "OrdersLedgerTab.tsx"
-Cohesion: 0.16
-Nodes (14): EditBusinessInfoTab(), loadConfig(), CATEGORY_HEADER_CONFIG, OrdersLedgerTab(), ConfirmOptions, ToastContext, ToastContextValue, ToastOptions (+6 more)
+### Community 167 - "dashboard/page.tsx"
+Cohesion: 0.13
+Nodes (30): DashboardPage(), BillingTab(), Window, ConversationsTab(), EditBusinessInfoTab(), loadConfig(), HospitalAIAgentTab(), HospitalAppointmentsTab() (+22 more)
 
 ### Community 168 - "Modal"
 Cohesion: 0.20
@@ -1786,13 +1786,13 @@ Nodes (9): Architecture, CLI Fallback, Pattern 3: Testing Swarm, Phase 1: Test P
 Cohesion: 0.22
 Nodes (8): CLAUDE_FLOW_HOOKS_ENABLED, CLAUDE_FLOW_MAX_AGENTS, CLAUDE_FLOW_MEMORY_BACKEND, CLAUDE_FLOW_MODE, CLAUDE_FLOW_TOPOLOGY, npm_config_update_notifier, cmd, claude-flow
 
-### Community 294 - "types/index.ts"
-Cohesion: 0.07
-Nodes (40): metadata, ApiDocsPage(), metadata, metadata, CAAIAgentTab(), CAAIAgentTabProps, ChatMessage, CAComplianceTab() (+32 more)
+### Community 294 - "CALeadsTab.tsx"
+Cohesion: 0.08
+Nodes (28): CAAIAgentTab(), CAAIAgentTabProps, ChatMessage, CAInvoicesTab(), CAInvoicesTabProps, InvoiceItem, CALeadsTab(), CALeadsTabProps (+20 more)
 
-### Community 295 - "whatsappService.ts"
-Cohesion: 0.44
-Nodes (7): sendWhatsAppMediaMessage(), credentials(), formatWhatsAppMessage(), postToGraph(), sendInteractiveButtonsMessage(), sendMediaMessage(), SendResult
+### Community 295 - "sendMessage"
+Cohesion: 0.17
+Nodes (19): PATCH(), sendWhatsAppStatusNotification(), POST(), sendWhatsAppStatusNotification(), GET(), POST(), POST(), sendWhatsAppInteractiveButtons() (+11 more)
 
 ### Community 296 - "Ruflo"
 Cohesion: 0.25
@@ -1922,9 +1922,9 @@ Nodes (7): 1. Choosing the Right Topology, 2. Agent Specialization, 3. Parallel 
 Cohesion: 0.29
 Nodes (7): Advanced Techniques, Error Handling and Fault Tolerance, Memory and State Management, Monitoring and Metrics, Neural Pattern Learning, Performance Optimization, Workflow Automation
 
-### Community 330 - "Mode Selection Guide"
+### Community 330 - "Workspace Configuration"
 Cohesion: 0.40
-Nodes (5): Choose Driver Mode When:, Choose Navigator Mode When:, Choose Specialized Modes When:, Choose Switch Mode When:, Mode Selection Guide
+Nodes (5): Global, Priority Order, Project-Specific, User-Specific, Workspace Configuration
 
 ### Community 331 - "Supabase Postgres Best Practices"
 Cohesion: 0.33
@@ -1982,9 +1982,9 @@ Nodes (5): Best practices:, Component patterns:, Key responsibilities:, Platform
 Cohesion: 0.33
 Nodes (6): Adaptive, agent-coordination, Best Practices, Coordination Patterns, Hierarchical, Mesh
 
-### Community 345 - "Specialized Modes"
+### Community 345 - "Examples"
 Cohesion: 0.40
-Nodes (5): Debug Mode, Mentor Mode, Review Mode, Specialized Modes, TDD Mode
+Nodes (5): Bug Fixing, Code Review Session, Examples, Refactoring Session, Test-Driven Development
 
 ### Community 347 - "AI Partner Commands"
 Cohesion: 0.33
@@ -2067,8 +2067,8 @@ Cohesion: 0.33
 Nodes (6): 1. Clear and Specific Prompts, 2. Logical Progression, 3. Appropriate Timeouts, 4. Verification Steps, 5. Iterative Refinement, Best Practices
 
 ### Community 367 - "package.json"
-Cohesion: 0.33
-Nodes (5): description, main, name, type, version
+Cohesion: 0.22
+Nodes (8): bin, agento, agento-cli, description, main, name, type, version
 
 ### Community 368 - "Backend API Developer"
 Cohesion: 0.40
@@ -2111,12 +2111,12 @@ Cohesion: 0.40
 Nodes (5): /leaderboard, /metrics, Metrics Commands, /productivity, /score
 
 ### Community 378 - "[...catchall]/route.ts"
-Cohesion: 0.20
-Nodes (8): RFC-9457, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+Cohesion: 0.11
+Nodes (17): RFC-9457, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT (+9 more)
 
-### Community 379 - "Release Agents"
-Cohesion: 0.33
-Nodes (6): Build Agent, Changelog Agent, Deploy Agent, Release Agents, Test Agent, Version Agent
+### Community 379 - "Core Features"
+Cohesion: 0.50
+Nodes (4): 1. Board Initialization, 2. Task Synchronization, 3. Real-time Updates, Core Features
 
 ### Community 380 - "Features"
 Cohesion: 0.40
@@ -2246,9 +2246,9 @@ Nodes (5): Advanced Use Cases, Code Migration Workflow, Data Transformation Pipe
 Cohesion: 0.40
 Nodes (5): Example 1: AI Research Project, Example 2: Full-Stack Application, Example 3: Security Audit, Example 4: Performance Optimization, Real-World Examples
 
-### Community 412 - "src/middleware.ts"
-Cohesion: 0.36
-Nodes (5): MARKDOWN_PAGES, NOT_FOUND_MARKDOWN, config, middleware(), createClient()
+### Community 412 - "Advanced Synchronization"
+Cohesion: 0.50
+Nodes (4): 1. Multi-Board Sync, 2. Cross-Organization Sync, 3. External Tool Integration, Advanced Synchronization
 
 ### Community 414 - "gradlew"
 Cohesion: 0.83
@@ -2258,45 +2258,45 @@ Nodes (3): gradlew script, die(), warn()
 Cohesion: 0.50
 Nodes (4): Advanced Swarm PR Coordination, Intelligent PR Merge Coordination, Multi-Agent PR Analysis, Swarm-Coordinated PR Lifecycle
 
-### Community 416 - "Advanced Features"
+### Community 416 - "Examples"
 Cohesion: 0.50
-Nodes (4): 1. Distributed Task Queue, 2. Cross-Repo Testing, 3. Monorepo Migration, Advanced Features
+Nodes (4): Agile Development Board, Examples, Kanban Flow Board, Research Project Board
 
-### Community 417 - "Advanced Swarm Synchronization Features"
+### Community 417 - "Visualization & Reporting"
 Cohesion: 0.50
-Nodes (4): Advanced Swarm Synchronization Features, Comprehensive Synchronization Metrics, Intelligent Conflict Resolution, Multi-Agent Coordination Architecture
+Nodes (4): Board Analytics, Custom Dashboards, Reports, Visualization & Reporting
 
-### Community 418 - "Use Cases"
+### Community 418 - "Board Commands"
+Cohesion: 0.50
+Nodes (4): Board Commands, Bulk Operations, Card Templates, Create Cards from Issues
+
+### Community 419 - "Release Validation"
+Cohesion: 0.50
+Nodes (4): Compatibility Testing, Pre-Release Checks, Release Validation, Security Scanning
+
+### Community 420 - "Integration Examples"
+Cohesion: 0.50
+Nodes (4): Docker Image Release, Integration Examples, Mobile App Release, NPM Package Release
+
+### Community 421 - "Core Features"
+Cohesion: 0.50
+Nodes (4): 1. Cross-Repo Initialization, 2. Repository Discovery, 3. Synchronized Operations, Core Features
+
+### Community 422 - "Use Cases"
 Cohesion: 0.50
 Nodes (4): 1. Microservices Coordination, 2. Library Updates, 3. Organization-Wide Changes, Use Cases
 
-### Community 419 - "Best Practices"
+### Community 423 - "Best Practices"
 Cohesion: 0.50
 Nodes (4): 1. Repository Organization, 2. Communication, 3. Security, Best Practices
 
-### Community 420 - "Performance Optimization"
+### Community 424 - "Communication Strategies"
 Cohesion: 0.50
-Nodes (4): Caching Strategy, Parallel Execution, Performance Optimization, Resource Pooling
+Nodes (4): 1. Webhook-Based Coordination, 2. GraphQL Federation, 3. Event Streaming, Communication Strategies
 
-### Community 421 - "Troubleshooting"
+### Community 425 - "Automation Features"
 Cohesion: 0.50
-Nodes (4): Connectivity Issues, Memory Synchronization, Performance Bottlenecks, Troubleshooting
-
-### Community 422 - "Orchestration Commands"
-Cohesion: 0.50
-Nodes (4): Dependency Management, Orchestration Commands, Refactoring Operations, Security Updates
-
-### Community 423 - "Advanced Features"
-Cohesion: 0.50
-Nodes (4): 1. Multi-PR Swarm Coordination, 2. PR Dependency Analysis, 3. Automated PR Fixes, Advanced Features
-
-### Community 424 - "Driver Mode"
-Cohesion: 0.33
-Nodes (6): Best For, Commands in Driver Mode, Driver Mode, Example Session, Responsibilities, Usage
-
-### Community 425 - "Core Features"
-Cohesion: 0.50
-Nodes (4): 1. PR-Based Swarm Creation, 2. PR Comment Commands, 3. Automated PR Workflows, Core Features
+Nodes (4): 1. Auto-Assignment, 2. Progress Tracking, 3. Smart Card Movement, Automation Features
 
 ### Community 428 - "Integration Examples"
 Cohesion: 0.50
@@ -2326,17 +2326,17 @@ Nodes (4): 1. Swarm-Powered Actions, 2. Dynamic Workflow Generation, 3. Intellig
 Cohesion: 0.50
 Nodes (4): 1. Workflow Organization, 2. Security, 3. Performance, Best Practices
 
-### Community 435 - "Advanced Features"
+### Community 435 - "Core Features"
 Cohesion: 0.50
-Nodes (4): 1. Distributed Task Queue, 2. Cross-Repo Testing, 3. Monorepo Migration, Advanced Features
+Nodes (4): 1. Board Initialization, 2. Task Synchronization, 3. Real-time Updates, Core Features
 
-### Community 436 - "Synchronization Patterns"
+### Community 436 - "Advanced Synchronization"
 Cohesion: 0.50
-Nodes (4): 1. Eventually Consistent, 2. Strong Consistency, 3. Hybrid Approach, Synchronization Patterns
+Nodes (4): 1. Multi-Board Sync, 2. Cross-Organization Sync, 3. External Tool Integration, Advanced Synchronization
 
-### Community 437 - "Performance Optimization"
+### Community 437 - "Board Commands"
 Cohesion: 0.50
-Nodes (4): Caching Strategy, Parallel Execution, Performance Optimization, Resource Pooling
+Nodes (4): Board Commands, Bulk Operations, Card Templates, Create Cards from Issues
 
 ### Community 438 - "Troubleshooting"
 Cohesion: 0.50
@@ -2350,37 +2350,33 @@ Nodes (4): Dependency Graph, Health Monitoring, Monitoring & Visualization, Mult
 Cohesion: 0.50
 Nodes (4): Dependency Management, Orchestration Commands, Refactoring Operations, Security Updates
 
-### Community 441 - "Advanced Features"
+### Community 441 - "Troubleshooting"
 Cohesion: 0.50
-Nodes (4): 1. Progressive Deployment, 2. Multi-Repo Releases, 3. Hotfix Automation, Advanced Features
+Nodes (4): Data Recovery, Performance, Sync Issues, Troubleshooting
 
 ### Community 442 - "Best Practices"
 Cohesion: 0.50
 Nodes (4): 1. PR Templates, 2. Status Checks, 3. PR Merge Automation, Best Practices
 
-### Community 443 - "Core Features"
+### Community 443 - "Workflow Integration"
 Cohesion: 0.50
-Nodes (4): 1. Release Planning, 2. Automated Versioning, 3. Release Orchestration, Core Features
+Nodes (4): Milestone Tracking, Release Planning, Sprint Management, Workflow Integration
 
-### Community 444 - "Best Practices"
+### Community 444 - "CLI Configuration"
 Cohesion: 0.50
-Nodes (4): 1. Release Planning, 2. Automation, 3. Documentation, Best Practices
+Nodes (4): CLI Configuration, Get Configuration, Reset Configuration, Set Configuration
 
-### Community 445 - "Release Validation"
+### Community 445 - "Mode-Specific Configuration"
 Cohesion: 0.50
-Nodes (4): Compatibility Testing, Pre-Release Checks, Release Validation, Security Scanning
+Nodes (4): Driver Mode, Mode-Specific Configuration, Navigator Mode, Switch Mode
 
-### Community 446 - "Integration Examples"
+### Community 446 - "Modes"
 Cohesion: 0.50
-Nodes (4): Docker Image Release, Integration Examples, Mobile App Release, NPM Package Release
+Nodes (4): Driver Mode, Modes, Navigator Mode, Switch Mode (Default)
 
-### Community 447 - "Examples"
+### Community 447 - "Quality Features"
 Cohesion: 0.50
-Nodes (4): Bug Fix PR, Documentation PR, Examples, Feature Development PR
-
-### Community 448 - "Session Management"
-Cohesion: 0.50
-Nodes (4): During Session, End Session, Session Management, Start Session
+Nodes (4): Code Review, Quality Features, Testing, Verification
 
 ### Community 449 - "Session Lifecycle"
 Cohesion: 0.50
@@ -2550,13 +2546,9 @@ Nodes (4): Combine with Swarm Coordination, Integration with Claude Flow, Memory
 Cohesion: 0.67
 Nodes (3): Dynamic Test Matrix, Intelligent Parallelization, Matrix Strategies
 
-### Community 491 - "Integration"
-Cohesion: 0.50
-Nodes (4): Integration, With CI/CD, With Git, With Testing Frameworks
-
-### Community 492 - "Modes Explained"
-Cohesion: 0.50
-Nodes (4): Driver Mode, Modes Explained, Navigator Mode, Switch Mode
+### Community 491 - "Language-Specific Settings"
+Cohesion: 0.67
+Nodes (3): JavaScript/TypeScript, Language-Specific Settings, Python
 
 ### Community 494 - "💬 Intelligent Comment Generation"
 Cohesion: 0.67
@@ -2627,24 +2619,24 @@ Cohesion: 0.67
 Nodes (3): Basic Pattern, Prerequisites, Quick Start
 
 ## Knowledge Gaps
-- **4493 isolated node(s):** `ADRS`, `__filename`, `__dirname`, `PROJECT_ROOT`, `DATA_DIR` (+4488 more)
+- **4499 isolated node(s):** `ADRS`, `__filename`, `__dirname`, `PROJECT_ROOT`, `DATA_DIR` (+4494 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **66 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **68 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `supabase` connect `config/supabase.ts` to `subscriptionService.ts`, `requireBusiness`, `inboundPipeline.ts`, `[orderId]/route.ts`, `send-pitch/route.ts`, `caCronService.ts`, `business/route.ts`, `campaignService.ts`, `Card`, `caService.ts`, `promptBuilder.ts`?**
-  _High betweenness centrality (0.002) - this node is a cross-community bridge._
-- **Why does `Release Swarm - Intelligent Release Automation` connect `Release Swarm - Intelligent Release Automation` to `agents/github/swarm-pr.md`?**
-  _High betweenness centrality (0.001) - this node is a cross-community bridge._
-- **Why does `Pair Programming Modes` connect `Pair Programming Modes` to `Navigator Mode`, `Driver Mode`, `Mode Selection Guide`, `Switch Mode`, `Specialized Modes`, `config.md`?**
+- **Why does `supabase` connect `config/supabase.ts` to `subscriptionService.ts`, `requireBusiness`, `inboundPipeline.ts`, `[orderId]/route.ts`, `optOutService.ts`, `caCronService.ts`, `business/route.ts`, `sendMessage`, `campaignService.ts`, `Card`, `otpService.ts`, `caService.ts`, `promptBuilder.ts`?**
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
+- **Why does `Release Swarm - Intelligent Release Automation` connect `Release Swarm - Intelligent Release Automation` to `Integration Examples`, `Release Validation`, `agents/github/swarm-pr.md`, `Release Agents`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
 - **What connects `ADRS`, `__filename`, `__dirname` to the rest of the system?**
-  _4493 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _4499 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ui/index.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05600722673893405 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05927405927405927 - nodes in this community are weakly interconnected._
 - **Should `requireBusiness` be split into smaller, more focused modules?**
   _Cohesion score 0.06628621597892889 - nodes in this community are weakly interconnected._
-- **Should `dashboard/page.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.08018648018648018 - nodes in this community are weakly interconnected._
+- **Should `types/index.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.06127206127206127 - nodes in this community are weakly interconnected._
+- **Should `inboundPipeline.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.06638714185883997 - nodes in this community are weakly interconnected._

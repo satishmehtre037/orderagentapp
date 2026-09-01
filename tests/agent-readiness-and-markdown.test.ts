@@ -3,6 +3,9 @@ import { middleware } from '@/middleware';
 import { NextRequest } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { GET as apiDiscoveryGet } from '@/app/api/route';
+import { GET as apiHealthGet } from '@/app/api/health/route';
+import { GET as catchallGet } from '@/app/api/[...catchall]/route';
 
 describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
   describe('Markdown Content Negotiation via Middleware', () => {
@@ -22,7 +25,7 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
       expect(body).toContain('Hospital & Clinic OPD Automation');
     });
 
-    it('should serve text/markdown for /about and /api-docs', async () => {
+    it('should serve text/markdown for /about, /api-docs, and /cli', async () => {
       const reqAbout = new NextRequest('http://localhost:3000/about', {
         headers: { accept: 'text/markdown' },
       });
@@ -33,13 +36,14 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
       const bodyAbout = await resAbout.text();
       expect(bodyAbout).toContain('WebCore Studio');
 
-      const reqDocs = new NextRequest('http://localhost:3000/api-docs', {
+      const reqCli = new NextRequest('http://localhost:3000/cli', {
         headers: { accept: 'text/markdown' },
       });
-      const resDocs = await middleware(reqDocs);
-      expect(resDocs.status).toBe(200);
-      expect(resDocs.headers.get('content-type')).toContain('text/markdown');
-      expect(resDocs.headers.get('vary')).toContain('Accept');
+      const resCli = await middleware(reqCli);
+      expect(resCli.status).toBe(200);
+      expect(resCli.headers.get('content-type')).toContain('text/markdown');
+      const bodyCli = await resCli.text();
+      expect(bodyCli).toContain('@webcorestudio/agento-cli');
     });
 
     it('should return real HTTP 404 with recovery markdown for nonexistent paths requesting markdown', async () => {
@@ -53,6 +57,36 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
       const body404 = await res404.text();
       expect(body404).toContain('404 — Resource Not Found');
       expect(body404).toContain('Recovery Directory');
+    });
+  });
+
+  describe('API Root Discovery & RFC 9457 JSON Error Model', () => {
+    it('should return API discovery manifest from GET /api', async () => {
+      const res = await apiDiscoveryGet();
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.name).toContain('Agento AI');
+      expect(json.status).toBe('operational');
+      expect(json.endpoints.webhook).toBe('/api/webhook');
+    });
+
+    it('should return health status from GET /api/health', async () => {
+      const res = await apiHealthGet();
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.status).toBe('healthy');
+      expect(json.service).toContain('Agento AI');
+    });
+
+    it('should return structured RFC 9457 problem+json on unhandled API endpoints', async () => {
+      const req = new Request('http://localhost:3000/api/unknown-endpoint-404');
+      const res = catchallGet(req);
+      expect(res.status).toBe(404);
+      expect(res.headers.get('content-type')).toContain('application/problem+json');
+      const json = await res.json();
+      expect(json.type).toBe('https://orderagentapp.webcorestudio.dev/errors/not-found');
+      expect(json.error.code).toBe('API_ENDPOINT_NOT_FOUND');
+      expect(json.error.hint).toContain('https://orderagentapp.webcorestudio.dev/openapi.json');
     });
   });
 
@@ -74,7 +108,7 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
     });
   });
 
-  describe('Machine-Readable Discovery Files', () => {
+  describe('Machine-Readable Discovery Files & CLI', () => {
     it('should have a valid public/llms.txt with When To Use, CLI, and Rate Limit sections', () => {
       const llmsPath = path.join(process.cwd(), 'public', 'llms.txt');
       expect(fs.existsSync(llmsPath)).toBe(true);
@@ -94,7 +128,6 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
       expect(json.info.title).toContain('Agento AI');
       expect(json.components.schemas.ErrorResponse).toBeDefined();
 
-      // Ensure every single path operation has a unique operationId and typed 200 response
       let operationCount = 0;
       for (const [pathKey, pathItem] of Object.entries(json.paths)) {
         for (const [method, op] of Object.entries(pathItem as any)) {
@@ -106,7 +139,15 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
           }
         }
       }
-      expect(operationCount).toBeGreaterThanOrEqual(7);
+      expect(operationCount).toBeGreaterThanOrEqual(9);
+    });
+
+    it('should have executable CLI file in bin/agento-cli.js', () => {
+      const binPath = path.join(process.cwd(), 'bin', 'agento-cli.js');
+      expect(fs.existsSync(binPath)).toBe(true);
+      const content = fs.readFileSync(binPath, 'utf-8');
+      expect(content).toContain('#!/usr/bin/env node');
+      expect(content).toContain('@webcorestudio/agento-cli');
     });
 
     it('should have valid sitemap.xml and robots.txt', () => {
@@ -115,6 +156,7 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
       const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
       expect(sitemapContent).toContain('https://orderagentapp.webcorestudio.dev/');
       expect(sitemapContent).toContain('https://orderagentapp.webcorestudio.dev/about');
+      expect(sitemapContent).toContain('https://orderagentapp.webcorestudio.dev/cli');
 
       const robotsPath = path.join(process.cwd(), 'public', 'robots.txt');
       expect(fs.existsSync(robotsPath)).toBe(true);

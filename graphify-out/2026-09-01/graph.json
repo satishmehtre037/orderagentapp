@@ -7038,6 +7038,18 @@
       "source_location": "L23"
     },
     {
+      "id": "src_app_api_catchall_route_handlenotfound",
+      "label": "handleNotFound()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 378,
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "handlenotfound()",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L8"
+    },
+    {
       "id": "claude_helpers_statusline_applylocaloverlays",
       "label": "applyLocalOverlays()",
       "_callable": true,
@@ -8068,6 +8080,18 @@
       "norm_label": "createclient()",
       "source_file": "src/utils/supabase/server.ts",
       "source_location": "L10"
+    },
+    {
+      "id": "src_app_openapi_json_route_get",
+      "label": "GET()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 595,
+      "community_name": "openapi.json/route.ts",
+      "file_type": "code",
+      "norm_label": "get()",
+      "source_file": "src/app/openapi.json/route.ts",
+      "source_location": "L7"
     },
     {
       "id": "src_app_api_ca_cron_trigger_jobname_route_post",
@@ -16895,28 +16919,16 @@
       "source_location": "L217"
     },
     {
-      "id": "claude_commands_pair_readme_during_session",
-      "label": "During Session",
+      "id": "claude_commands_pair_readme_driver_mode",
+      "label": "Driver Mode",
       "_origin": "ast",
       "community": 125,
       "community_name": "\ud83d\udc65 Pair Programming Command",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "during session",
+      "norm_label": "driver mode",
       "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L100"
-    },
-    {
-      "id": "claude_commands_pair_readme_end_session",
-      "label": "End Session",
-      "_origin": "ast",
-      "community": 125,
-      "community_name": "\ud83d\udc65 Pair Programming Command",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "end session",
-      "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L115"
+      "source_location": "L42"
     },
     {
       "id": "claude_commands_pair_readme_examples",
@@ -16931,16 +16943,28 @@
       "source_location": "L124"
     },
     {
-      "id": "claude_commands_pair_readme_integration",
-      "label": "Integration",
+      "id": "claude_commands_pair_readme_modes",
+      "label": "Modes",
       "_origin": "ast",
       "community": 125,
       "community_name": "\ud83d\udc65 Pair Programming Command",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "integration",
+      "norm_label": "modes",
       "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L158"
+      "source_location": "L40"
+    },
+    {
+      "id": "claude_commands_pair_readme_navigator_mode",
+      "label": "Navigator Mode",
+      "_origin": "ast",
+      "community": 125,
+      "community_name": "\ud83d\udc65 Pair Programming Command",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "navigator mode",
+      "source_file": ".claude/commands/pair/README.md",
+      "source_location": "L48"
     },
     {
       "id": "claude_commands_pair_readme_options",
@@ -17027,18 +17051,6 @@
       "source_location": "L256"
     },
     {
-      "id": "claude_commands_pair_readme_session_management",
-      "label": "Session Management",
-      "_origin": "ast",
-      "community": 125,
-      "community_name": "\ud83d\udc65 Pair Programming Command",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "session management",
-      "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L85"
-    },
-    {
       "id": "claude_commands_pair_readme_session_output",
       "label": "Session Output",
       "_origin": "ast",
@@ -17051,16 +17063,16 @@
       "source_location": "L184"
     },
     {
-      "id": "claude_commands_pair_readme_start_session",
-      "label": "Start Session",
+      "id": "claude_commands_pair_readme_switch_mode_default",
+      "label": "Switch Mode (Default)",
       "_origin": "ast",
       "community": 125,
       "community_name": "\ud83d\udc65 Pair Programming Command",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "start session",
+      "norm_label": "switch mode (default)",
       "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L87"
+      "source_location": "L54"
     },
     {
       "id": "claude_commands_pair_readme_test_driven_development",
@@ -17085,42 +17097,6 @@
       "norm_label": "usage",
       "source_file": ".claude/commands/pair/README.md",
       "source_location": "L9"
-    },
-    {
-      "id": "claude_commands_pair_readme_with_ci_cd",
-      "label": "With CI/CD",
-      "_origin": "ast",
-      "community": 125,
-      "community_name": "\ud83d\udc65 Pair Programming Command",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "with ci/cd",
-      "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L178"
-    },
-    {
-      "id": "claude_commands_pair_readme_with_git",
-      "label": "With Git",
-      "_origin": "ast",
-      "community": 125,
-      "community_name": "\ud83d\udc65 Pair Programming Command",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "with git",
-      "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L160"
-    },
-    {
-      "id": "claude_commands_pair_readme_with_testing_frameworks",
-      "label": "With Testing Frameworks",
-      "_origin": "ast",
-      "community": 125,
-      "community_name": "\ud83d\udc65 Pair Programming Command",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "with testing frameworks",
-      "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L169"
     },
     {
       "id": "claude_commands_sparc_sparc_modes",
@@ -19114,126 +19090,6 @@
       "source_location": "L64"
     },
     {
-      "id": "claude_commands_github_release_swarm_1_progressive_deployment",
-      "label": "1. Progressive Deployment",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. progressive deployment",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L219"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_1_release_planning",
-      "label": "1. Release Planning",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. release planning",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L8"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_1_release_planning_472",
-      "label": "1. Release Planning",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. release planning",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L472"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_2_automated_versioning",
-      "label": "2. Automated Versioning",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. automated versioning",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L29"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_2_automation",
-      "label": "2. Automation",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. automation",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L478"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_2_multi_repo_releases",
-      "label": "2. Multi-Repo Releases",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. multi-repo releases",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L242"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_3_documentation",
-      "label": "3. Documentation",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. documentation",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L484"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_3_hotfix_automation",
-      "label": "3. Hotfix Automation",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. hotfix automation",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L252"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_3_release_orchestration",
-      "label": "3. Release Orchestration",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. release orchestration",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L39"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_advanced_features",
-      "label": "Advanced Features",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "advanced features",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L217"
-    },
-    {
       "id": "claude_commands_github_release_swarm_auto_generated_docs",
       "label": "Auto-Generated Docs",
       "_origin": "ast",
@@ -19258,54 +19114,6 @@
       "source_location": "L394"
     },
     {
-      "id": "claude_commands_github_release_swarm_best_practices",
-      "label": "Best Practices",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "best practices",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L470"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_build_agent",
-      "label": "Build Agent",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "build agent",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L180"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_changelog_agent",
-      "label": "Changelog Agent",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "changelog agent",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L122"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_compatibility_testing",
-      "label": "Compatibility Testing",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "compatibility testing",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L362"
-    },
-    {
       "id": "claude_commands_github_release_swarm_continuous_deployment",
       "label": "Continuous Deployment",
       "_origin": "ast",
@@ -19316,42 +19124,6 @@
       "norm_label": "continuous deployment",
       "source_file": ".claude/commands/github/release-swarm.md",
       "source_location": "L335"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_core_features",
-      "label": "Core Features",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "core features",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L6"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_deploy_agent",
-      "label": "Deploy Agent",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "deploy agent",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L207"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_docker_image_release",
-      "label": "Docker Image Release",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "docker image release",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L502"
     },
     {
       "id": "claude_commands_github_release_swarm_documentation",
@@ -19390,30 +19162,6 @@
       "source_location": "L524"
     },
     {
-      "id": "claude_commands_github_release_swarm_integration_examples",
-      "label": "Integration Examples",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "integration examples",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L490"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_mobile_app_release",
-      "label": "Mobile App Release",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "mobile app release",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L512"
-    },
-    {
       "id": "claude_commands_github_release_swarm_monitoring_rollback",
       "label": "Monitoring & Rollback",
       "_origin": "ast",
@@ -19426,18 +19174,6 @@
       "source_location": "L382"
     },
     {
-      "id": "claude_commands_github_release_swarm_npm_package_release",
-      "label": "NPM Package Release",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "npm package release",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L492"
-    },
-    {
       "id": "claude_commands_github_release_swarm_overview",
       "label": "Overview",
       "_origin": "ast",
@@ -19448,30 +19184,6 @@
       "norm_label": "overview",
       "source_file": ".claude/commands/github/release-swarm.md",
       "source_location": "L3"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_pre_release_checks",
-      "label": "Pre-Release Checks",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "pre-release checks",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L347"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_release_agents",
-      "label": "Release Agents",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "release agents",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L120"
     },
     {
       "id": "claude_commands_github_release_swarm_release_analytics",
@@ -19546,18 +19258,6 @@
       "source_location": "L1"
     },
     {
-      "id": "claude_commands_github_release_swarm_release_validation",
-      "label": "Release Validation",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "release validation",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L345"
-    },
-    {
       "id": "claude_commands_github_release_swarm_release_workflows",
       "label": "Release Workflows",
       "_origin": "ast",
@@ -19582,18 +19282,6 @@
       "source_location": "L534"
     },
     {
-      "id": "claude_commands_github_release_swarm_security_scanning",
-      "label": "Security Scanning",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "security scanning",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L372"
-    },
-    {
       "id": "claude_commands_github_release_swarm_standard_release_flow",
       "label": "Standard Release Flow",
       "_origin": "ast",
@@ -19604,30 +19292,6 @@
       "norm_label": "standard release flow",
       "source_file": ".claude/commands/github/release-swarm.md",
       "source_location": "L264"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_test_agent",
-      "label": "Test Agent",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "test agent",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L197"
-    },
-    {
-      "id": "claude_commands_github_release_swarm_version_agent",
-      "label": "Version Agent",
-      "_origin": "ast",
-      "community": 134,
-      "community_name": "Release Swarm - Intelligent Release Automation",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "version agent",
-      "source_file": ".claude/commands/github/release-swarm.md",
-      "source_location": "L163"
     },
     {
       "id": "claude_commands_pair_start",
@@ -19678,18 +19342,6 @@
       "source_location": "L123"
     },
     {
-      "id": "claude_commands_pair_start_driver_mode",
-      "label": "Driver Mode",
-      "_origin": "ast",
-      "community": 135,
-      "community_name": "pair --start",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "driver mode",
-      "source_file": ".claude/commands/pair/start.md",
-      "source_location": "L68"
-    },
-    {
       "id": "claude_commands_pair_start_integration",
       "label": "Integration",
       "_origin": "ast",
@@ -19700,30 +19352,6 @@
       "norm_label": "integration",
       "source_file": ".claude/commands/pair/start.md",
       "source_location": "L179"
-    },
-    {
-      "id": "claude_commands_pair_start_modes_explained",
-      "label": "Modes Explained",
-      "_origin": "ast",
-      "community": 135,
-      "community_name": "pair --start",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "modes explained",
-      "source_file": ".claude/commands/pair/start.md",
-      "source_location": "L66"
-    },
-    {
-      "id": "claude_commands_pair_start_navigator_mode",
-      "label": "Navigator Mode",
-      "_origin": "ast",
-      "community": 135,
-      "community_name": "pair --start",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "navigator mode",
-      "source_file": ".claude/commands/pair/start.md",
-      "source_location": "L75"
     },
     {
       "id": "claude_commands_pair_start_options",
@@ -19796,18 +19424,6 @@
       "norm_label": "session output",
       "source_file": ".claude/commands/pair/start.md",
       "source_location": "L135"
-    },
-    {
-      "id": "claude_commands_pair_start_switch_mode",
-      "label": "Switch Mode",
-      "_origin": "ast",
-      "community": 135,
-      "community_name": "pair --start",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "switch mode",
-      "source_file": ".claude/commands/pair/start.md",
-      "source_location": "L82"
     },
     {
       "id": "claude_commands_pair_start_testing",
@@ -31214,6 +30830,174 @@
       "source_location": "L11"
     },
     {
+      "id": "claude_commands_github_swarm_issue_1_issue_dependencies",
+      "label": "1. Issue Dependencies",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. issue dependencies",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L217"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_1_issue_pr_linking",
+      "label": "1. Issue-PR Linking",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. issue-pr linking",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L381"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_1_issue_templates",
+      "label": "1. Issue Templates",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. issue templates",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L428"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_1_issue_to_swarm_conversion",
+      "label": "1. Issue-to-Swarm Conversion",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. issue-to-swarm conversion",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L8"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_2_epic_management",
+      "label": "2. Epic Management",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. epic management",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L226"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_2_issue_comment_commands",
+      "label": "2. Issue Comment Commands",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. issue comment commands",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L32"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_2_label_strategy",
+      "label": "2. Label Strategy",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. label strategy",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L434"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_2_milestone_coordination",
+      "label": "2. Milestone Coordination",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. milestone coordination",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L390"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_3_comment_etiquette",
+      "label": "3. Comment Etiquette",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. comment etiquette",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L440"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_3_cross_repo_issues",
+      "label": "3. Cross-Repo Issues",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. cross-repo issues",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L399"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_3_issue_templates",
+      "label": "3. Issue Templates",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. issue templates",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L235"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_3_issue_templates_for_swarms",
+      "label": "3. Issue Templates for Swarms",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. issue templates for swarms",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L44"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_advanced_features",
+      "label": "Advanced Features",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "advanced features",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L215"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_auto_close_stale_issues",
+      "label": "Auto-Close Stale Issues",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "auto-close stale issues",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L316"
+    },
+    {
       "id": "claude_commands_github_swarm_issue_auto_label_based_on_content",
       "label": "Auto-Label Based on Content",
       "_origin": "ast",
@@ -31224,6 +31008,30 @@
       "norm_label": "auto-label based on content",
       "source_file": ".claude/commands/github/swarm-issue.md",
       "source_location": "L76"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_automation_examples",
+      "label": "Automation Examples",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "automation examples",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L314"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_best_practices",
+      "label": "Best Practices",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "best practices",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L426"
     },
     {
       "id": "claude_commands_github_swarm_issue_bug_reports",
@@ -31250,6 +31058,18 @@
       "source_location": "L455"
     },
     {
+      "id": "claude_commands_github_swarm_issue_core_features",
+      "label": "Core Features",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "core features",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L6"
+    },
+    {
       "id": "claude_commands_github_swarm_issue_documentation_update",
       "label": "Documentation Update",
       "_origin": "ast",
@@ -31260,6 +31080,18 @@
       "norm_label": "documentation update",
       "source_file": ".claude/commands/github/swarm-issue.md",
       "source_location": "L475"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_duplicate_detection",
+      "label": "Duplicate Detection",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "duplicate detection",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L370"
     },
     {
       "id": "claude_commands_github_swarm_issue_dynamic_agent_assignment",
@@ -31322,6 +31154,30 @@
       "source_location": "L246"
     },
     {
+      "id": "claude_commands_github_swarm_issue_initialize_from_issue",
+      "label": "Initialize from Issue",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "initialize from issue",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L111"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_integration_patterns",
+      "label": "Integration Patterns",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "integration patterns",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L379"
+    },
+    {
       "id": "claude_commands_github_swarm_issue_issue_board_integration",
       "label": "Issue Board Integration",
       "_origin": "ast",
@@ -31356,6 +31212,30 @@
       "norm_label": "issue resolution time",
       "source_file": ".claude/commands/github/swarm-issue.md",
       "source_location": "L410"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_issue_swarm_commands",
+      "label": "Issue Swarm Commands",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "issue swarm commands",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L109"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_issue_triage",
+      "label": "Issue Triage",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "issue triage",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L360"
     },
     {
       "id": "claude_commands_github_swarm_issue_issue_types_strategies",
@@ -31394,6 +31274,18 @@
       "source_location": "L3"
     },
     {
+      "id": "claude_commands_github_swarm_issue_progress_tracking",
+      "label": "Progress Tracking",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "progress tracking",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L172"
+    },
+    {
       "id": "claude_commands_github_swarm_issue_security_permissions",
       "label": "Security & Permissions",
       "_origin": "ast",
@@ -31428,6 +31320,18 @@
       "norm_label": "swarm issue - issue-based swarm coordination",
       "source_file": ".claude/commands/github/swarm-issue.md",
       "source_location": "L1"
+    },
+    {
+      "id": "claude_commands_github_swarm_issue_task_decomposition",
+      "label": "Task Decomposition",
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "Swarm Issue - Issue-Based Swarm Coordination",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "task decomposition",
+      "source_file": ".claude/commands/github/swarm-issue.md",
+      "source_location": "L137"
     },
     {
       "id": "claude_commands_github_swarm_issue_technical_debt",
@@ -39098,18 +39002,6 @@
       "source_location": "L1"
     },
     {
-      "id": "claude_commands_pair_modes_best_for",
-      "label": "Best For",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "Pair Programming Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "best for",
-      "source_file": ".claude/commands/pair/modes.md",
-      "source_location": "L29"
-    },
-    {
       "id": "claude_commands_pair_modes_best_practices_by_mode",
       "label": "Best Practices by Mode",
       "_origin": "ast",
@@ -39120,18 +39012,6 @@
       "norm_label": "best practices by mode",
       "source_file": ".claude/commands/pair/modes.md",
       "source_location": "L323"
-    },
-    {
-      "id": "claude_commands_pair_modes_commands_in_driver_mode",
-      "label": "Commands in Driver Mode",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "Pair Programming Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "commands in driver mode",
-      "source_file": ".claude/commands/pair/modes.md",
-      "source_location": "L44"
     },
     {
       "id": "claude_commands_pair_modes_debug_focused",
@@ -39146,18 +39026,6 @@
       "source_location": "L286"
     },
     {
-      "id": "claude_commands_pair_modes_driver_mode",
-      "label": "Driver Mode",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "Pair Programming Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "driver mode",
-      "source_file": ".claude/commands/pair/modes.md",
-      "source_location": "L5"
-    },
-    {
       "id": "claude_commands_pair_modes_driver_mode_325",
       "label": "Driver Mode",
       "_origin": "ast",
@@ -39168,18 +39036,6 @@
       "norm_label": "driver mode",
       "source_file": ".claude/commands/pair/modes.md",
       "source_location": "L325"
-    },
-    {
-      "id": "claude_commands_pair_modes_example_session",
-      "label": "Example Session",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "Pair Programming Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "example session",
-      "source_file": ".claude/commands/pair/modes.md",
-      "source_location": "L35"
     },
     {
       "id": "claude_commands_pair_modes_learning_focused",
@@ -39278,18 +39134,6 @@
       "source_location": "L343"
     },
     {
-      "id": "claude_commands_pair_modes_responsibilities",
-      "label": "Responsibilities",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "Pair Programming Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "responsibilities",
-      "source_file": ".claude/commands/pair/modes.md",
-      "source_location": "L14"
-    },
-    {
       "id": "claude_commands_pair_modes_speed_focused",
       "label": "Speed-Focused",
       "_origin": "ast",
@@ -39324,18 +39168,6 @@
       "norm_label": "switching modes mid-session",
       "source_file": ".claude/commands/pair/modes.md",
       "source_location": "L295"
-    },
-    {
-      "id": "claude_commands_pair_modes_usage",
-      "label": "Usage",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "Pair Programming Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "usage",
-      "source_file": ".claude/commands/pair/modes.md",
-      "source_location": "L9"
     },
     {
       "id": "claude_commands_agents_agent_capabilities",
@@ -43699,6 +43531,30 @@
       "source_location": "L24"
     },
     {
+      "id": "claude_commands_github_workflow_automation_1_pr_validation_swarm",
+      "label": "1. PR Validation Swarm",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. pr validation swarm",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L308"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_1_self_healing_ci_cd",
+      "label": "1. Self-Healing CI/CD",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. self-healing ci/cd",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L153"
+    },
+    {
       "id": "claude_commands_github_workflow_automation_1_swarm_powered_actions",
       "label": "1. Swarm-Powered Actions",
       "_origin": "ast",
@@ -43735,6 +43591,30 @@
       "source_location": "L34"
     },
     {
+      "id": "claude_commands_github_workflow_automation_2_progressive_deployment",
+      "label": "2. Progressive Deployment",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. progressive deployment",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L172"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_2_release_automation",
+      "label": "2. Release Automation",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. release automation",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L333"
+    },
+    {
       "id": "claude_commands_github_workflow_automation_2_security",
       "label": "2. Security",
       "_origin": "ast",
@@ -43745,6 +43625,18 @@
       "norm_label": "2. security",
       "source_file": ".claude/commands/github/workflow-automation.md",
       "source_location": "L380"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_3_documentation_updates",
+      "label": "3. Documentation Updates",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. documentation updates",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L353"
     },
     {
       "id": "claude_commands_github_workflow_automation_3_intelligent_test_selection",
@@ -43771,6 +43663,30 @@
       "source_location": "L386"
     },
     {
+      "id": "claude_commands_github_workflow_automation_3_performance_regression_detection",
+      "label": "3. Performance Regression Detection",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. performance regression detection",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L198"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_action_commands",
+      "label": "Action Commands",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "action commands",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L113"
+    },
+    {
       "id": "claude_commands_github_workflow_automation_adaptive_security_scanning",
       "label": "Adaptive Security Scanning",
       "_origin": "ast",
@@ -43793,6 +43709,18 @@
       "norm_label": "advanced features",
       "source_file": ".claude/commands/github/workflow-automation.md",
       "source_location": "L392"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_advanced_workflows",
+      "label": "Advanced Workflows",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "advanced workflows",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L151"
     },
     {
       "id": "claude_commands_github_workflow_automation_automated_optimization",
@@ -43829,6 +43757,18 @@
       "norm_label": "core features",
       "source_file": ".claude/commands/github/workflow-automation.md",
       "source_location": "L6"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_cost_optimization",
+      "label": "Cost Optimization",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "cost optimization",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L288"
     },
     {
       "id": "claude_commands_github_workflow_automation_custom_actions",
@@ -43879,6 +43819,42 @@
       "source_location": "L246"
     },
     {
+      "id": "claude_commands_github_workflow_automation_failure_analysis",
+      "label": "Failure Analysis",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "failure analysis",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L125"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_failure_patterns",
+      "label": "Failure Patterns",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "failure patterns",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L297"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_integration_examples",
+      "label": "Integration Examples",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "integration examples",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L306"
+    },
+    {
       "id": "claude_commands_github_workflow_automation_intelligent_parallelization",
       "label": "Intelligent Parallelization",
       "_origin": "ast",
@@ -43901,6 +43877,18 @@
       "norm_label": "matrix strategies",
       "source_file": ".claude/commands/github/workflow-automation.md",
       "source_location": "L244"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_monitoring_insights",
+      "label": "Monitoring & Insights",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "monitoring & insights",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L276"
     },
     {
       "id": "claude_commands_github_workflow_automation_multi_language_detection",
@@ -43939,6 +43927,18 @@
       "source_location": "L433"
     },
     {
+      "id": "claude_commands_github_workflow_automation_pipeline_optimization",
+      "label": "Pipeline Optimization",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "pipeline optimization",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L115"
+    },
+    {
       "id": "claude_commands_github_workflow_automation_predictive_failures",
       "label": "Predictive Failures",
       "_origin": "ast",
@@ -43951,6 +43951,18 @@
       "source_location": "L394"
     },
     {
+      "id": "claude_commands_github_workflow_automation_resource_management",
+      "label": "Resource Management",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "resource management",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L142"
+    },
+    {
       "id": "claude_commands_github_workflow_automation_swarm_action_development",
       "label": "Swarm Action Development",
       "_origin": "ast",
@@ -43961,6 +43973,18 @@
       "norm_label": "swarm action development",
       "source_file": ".claude/commands/github/workflow-automation.md",
       "source_location": "L218"
+    },
+    {
+      "id": "claude_commands_github_workflow_automation_workflow_analytics",
+      "label": "Workflow Analytics",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Workflow Automation - GitHub Actions Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "workflow analytics",
+      "source_file": ".claude/commands/github/workflow-automation.md",
+      "source_location": "L278"
     },
     {
       "id": "claude_commands_github_workflow_automation_workflow_automation_github_actions_integration",
@@ -57733,124 +57757,175 @@
       "source_location": "L285"
     },
     {
-      "id": "claude_commands_pair_config_create_profile",
-      "label": "Create Profile",
+      "id": "src_app_api_catchall_route",
+      "label": "[...catchall]/route.ts",
       "_origin": "ast",
       "community": 378,
-      "community_name": "Profile Management",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "create profile",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L391"
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "[...catchall]/route.ts",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L1"
     },
     {
-      "id": "claude_commands_pair_config_list_profiles",
-      "label": "List Profiles",
+      "id": "src_app_api_catchall_route_delete",
+      "label": "DELETE",
       "_origin": "ast",
       "community": 378,
-      "community_name": "Profile Management",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "list profiles",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L405"
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "delete",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L36"
     },
     {
-      "id": "claude_commands_pair_config_profile_management",
-      "label": "Profile Management",
+      "id": "src_app_api_catchall_route_get",
+      "label": "GET",
       "_origin": "ast",
       "community": 378,
-      "community_name": "Profile Management",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "profile management",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L389"
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "get",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L33"
     },
     {
-      "id": "claude_commands_pair_config_profiles_configuration",
-      "label": "Profiles Configuration",
+      "id": "src_app_api_catchall_route_head",
+      "label": "HEAD",
       "_origin": "ast",
       "community": 378,
-      "community_name": "Profile Management",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "profiles configuration",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L410"
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "head",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L38"
     },
     {
-      "id": "claude_commands_pair_config_use_profile",
-      "label": "Use Profile",
+      "id": "src_app_api_catchall_route_options",
+      "label": "OPTIONS",
       "_origin": "ast",
       "community": 378,
-      "community_name": "Profile Management",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "use profile",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L400"
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "options",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L39"
     },
     {
-      "id": "claude_commands_pair_config_global",
-      "label": "Global",
+      "id": "src_app_api_catchall_route_patch",
+      "label": "PATCH",
       "_origin": "ast",
-      "community": 379,
-      "community_name": "Workspace Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "global",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L446"
+      "community": 378,
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "patch",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L37"
     },
     {
-      "id": "claude_commands_pair_config_priority_order",
-      "label": "Priority Order",
+      "id": "src_app_api_catchall_route_post",
+      "label": "POST",
       "_origin": "ast",
-      "community": 379,
-      "community_name": "Workspace Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "priority order",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L449"
+      "community": 378,
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "post",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L34"
     },
     {
-      "id": "claude_commands_pair_config_project_specific",
-      "label": "Project-Specific",
+      "id": "src_app_api_catchall_route_put",
+      "label": "PUT",
       "_origin": "ast",
-      "community": 379,
-      "community_name": "Workspace Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "project-specific",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L440"
+      "community": 378,
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "code",
+      "norm_label": "put",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L35"
     },
     {
-      "id": "claude_commands_pair_config_user_specific",
-      "label": "User-Specific",
+      "id": "docref_rfc_9457",
+      "label": "RFC-9457",
       "_origin": "ast",
-      "community": 379,
-      "community_name": "Workspace Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "user-specific",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L443"
+      "community": 378,
+      "community_name": "[...catchall]/route.ts",
+      "file_type": "concept",
+      "norm_label": "rfc-9457",
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L5"
     },
     {
-      "id": "claude_commands_pair_config_workspace_configuration",
-      "label": "Workspace Configuration",
+      "id": "claude_commands_github_release_swarm_build_agent",
+      "label": "Build Agent",
       "_origin": "ast",
       "community": 379,
-      "community_name": "Workspace Configuration",
+      "community_name": "Release Agents",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "workspace configuration",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L438"
+      "norm_label": "build agent",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L180"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_changelog_agent",
+      "label": "Changelog Agent",
+      "_origin": "ast",
+      "community": 379,
+      "community_name": "Release Agents",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "changelog agent",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L122"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_deploy_agent",
+      "label": "Deploy Agent",
+      "_origin": "ast",
+      "community": 379,
+      "community_name": "Release Agents",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "deploy agent",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L207"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_release_agents",
+      "label": "Release Agents",
+      "_origin": "ast",
+      "community": 379,
+      "community_name": "Release Agents",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "release agents",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L120"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_test_agent",
+      "label": "Test Agent",
+      "_origin": "ast",
+      "community": 379,
+      "community_name": "Release Agents",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "test agent",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L197"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_version_agent",
+      "label": "Version Agent",
+      "_origin": "ast",
+      "community": 379,
+      "community_name": "Release Agents",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "version agent",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L163"
     },
     {
       "id": "claude_skills_agentdb_vector_search_skill",
@@ -62702,52 +62777,76 @@
       "source_location": "L166"
     },
     {
-      "id": "claude_commands_github_swarm_pr_1_multi_pr_swarm_coordination",
-      "label": "1. Multi-PR Swarm Coordination",
+      "id": "claude_commands_pair_modes_best_for",
+      "label": "Best For",
       "_origin": "ast",
       "community": 424,
-      "community_name": "Advanced Features",
+      "community_name": "Driver Mode",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. multi-pr swarm coordination",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L135"
+      "norm_label": "best for",
+      "source_file": ".claude/commands/pair/modes.md",
+      "source_location": "L29"
     },
     {
-      "id": "claude_commands_github_swarm_pr_2_pr_dependency_analysis",
-      "label": "2. PR Dependency Analysis",
+      "id": "claude_commands_pair_modes_commands_in_driver_mode",
+      "label": "Commands in Driver Mode",
       "_origin": "ast",
       "community": 424,
-      "community_name": "Advanced Features",
+      "community_name": "Driver Mode",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. pr dependency analysis",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L144"
+      "norm_label": "commands in driver mode",
+      "source_file": ".claude/commands/pair/modes.md",
+      "source_location": "L44"
     },
     {
-      "id": "claude_commands_github_swarm_pr_3_automated_pr_fixes",
-      "label": "3. Automated PR Fixes",
+      "id": "claude_commands_pair_modes_driver_mode",
+      "label": "Driver Mode",
       "_origin": "ast",
       "community": 424,
-      "community_name": "Advanced Features",
+      "community_name": "Driver Mode",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3. automated pr fixes",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L152"
+      "norm_label": "driver mode",
+      "source_file": ".claude/commands/pair/modes.md",
+      "source_location": "L5"
     },
     {
-      "id": "claude_commands_github_swarm_pr_advanced_features",
-      "label": "Advanced Features",
+      "id": "claude_commands_pair_modes_example_session",
+      "label": "Example Session",
       "_origin": "ast",
       "community": 424,
-      "community_name": "Advanced Features",
+      "community_name": "Driver Mode",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "advanced features",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L133"
+      "norm_label": "example session",
+      "source_file": ".claude/commands/pair/modes.md",
+      "source_location": "L35"
+    },
+    {
+      "id": "claude_commands_pair_modes_responsibilities",
+      "label": "Responsibilities",
+      "_origin": "ast",
+      "community": 424,
+      "community_name": "Driver Mode",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "responsibilities",
+      "source_file": ".claude/commands/pair/modes.md",
+      "source_location": "L14"
+    },
+    {
+      "id": "claude_commands_pair_modes_usage",
+      "label": "Usage",
+      "_origin": "ast",
+      "community": 424,
+      "community_name": "Driver Mode",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "usage",
+      "source_file": ".claude/commands/pair/modes.md",
+      "source_location": "L9"
     },
     {
       "id": "claude_agents_github_swarm_pr_1_pr_based_swarm_creation",
@@ -63343,43 +63442,43 @@
       "source_location": "L677"
     },
     {
-      "id": "claude_commands_github_swarm_issue_1_issue_dependencies",
-      "label": "1. Issue Dependencies",
+      "id": "claude_commands_github_multi_repo_swarm_1_distributed_task_queue",
+      "label": "1. Distributed Task Queue",
       "_origin": "ast",
       "community": 435,
       "community_name": "Advanced Features",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. issue dependencies",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L217"
+      "norm_label": "1. distributed task queue",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L282"
     },
     {
-      "id": "claude_commands_github_swarm_issue_2_epic_management",
-      "label": "2. Epic Management",
+      "id": "claude_commands_github_multi_repo_swarm_2_cross_repo_testing",
+      "label": "2. Cross-Repo Testing",
       "_origin": "ast",
       "community": 435,
       "community_name": "Advanced Features",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. epic management",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L226"
+      "norm_label": "2. cross-repo testing",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L292"
     },
     {
-      "id": "claude_commands_github_swarm_issue_3_issue_templates",
-      "label": "3. Issue Templates",
+      "id": "claude_commands_github_multi_repo_swarm_3_monorepo_migration",
+      "label": "3. Monorepo Migration",
       "_origin": "ast",
       "community": 435,
       "community_name": "Advanced Features",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3. issue templates",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L235"
+      "norm_label": "3. monorepo migration",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L302"
     },
     {
-      "id": "claude_commands_github_swarm_issue_advanced_features",
+      "id": "claude_commands_github_multi_repo_swarm_advanced_features",
       "label": "Advanced Features",
       "_origin": "ast",
       "community": 435,
@@ -63387,200 +63486,200 @@
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "advanced features",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L215"
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L280"
     },
     {
-      "id": "claude_commands_github_swarm_issue_1_issue_pr_linking",
-      "label": "1. Issue-PR Linking",
+      "id": "claude_commands_github_multi_repo_swarm_1_eventually_consistent",
+      "label": "1. Eventually Consistent",
       "_origin": "ast",
       "community": 436,
-      "community_name": "Integration Patterns",
+      "community_name": "Synchronization Patterns",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. issue-pr linking",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L381"
+      "norm_label": "1. eventually consistent",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L343"
     },
     {
-      "id": "claude_commands_github_swarm_issue_2_milestone_coordination",
-      "label": "2. Milestone Coordination",
+      "id": "claude_commands_github_multi_repo_swarm_2_strong_consistency",
+      "label": "2. Strong Consistency",
       "_origin": "ast",
       "community": 436,
-      "community_name": "Integration Patterns",
+      "community_name": "Synchronization Patterns",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. milestone coordination",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L390"
+      "norm_label": "2. strong consistency",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L358"
     },
     {
-      "id": "claude_commands_github_swarm_issue_3_cross_repo_issues",
-      "label": "3. Cross-Repo Issues",
+      "id": "claude_commands_github_multi_repo_swarm_3_hybrid_approach",
+      "label": "3. Hybrid Approach",
       "_origin": "ast",
       "community": 436,
-      "community_name": "Integration Patterns",
+      "community_name": "Synchronization Patterns",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3. cross-repo issues",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L399"
+      "norm_label": "3. hybrid approach",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L371"
     },
     {
-      "id": "claude_commands_github_swarm_issue_integration_patterns",
-      "label": "Integration Patterns",
+      "id": "claude_commands_github_multi_repo_swarm_synchronization_patterns",
+      "label": "Synchronization Patterns",
       "_origin": "ast",
       "community": 436,
-      "community_name": "Integration Patterns",
+      "community_name": "Synchronization Patterns",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "integration patterns",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L379"
+      "norm_label": "synchronization patterns",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L341"
     },
     {
-      "id": "claude_commands_github_swarm_issue_1_issue_templates",
-      "label": "1. Issue Templates",
+      "id": "claude_commands_github_multi_repo_swarm_caching_strategy",
+      "label": "Caching Strategy",
       "_origin": "ast",
       "community": 437,
-      "community_name": "Best Practices",
+      "community_name": "Performance Optimization",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. issue templates",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L428"
+      "norm_label": "caching strategy",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L441"
     },
     {
-      "id": "claude_commands_github_swarm_issue_2_label_strategy",
-      "label": "2. Label Strategy",
+      "id": "claude_commands_github_multi_repo_swarm_parallel_execution",
+      "label": "Parallel Execution",
       "_origin": "ast",
       "community": 437,
-      "community_name": "Best Practices",
+      "community_name": "Performance Optimization",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. label strategy",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L434"
+      "norm_label": "parallel execution",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L450"
     },
     {
-      "id": "claude_commands_github_swarm_issue_3_comment_etiquette",
-      "label": "3. Comment Etiquette",
+      "id": "claude_commands_github_multi_repo_swarm_performance_optimization",
+      "label": "Performance Optimization",
       "_origin": "ast",
       "community": 437,
-      "community_name": "Best Practices",
+      "community_name": "Performance Optimization",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3. comment etiquette",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L440"
+      "norm_label": "performance optimization",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L439"
     },
     {
-      "id": "claude_commands_github_swarm_issue_best_practices",
-      "label": "Best Practices",
+      "id": "claude_commands_github_multi_repo_swarm_resource_pooling",
+      "label": "Resource Pooling",
       "_origin": "ast",
       "community": 437,
-      "community_name": "Best Practices",
+      "community_name": "Performance Optimization",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "best practices",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L426"
+      "norm_label": "resource pooling",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L459"
     },
     {
-      "id": "claude_commands_github_swarm_issue_1_issue_to_swarm_conversion",
-      "label": "1. Issue-to-Swarm Conversion",
+      "id": "claude_commands_github_multi_repo_swarm_connectivity_issues",
+      "label": "Connectivity Issues",
       "_origin": "ast",
       "community": 438,
-      "community_name": "Core Features",
+      "community_name": "Troubleshooting",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. issue-to-swarm conversion",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L8"
+      "norm_label": "connectivity issues",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L470"
     },
     {
-      "id": "claude_commands_github_swarm_issue_2_issue_comment_commands",
-      "label": "2. Issue Comment Commands",
+      "id": "claude_commands_github_multi_repo_swarm_memory_synchronization",
+      "label": "Memory Synchronization",
       "_origin": "ast",
       "community": 438,
-      "community_name": "Core Features",
+      "community_name": "Troubleshooting",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. issue comment commands",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L32"
+      "norm_label": "memory synchronization",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L479"
     },
     {
-      "id": "claude_commands_github_swarm_issue_3_issue_templates_for_swarms",
-      "label": "3. Issue Templates for Swarms",
+      "id": "claude_commands_github_multi_repo_swarm_performance_bottlenecks",
+      "label": "Performance Bottlenecks",
       "_origin": "ast",
       "community": 438,
-      "community_name": "Core Features",
+      "community_name": "Troubleshooting",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3. issue templates for swarms",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L44"
+      "norm_label": "performance bottlenecks",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L488"
     },
     {
-      "id": "claude_commands_github_swarm_issue_core_features",
-      "label": "Core Features",
+      "id": "claude_commands_github_multi_repo_swarm_troubleshooting",
+      "label": "Troubleshooting",
       "_origin": "ast",
       "community": 438,
-      "community_name": "Core Features",
+      "community_name": "Troubleshooting",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "core features",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L6"
+      "norm_label": "troubleshooting",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L468"
     },
     {
-      "id": "claude_commands_github_swarm_issue_auto_close_stale_issues",
-      "label": "Auto-Close Stale Issues",
+      "id": "claude_commands_github_multi_repo_swarm_dependency_graph",
+      "label": "Dependency Graph",
       "_origin": "ast",
       "community": 439,
-      "community_name": "Automation Examples",
+      "community_name": "Monitoring & Visualization",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "auto-close stale issues",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L316"
+      "norm_label": "dependency graph",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L323"
     },
     {
-      "id": "claude_commands_github_swarm_issue_automation_examples",
-      "label": "Automation Examples",
+      "id": "claude_commands_github_multi_repo_swarm_health_monitoring",
+      "label": "Health Monitoring",
       "_origin": "ast",
       "community": 439,
-      "community_name": "Automation Examples",
+      "community_name": "Monitoring & Visualization",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "automation examples",
-      "source_file": ".claude/commands/github/swarm-issue.md",
+      "norm_label": "health monitoring",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L332"
+    },
+    {
+      "id": "claude_commands_github_multi_repo_swarm_monitoring_visualization",
+      "label": "Monitoring & Visualization",
+      "_origin": "ast",
+      "community": 439,
+      "community_name": "Monitoring & Visualization",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "monitoring & visualization",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L312"
+    },
+    {
+      "id": "claude_commands_github_multi_repo_swarm_multi_repo_dashboard",
+      "label": "Multi-Repo Dashboard",
+      "_origin": "ast",
+      "community": 439,
+      "community_name": "Monitoring & Visualization",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "multi-repo dashboard",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
       "source_location": "L314"
-    },
-    {
-      "id": "claude_commands_github_swarm_issue_duplicate_detection",
-      "label": "Duplicate Detection",
-      "_origin": "ast",
-      "community": 439,
-      "community_name": "Automation Examples",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "duplicate detection",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L370"
-    },
-    {
-      "id": "claude_commands_github_swarm_issue_issue_triage",
-      "label": "Issue Triage",
-      "_origin": "ast",
-      "community": 439,
-      "community_name": "Automation Examples",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "issue triage",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L360"
     },
     {
       "id": "claude_commands_hive_mind_hive_mind",
@@ -63991,100 +64090,100 @@
       "source_location": "L1"
     },
     {
-      "id": "claude_commands_github_swarm_issue_initialize_from_issue",
-      "label": "Initialize from Issue",
+      "id": "claude_commands_github_multi_repo_swarm_dependency_management",
+      "label": "Dependency Management",
       "_origin": "ast",
       "community": 440,
-      "community_name": "Issue Swarm Commands",
+      "community_name": "Orchestration Commands",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "initialize from issue",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L111"
+      "norm_label": "dependency management",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L153"
     },
     {
-      "id": "claude_commands_github_swarm_issue_issue_swarm_commands",
-      "label": "Issue Swarm Commands",
+      "id": "claude_commands_github_multi_repo_swarm_orchestration_commands",
+      "label": "Orchestration Commands",
       "_origin": "ast",
       "community": 440,
-      "community_name": "Issue Swarm Commands",
+      "community_name": "Orchestration Commands",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "issue swarm commands",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L109"
+      "norm_label": "orchestration commands",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L151"
     },
     {
-      "id": "claude_commands_github_swarm_issue_progress_tracking",
-      "label": "Progress Tracking",
+      "id": "claude_commands_github_multi_repo_swarm_refactoring_operations",
+      "label": "Refactoring Operations",
       "_origin": "ast",
       "community": 440,
-      "community_name": "Issue Swarm Commands",
+      "community_name": "Orchestration Commands",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "progress tracking",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L172"
+      "norm_label": "refactoring operations",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L204"
     },
     {
-      "id": "claude_commands_github_swarm_issue_task_decomposition",
-      "label": "Task Decomposition",
+      "id": "claude_commands_github_multi_repo_swarm_security_updates",
+      "label": "Security Updates",
       "_origin": "ast",
       "community": 440,
-      "community_name": "Issue Swarm Commands",
+      "community_name": "Orchestration Commands",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "task decomposition",
-      "source_file": ".claude/commands/github/swarm-issue.md",
-      "source_location": "L137"
+      "norm_label": "security updates",
+      "source_file": ".claude/commands/github/multi-repo-swarm.md",
+      "source_location": "L214"
     },
     {
-      "id": "claude_commands_github_swarm_pr_1_pr_based_swarm_creation",
-      "label": "1. PR-Based Swarm Creation",
+      "id": "claude_commands_github_release_swarm_1_progressive_deployment",
+      "label": "1. Progressive Deployment",
       "_origin": "ast",
       "community": 441,
-      "community_name": "Core Features",
+      "community_name": "Advanced Features",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. pr-based swarm creation",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L8"
+      "norm_label": "1. progressive deployment",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L219"
     },
     {
-      "id": "claude_commands_github_swarm_pr_2_pr_comment_commands",
-      "label": "2. PR Comment Commands",
+      "id": "claude_commands_github_release_swarm_2_multi_repo_releases",
+      "label": "2. Multi-Repo Releases",
       "_origin": "ast",
       "community": 441,
-      "community_name": "Core Features",
+      "community_name": "Advanced Features",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. pr comment commands",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L21"
+      "norm_label": "2. multi-repo releases",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L242"
     },
     {
-      "id": "claude_commands_github_swarm_pr_3_automated_pr_workflows",
-      "label": "3. Automated PR Workflows",
+      "id": "claude_commands_github_release_swarm_3_hotfix_automation",
+      "label": "3. Hotfix Automation",
       "_origin": "ast",
       "community": 441,
-      "community_name": "Core Features",
+      "community_name": "Advanced Features",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3. automated pr workflows",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L32"
+      "norm_label": "3. hotfix automation",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L252"
     },
     {
-      "id": "claude_commands_github_swarm_pr_core_features",
-      "label": "Core Features",
+      "id": "claude_commands_github_release_swarm_advanced_features",
+      "label": "Advanced Features",
       "_origin": "ast",
       "community": 441,
-      "community_name": "Core Features",
+      "community_name": "Advanced Features",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "core features",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L6"
+      "norm_label": "advanced features",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L217"
     },
     {
       "id": "claude_commands_github_swarm_pr_1_pr_templates",
@@ -64135,292 +64234,292 @@
       "source_location": "L160"
     },
     {
-      "id": "claude_commands_github_workflow_automation_1_pr_validation_swarm",
-      "label": "1. PR Validation Swarm",
+      "id": "claude_commands_github_release_swarm_1_release_planning",
+      "label": "1. Release Planning",
       "_origin": "ast",
       "community": 443,
+      "community_name": "Core Features",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. release planning",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L8"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_2_automated_versioning",
+      "label": "2. Automated Versioning",
+      "_origin": "ast",
+      "community": 443,
+      "community_name": "Core Features",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. automated versioning",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L29"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_3_release_orchestration",
+      "label": "3. Release Orchestration",
+      "_origin": "ast",
+      "community": 443,
+      "community_name": "Core Features",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. release orchestration",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L39"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_core_features",
+      "label": "Core Features",
+      "_origin": "ast",
+      "community": 443,
+      "community_name": "Core Features",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "core features",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L6"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_1_release_planning_472",
+      "label": "1. Release Planning",
+      "_origin": "ast",
+      "community": 444,
+      "community_name": "Best Practices",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. release planning",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L472"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_2_automation",
+      "label": "2. Automation",
+      "_origin": "ast",
+      "community": 444,
+      "community_name": "Best Practices",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. automation",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L478"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_3_documentation",
+      "label": "3. Documentation",
+      "_origin": "ast",
+      "community": 444,
+      "community_name": "Best Practices",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. documentation",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L484"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_best_practices",
+      "label": "Best Practices",
+      "_origin": "ast",
+      "community": 444,
+      "community_name": "Best Practices",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "best practices",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L470"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_compatibility_testing",
+      "label": "Compatibility Testing",
+      "_origin": "ast",
+      "community": 445,
+      "community_name": "Release Validation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "compatibility testing",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L362"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_pre_release_checks",
+      "label": "Pre-Release Checks",
+      "_origin": "ast",
+      "community": 445,
+      "community_name": "Release Validation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "pre-release checks",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L347"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_release_validation",
+      "label": "Release Validation",
+      "_origin": "ast",
+      "community": 445,
+      "community_name": "Release Validation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "release validation",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L345"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_security_scanning",
+      "label": "Security Scanning",
+      "_origin": "ast",
+      "community": 445,
+      "community_name": "Release Validation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "security scanning",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L372"
+    },
+    {
+      "id": "claude_commands_github_release_swarm_docker_image_release",
+      "label": "Docker Image Release",
+      "_origin": "ast",
+      "community": 446,
       "community_name": "Integration Examples",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. pr validation swarm",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L308"
+      "norm_label": "docker image release",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L502"
     },
     {
-      "id": "claude_commands_github_workflow_automation_2_release_automation",
-      "label": "2. Release Automation",
-      "_origin": "ast",
-      "community": 443,
-      "community_name": "Integration Examples",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. release automation",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L333"
-    },
-    {
-      "id": "claude_commands_github_workflow_automation_3_documentation_updates",
-      "label": "3. Documentation Updates",
-      "_origin": "ast",
-      "community": 443,
-      "community_name": "Integration Examples",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. documentation updates",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L353"
-    },
-    {
-      "id": "claude_commands_github_workflow_automation_integration_examples",
+      "id": "claude_commands_github_release_swarm_integration_examples",
       "label": "Integration Examples",
       "_origin": "ast",
-      "community": 443,
+      "community": 446,
       "community_name": "Integration Examples",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "integration examples",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L306"
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L490"
     },
     {
-      "id": "claude_commands_github_workflow_automation_1_self_healing_ci_cd",
-      "label": "1. Self-Healing CI/CD",
+      "id": "claude_commands_github_release_swarm_mobile_app_release",
+      "label": "Mobile App Release",
       "_origin": "ast",
-      "community": 444,
-      "community_name": "Advanced Workflows",
+      "community": 446,
+      "community_name": "Integration Examples",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "1. self-healing ci/cd",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L153"
+      "norm_label": "mobile app release",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L512"
     },
     {
-      "id": "claude_commands_github_workflow_automation_2_progressive_deployment",
-      "label": "2. Progressive Deployment",
+      "id": "claude_commands_github_release_swarm_npm_package_release",
+      "label": "NPM Package Release",
       "_origin": "ast",
-      "community": 444,
-      "community_name": "Advanced Workflows",
+      "community": 446,
+      "community_name": "Integration Examples",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "2. progressive deployment",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L172"
+      "norm_label": "npm package release",
+      "source_file": ".claude/commands/github/release-swarm.md",
+      "source_location": "L492"
     },
     {
-      "id": "claude_commands_github_workflow_automation_3_performance_regression_detection",
-      "label": "3. Performance Regression Detection",
+      "id": "claude_commands_github_swarm_pr_bug_fix_pr",
+      "label": "Bug Fix PR",
       "_origin": "ast",
-      "community": 444,
-      "community_name": "Advanced Workflows",
+      "community": 447,
+      "community_name": "Examples",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3. performance regression detection",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L198"
+      "norm_label": "bug fix pr",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L236"
     },
     {
-      "id": "claude_commands_github_workflow_automation_advanced_workflows",
-      "label": "Advanced Workflows",
+      "id": "claude_commands_github_swarm_pr_documentation_pr",
+      "label": "Documentation PR",
       "_origin": "ast",
-      "community": 444,
-      "community_name": "Advanced Workflows",
+      "community": 447,
+      "community_name": "Examples",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "advanced workflows",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L151"
+      "norm_label": "documentation pr",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L245"
     },
     {
-      "id": "claude_commands_github_workflow_automation_action_commands",
-      "label": "Action Commands",
+      "id": "claude_commands_github_swarm_pr_examples",
+      "label": "Examples",
       "_origin": "ast",
-      "community": 445,
-      "community_name": "Action Commands",
+      "community": 447,
+      "community_name": "Examples",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "action commands",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L113"
+      "norm_label": "examples",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L225"
     },
     {
-      "id": "claude_commands_github_workflow_automation_failure_analysis",
-      "label": "Failure Analysis",
+      "id": "claude_commands_github_swarm_pr_feature_development_pr",
+      "label": "Feature Development PR",
       "_origin": "ast",
-      "community": 445,
-      "community_name": "Action Commands",
+      "community": 447,
+      "community_name": "Examples",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "failure analysis",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L125"
+      "norm_label": "feature development pr",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L227"
     },
     {
-      "id": "claude_commands_github_workflow_automation_pipeline_optimization",
-      "label": "Pipeline Optimization",
+      "id": "claude_commands_pair_readme_during_session",
+      "label": "During Session",
       "_origin": "ast",
-      "community": 445,
-      "community_name": "Action Commands",
+      "community": 448,
+      "community_name": "Session Management",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "pipeline optimization",
-      "source_file": ".claude/commands/github/workflow-automation.md",
+      "norm_label": "during session",
+      "source_file": ".claude/commands/pair/README.md",
+      "source_location": "L100"
+    },
+    {
+      "id": "claude_commands_pair_readme_end_session",
+      "label": "End Session",
+      "_origin": "ast",
+      "community": 448,
+      "community_name": "Session Management",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "end session",
+      "source_file": ".claude/commands/pair/README.md",
       "source_location": "L115"
     },
     {
-      "id": "claude_commands_github_workflow_automation_resource_management",
-      "label": "Resource Management",
-      "_origin": "ast",
-      "community": 445,
-      "community_name": "Action Commands",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "resource management",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L142"
-    },
-    {
-      "id": "claude_commands_github_workflow_automation_cost_optimization",
-      "label": "Cost Optimization",
-      "_origin": "ast",
-      "community": 446,
-      "community_name": "Monitoring & Insights",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "cost optimization",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L288"
-    },
-    {
-      "id": "claude_commands_github_workflow_automation_failure_patterns",
-      "label": "Failure Patterns",
-      "_origin": "ast",
-      "community": 446,
-      "community_name": "Monitoring & Insights",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "failure patterns",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L297"
-    },
-    {
-      "id": "claude_commands_github_workflow_automation_monitoring_insights",
-      "label": "Monitoring & Insights",
-      "_origin": "ast",
-      "community": 446,
-      "community_name": "Monitoring & Insights",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "monitoring & insights",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L276"
-    },
-    {
-      "id": "claude_commands_github_workflow_automation_workflow_analytics",
-      "label": "Workflow Analytics",
-      "_origin": "ast",
-      "community": 446,
-      "community_name": "Monitoring & Insights",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "workflow analytics",
-      "source_file": ".claude/commands/github/workflow-automation.md",
-      "source_location": "L278"
-    },
-    {
-      "id": "claude_commands_pair_config_driver_mode",
-      "label": "Driver Mode",
-      "_origin": "ast",
-      "community": 447,
-      "community_name": "Mode-Specific Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "driver mode",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L228"
-    },
-    {
-      "id": "claude_commands_pair_config_mode_specific_configuration",
-      "label": "Mode-Specific Configuration",
-      "_origin": "ast",
-      "community": 447,
-      "community_name": "Mode-Specific Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "mode-specific configuration",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L226"
-    },
-    {
-      "id": "claude_commands_pair_config_navigator_mode",
-      "label": "Navigator Mode",
-      "_origin": "ast",
-      "community": 447,
-      "community_name": "Mode-Specific Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "navigator mode",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L251"
-    },
-    {
-      "id": "claude_commands_pair_config_switch_mode",
-      "label": "Switch Mode",
-      "_origin": "ast",
-      "community": 447,
-      "community_name": "Mode-Specific Configuration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "switch mode",
-      "source_file": ".claude/commands/pair/config.md",
-      "source_location": "L269"
-    },
-    {
-      "id": "claude_commands_pair_readme_driver_mode",
-      "label": "Driver Mode",
+      "id": "claude_commands_pair_readme_session_management",
+      "label": "Session Management",
       "_origin": "ast",
       "community": 448,
-      "community_name": "Modes",
+      "community_name": "Session Management",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "driver mode",
+      "norm_label": "session management",
       "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L42"
+      "source_location": "L85"
     },
     {
-      "id": "claude_commands_pair_readme_modes",
-      "label": "Modes",
+      "id": "claude_commands_pair_readme_start_session",
+      "label": "Start Session",
       "_origin": "ast",
       "community": 448,
-      "community_name": "Modes",
+      "community_name": "Session Management",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "modes",
+      "norm_label": "start session",
       "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L40"
-    },
-    {
-      "id": "claude_commands_pair_readme_navigator_mode",
-      "label": "Navigator Mode",
-      "_origin": "ast",
-      "community": 448,
-      "community_name": "Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "navigator mode",
-      "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L48"
-    },
-    {
-      "id": "claude_commands_pair_readme_switch_mode_default",
-      "label": "Switch Mode (Default)",
-      "_origin": "ast",
-      "community": 448,
-      "community_name": "Modes",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "switch mode (default)",
-      "source_file": ".claude/commands/pair/README.md",
-      "source_location": "L54"
+      "source_location": "L87"
     },
     {
       "id": "claude_commands_pair_session_1_initialization",
@@ -68378,6 +68477,102 @@
       "norm_label": "matrix strategies",
       "source_file": ".claude/agents/github/workflow-automation.md",
       "source_location": "L549"
+    },
+    {
+      "id": "claude_commands_pair_readme_integration",
+      "label": "Integration",
+      "_origin": "ast",
+      "community": 491,
+      "community_name": "Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "integration",
+      "source_file": ".claude/commands/pair/README.md",
+      "source_location": "L158"
+    },
+    {
+      "id": "claude_commands_pair_readme_with_ci_cd",
+      "label": "With CI/CD",
+      "_origin": "ast",
+      "community": 491,
+      "community_name": "Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "with ci/cd",
+      "source_file": ".claude/commands/pair/README.md",
+      "source_location": "L178"
+    },
+    {
+      "id": "claude_commands_pair_readme_with_git",
+      "label": "With Git",
+      "_origin": "ast",
+      "community": 491,
+      "community_name": "Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "with git",
+      "source_file": ".claude/commands/pair/README.md",
+      "source_location": "L160"
+    },
+    {
+      "id": "claude_commands_pair_readme_with_testing_frameworks",
+      "label": "With Testing Frameworks",
+      "_origin": "ast",
+      "community": 491,
+      "community_name": "Integration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "with testing frameworks",
+      "source_file": ".claude/commands/pair/README.md",
+      "source_location": "L169"
+    },
+    {
+      "id": "claude_commands_pair_start_driver_mode",
+      "label": "Driver Mode",
+      "_origin": "ast",
+      "community": 492,
+      "community_name": "Modes Explained",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "driver mode",
+      "source_file": ".claude/commands/pair/start.md",
+      "source_location": "L68"
+    },
+    {
+      "id": "claude_commands_pair_start_modes_explained",
+      "label": "Modes Explained",
+      "_origin": "ast",
+      "community": 492,
+      "community_name": "Modes Explained",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "modes explained",
+      "source_file": ".claude/commands/pair/start.md",
+      "source_location": "L66"
+    },
+    {
+      "id": "claude_commands_pair_start_navigator_mode",
+      "label": "Navigator Mode",
+      "_origin": "ast",
+      "community": 492,
+      "community_name": "Modes Explained",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "navigator mode",
+      "source_file": ".claude/commands/pair/start.md",
+      "source_location": "L75"
+    },
+    {
+      "id": "claude_commands_pair_start_switch_mode",
+      "label": "Switch Mode",
+      "_origin": "ast",
+      "community": 492,
+      "community_name": "Modes Explained",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "switch mode",
+      "source_file": ".claude/commands/pair/start.md",
+      "source_location": "L82"
     },
     {
       "id": "claude_helpers_statusline_hook",
@@ -75103,6 +75298,28 @@
       "norm_label": "vitest.config.ts",
       "source_file": "vitest.config.ts",
       "source_location": "L1"
+    },
+    {
+      "id": "src_app_openapi_json_route",
+      "label": "openapi.json/route.ts",
+      "_origin": "ast",
+      "community": 595,
+      "community_name": "openapi.json/route.ts",
+      "file_type": "code",
+      "norm_label": "openapi.json/route.ts",
+      "source_file": "src/app/openapi.json/route.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_app_openapi_json_route_dynamic",
+      "label": "dynamic",
+      "_origin": "ast",
+      "community": 595,
+      "community_name": "openapi.json/route.ts",
+      "file_type": "code",
+      "norm_label": "dynamic",
+      "source_file": "src/app/openapi.json/route.ts",
+      "source_location": "L5"
     },
     {
       "id": "claude_commands_pair_examples_best_practices_from_examples",
@@ -84935,30 +85152,6 @@
       "source_location": "L8"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_1_distributed_task_queue",
-      "label": "1. Distributed Task Queue",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. distributed task queue",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L282"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_1_eventually_consistent",
-      "label": "1. Eventually Consistent",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "1. eventually consistent",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L343"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_1_microservices_coordination",
       "label": "1. Microservices Coordination",
       "_origin": "ast",
@@ -85007,18 +85200,6 @@
       "source_location": "L427"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_2_cross_repo_testing",
-      "label": "2. Cross-Repo Testing",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. cross-repo testing",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L292"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_2_graphql_federation",
       "label": "2. GraphQL Federation",
       "_origin": "ast",
@@ -85055,18 +85236,6 @@
       "source_location": "L29"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_2_strong_consistency",
-      "label": "2. Strong Consistency",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "2. strong consistency",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L358"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_3_event_streaming",
       "label": "3. Event Streaming",
       "_origin": "ast",
@@ -85077,30 +85246,6 @@
       "norm_label": "3. event streaming",
       "source_file": ".claude/commands/github/multi-repo-swarm.md",
       "source_location": "L266"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_3_hybrid_approach",
-      "label": "3. Hybrid Approach",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. hybrid approach",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L371"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_3_monorepo_migration",
-      "label": "3. Monorepo Migration",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "3. monorepo migration",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L302"
     },
     {
       "id": "claude_commands_github_multi_repo_swarm_3_organization_wide_changes",
@@ -85139,18 +85284,6 @@
       "source_location": "L54"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_advanced_features",
-      "label": "Advanced Features",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "advanced features",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L280"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_best_practices",
       "label": "Best Practices",
       "_origin": "ast",
@@ -85161,18 +85294,6 @@
       "norm_label": "best practices",
       "source_file": ".claude/commands/github/multi-repo-swarm.md",
       "source_location": "L419"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_caching_strategy",
-      "label": "Caching Strategy",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "caching strategy",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L441"
     },
     {
       "id": "claude_commands_github_multi_repo_swarm_communication_strategies",
@@ -85199,18 +85320,6 @@
       "source_location": "L95"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_connectivity_issues",
-      "label": "Connectivity Issues",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "connectivity issues",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L470"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_core_features",
       "label": "Core Features",
       "_origin": "ast",
@@ -85233,30 +85342,6 @@
       "norm_label": "cross-team collaboration",
       "source_file": ".claude/commands/github/multi-repo-swarm.md",
       "source_location": "L509"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_dependency_graph",
-      "label": "Dependency Graph",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "dependency graph",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L323"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_dependency_management",
-      "label": "Dependency Management",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "dependency management",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L153"
     },
     {
       "id": "claude_commands_github_multi_repo_swarm_examples",
@@ -85283,42 +85368,6 @@
       "source_location": "L499"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_health_monitoring",
-      "label": "Health Monitoring",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "health monitoring",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L332"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_memory_synchronization",
-      "label": "Memory Synchronization",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "memory synchronization",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L479"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_monitoring_visualization",
-      "label": "Monitoring & Visualization",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "monitoring & visualization",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L312"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_multi_repo_config_file",
       "label": "Multi-Repo Config File",
       "_origin": "ast",
@@ -85329,18 +85378,6 @@
       "norm_label": "multi-repo config file",
       "source_file": ".claude/commands/github/multi-repo-swarm.md",
       "source_location": "L97"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_multi_repo_dashboard",
-      "label": "Multi-Repo Dashboard",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "multi-repo dashboard",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L314"
     },
     {
       "id": "claude_commands_github_multi_repo_swarm_multi_repo_swarm_cross_repository_swarm_orchestration",
@@ -85355,18 +85392,6 @@
       "source_location": "L1"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_orchestration_commands",
-      "label": "Orchestration Commands",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "orchestration commands",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L151"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_overview",
       "label": "Overview",
       "_origin": "ast",
@@ -85377,54 +85402,6 @@
       "norm_label": "overview",
       "source_file": ".claude/commands/github/multi-repo-swarm.md",
       "source_location": "L3"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_parallel_execution",
-      "label": "Parallel Execution",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "parallel execution",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L450"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_performance_bottlenecks",
-      "label": "Performance Bottlenecks",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "performance bottlenecks",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L488"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_performance_optimization",
-      "label": "Performance Optimization",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "performance optimization",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L439"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_refactoring_operations",
-      "label": "Refactoring Operations",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "refactoring operations",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L204"
     },
     {
       "id": "claude_commands_github_multi_repo_swarm_repository_roles",
@@ -85439,54 +85416,6 @@
       "source_location": "L130"
     },
     {
-      "id": "claude_commands_github_multi_repo_swarm_resource_pooling",
-      "label": "Resource Pooling",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "resource pooling",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L459"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_security_updates",
-      "label": "Security Updates",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "security updates",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L214"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_synchronization_patterns",
-      "label": "Synchronization Patterns",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "synchronization patterns",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L341"
-    },
-    {
-      "id": "claude_commands_github_multi_repo_swarm_troubleshooting",
-      "label": "Troubleshooting",
-      "_origin": "ast",
-      "community": 87,
-      "community_name": "Multi-Repo Swarm - Cross-Repository Swarm Orchestration",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "troubleshooting",
-      "source_file": ".claude/commands/github/multi-repo-swarm.md",
-      "source_location": "L468"
-    },
-    {
       "id": "claude_commands_github_multi_repo_swarm_use_cases",
       "label": "Use Cases",
       "_origin": "ast",
@@ -85497,6 +85426,90 @@
       "norm_label": "use cases",
       "source_file": ".claude/commands/github/multi-repo-swarm.md",
       "source_location": "L386"
+    },
+    {
+      "id": "claude_commands_github_swarm_pr_1_multi_pr_swarm_coordination",
+      "label": "1. Multi-PR Swarm Coordination",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. multi-pr swarm coordination",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L135"
+    },
+    {
+      "id": "claude_commands_github_swarm_pr_1_pr_based_swarm_creation",
+      "label": "1. PR-Based Swarm Creation",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. pr-based swarm creation",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L8"
+    },
+    {
+      "id": "claude_commands_github_swarm_pr_2_pr_comment_commands",
+      "label": "2. PR Comment Commands",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. pr comment commands",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L21"
+    },
+    {
+      "id": "claude_commands_github_swarm_pr_2_pr_dependency_analysis",
+      "label": "2. PR Dependency Analysis",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. pr dependency analysis",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L144"
+    },
+    {
+      "id": "claude_commands_github_swarm_pr_3_automated_pr_fixes",
+      "label": "3. Automated PR Fixes",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. automated pr fixes",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L152"
+    },
+    {
+      "id": "claude_commands_github_swarm_pr_3_automated_pr_workflows",
+      "label": "3. Automated PR Workflows",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. automated pr workflows",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L32"
+    },
+    {
+      "id": "claude_commands_github_swarm_pr_advanced_features",
+      "label": "Advanced Features",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "advanced features",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L133"
     },
     {
       "id": "claude_commands_github_swarm_pr_automatic_agent_assignment",
@@ -85511,18 +85524,6 @@
       "source_location": "L62"
     },
     {
-      "id": "claude_commands_github_swarm_pr_bug_fix_pr",
-      "label": "Bug Fix PR",
-      "_origin": "ast",
-      "community": 88,
-      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "bug fix pr",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L236"
-    },
-    {
       "id": "claude_commands_github_swarm_pr_code_review_integration",
       "label": "Code Review Integration",
       "_origin": "ast",
@@ -85535,6 +85536,18 @@
       "source_location": "L113"
     },
     {
+      "id": "claude_commands_github_swarm_pr_core_features",
+      "label": "Core Features",
+      "_origin": "ast",
+      "community": 88,
+      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "core features",
+      "source_file": ".claude/commands/github/swarm-pr.md",
+      "source_location": "L6"
+    },
+    {
       "id": "claude_commands_github_swarm_pr_dashboard_integration",
       "label": "Dashboard Integration",
       "_origin": "ast",
@@ -85545,42 +85558,6 @@
       "norm_label": "dashboard integration",
       "source_file": ".claude/commands/github/swarm-pr.md",
       "source_location": "L264"
-    },
-    {
-      "id": "claude_commands_github_swarm_pr_documentation_pr",
-      "label": "Documentation PR",
-      "_origin": "ast",
-      "community": 88,
-      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "documentation pr",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L245"
-    },
-    {
-      "id": "claude_commands_github_swarm_pr_examples",
-      "label": "Examples",
-      "_origin": "ast",
-      "community": 88,
-      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "examples",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L225"
-    },
-    {
-      "id": "claude_commands_github_swarm_pr_feature_development_pr",
-      "label": "Feature Development PR",
-      "_origin": "ast",
-      "community": 88,
-      "community_name": "Swarm PR - Managing Swarms through Pull Requests",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "feature development pr",
-      "source_file": ".claude/commands/github/swarm-pr.md",
-      "source_location": "L227"
     },
     {
       "id": "claude_commands_github_swarm_pr_initialize_from_pr",
@@ -88965,6 +88942,18 @@
       "source_location": "L457"
     },
     {
+      "id": "claude_commands_pair_config_create_profile",
+      "label": "Create Profile",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "create profile",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L391"
+    },
+    {
       "id": "claude_commands_pair_config_custom_agents",
       "label": "Custom Agents",
       "_origin": "ast",
@@ -88975,6 +88964,18 @@
       "norm_label": "custom agents",
       "source_file": ".claude/commands/pair/config.md",
       "source_location": "L207"
+    },
+    {
+      "id": "claude_commands_pair_config_driver_mode",
+      "label": "Driver Mode",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "driver mode",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L228"
     },
     {
       "id": "claude_commands_pair_config_environment_variables",
@@ -89025,6 +89026,18 @@
       "source_location": "L368"
     },
     {
+      "id": "claude_commands_pair_config_global",
+      "label": "Global",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "global",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L446"
+    },
+    {
       "id": "claude_commands_pair_config_javascript_typescript",
       "label": "JavaScript/TypeScript",
       "_origin": "ast",
@@ -89049,6 +89062,18 @@
       "source_location": "L311"
     },
     {
+      "id": "claude_commands_pair_config_list_profiles",
+      "label": "List Profiles",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "list profiles",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L405"
+    },
+    {
       "id": "claude_commands_pair_config_migration",
       "label": "Migration",
       "_origin": "ast",
@@ -89061,6 +89086,30 @@
       "source_location": "L467"
     },
     {
+      "id": "claude_commands_pair_config_mode_specific_configuration",
+      "label": "Mode-Specific Configuration",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "mode-specific configuration",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L226"
+    },
+    {
+      "id": "claude_commands_pair_config_navigator_mode",
+      "label": "Navigator Mode",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "navigator mode",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L251"
+    },
+    {
       "id": "claude_commands_pair_config_pair_programming_configuration",
       "label": "Pair Programming Configuration",
       "_origin": "ast",
@@ -89071,6 +89120,54 @@
       "norm_label": "pair programming configuration",
       "source_file": ".claude/commands/pair/config.md",
       "source_location": "L1"
+    },
+    {
+      "id": "claude_commands_pair_config_priority_order",
+      "label": "Priority Order",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "priority order",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L449"
+    },
+    {
+      "id": "claude_commands_pair_config_profile_management",
+      "label": "Profile Management",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "profile management",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L389"
+    },
+    {
+      "id": "claude_commands_pair_config_profiles_configuration",
+      "label": "Profiles Configuration",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "profiles configuration",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L410"
+    },
+    {
+      "id": "claude_commands_pair_config_project_specific",
+      "label": "Project-Specific",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "project-specific",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L440"
     },
     {
       "id": "claude_commands_pair_config_python",
@@ -89145,6 +89242,18 @@
       "source_location": "L499"
     },
     {
+      "id": "claude_commands_pair_config_switch_mode",
+      "label": "Switch Mode",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "switch mode",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L269"
+    },
+    {
       "id": "claude_commands_pair_config_troubleshooting",
       "label": "Troubleshooting",
       "_origin": "ast",
@@ -89155,6 +89264,42 @@
       "norm_label": "troubleshooting",
       "source_file": ".claude/commands/pair/config.md",
       "source_location": "L491"
+    },
+    {
+      "id": "claude_commands_pair_config_use_profile",
+      "label": "Use Profile",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "use profile",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L400"
+    },
+    {
+      "id": "claude_commands_pair_config_user_specific",
+      "label": "User-Specific",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "user-specific",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L443"
+    },
+    {
+      "id": "claude_commands_pair_config_workspace_configuration",
+      "label": "Workspace Configuration",
+      "_origin": "ast",
+      "community": 99,
+      "community_name": "Pair Programming Configuration",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "workspace configuration",
+      "source_file": ".claude/commands/pair/config.md",
+      "source_location": "L438"
     }
   ],
   "links": [
@@ -115172,6 +115317,17 @@
       "confidence_score": 1.0,
       "source_file": ".claude/helpers/statusline.cjs",
       "source_location": "L276",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "docref_rfc_9457",
+      "relation": "cites",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L5",
       "weight": 1.0
     },
     {
@@ -178810,6 +178966,94 @@
       "weight": 1.0
     },
     {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_get",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L33",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_post",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L34",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_put",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_delete",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L36",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_patch",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L37",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_head",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L38",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_options",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L39",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_api_catchall_route",
+      "target": "src_app_api_catchall_route_handlenotfound",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/api/[...catchall]/route.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
       "source": "src_app_api_conversations_route",
       "target": "src_app_api_conversations_route_post",
       "relation": "contains",
@@ -179522,6 +179766,28 @@
       "confidence_score": 1.0,
       "source_file": "src/app/onboarding/success/page.tsx",
       "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_openapi_json_route",
+      "target": "src_app_openapi_json_route_dynamic",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/openapi.json/route.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app_openapi_json_route",
+      "target": "src_app_openapi_json_route_get",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/app/openapi.json/route.ts",
+      "source_location": "L7",
       "weight": 1.0
     },
     {
@@ -189487,5 +189753,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "aa4629a4b80bb655ad13880b645b328d108eb6ca"
+  "built_at_commit": "cf55ad77a174c353b24cbb158dd0575474c32559"
 }

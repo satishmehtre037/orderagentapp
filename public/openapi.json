@@ -28,6 +28,67 @@
     }
   ],
   "paths": {
+    "/api": {
+      "get": {
+        "operationId": "getApiDiscoveryManifest",
+        "summary": "API Service Discovery Manifest",
+        "description": "Returns top-level metadata, schema URLs, and available endpoints.",
+        "tags": ["Discovery & Health"],
+        "responses": {
+          "200": {
+            "description": "API service manifest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["name", "status", "version", "endpoints"],
+                  "properties": {
+                    "name": { "type": "string", "example": "Agento AI REST API" },
+                    "organization": { "type": "string", "example": "WebCore Studio" },
+                    "status": { "type": "string", "example": "operational" },
+                    "version": { "type": "string", "example": "1.0.0" },
+                    "apiVersion": { "type": "string", "example": "2026-09-01" },
+                    "documentation": { "type": "string", "format": "uri" },
+                    "openapi": { "type": "string", "format": "uri" },
+                    "endpoints": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/500InternalError" }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "getApiHealthStatus",
+        "summary": "System Health & Uptime Status",
+        "description": "Returns current health and uptime status of Agento AI services.",
+        "tags": ["Discovery & Health"],
+        "responses": {
+          "200": {
+            "description": "System is healthy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "service", "timestamp"],
+                  "properties": {
+                    "status": { "type": "string", "example": "healthy" },
+                    "service": { "type": "string", "example": "Agento AI by WebCore Studio" },
+                    "timestamp": { "type": "string", "format": "date-time" },
+                    "version": { "type": "string", "example": "1.0.0" },
+                    "apiVersion": { "type": "string", "example": "2026-09-01" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/500InternalError" }
+        }
+      }
+    },
     "/api/webhook": {
       "post": {
         "operationId": "handleWhatsAppWebhook",
@@ -39,7 +100,7 @@
             "name": "x-hub-signature-256",
             "in": "header",
             "required": true,
-            "description": "HMAC-SHA256 signature computed over the raw payload using the configured WhatsApp App Secret.",
+            "description": "HMAC-SHA256 signature computed over raw payload.",
             "schema": { "type": "string", "example": "sha256=d3f1a2..." }
           }
         ],
@@ -63,11 +124,7 @@
         },
         "responses": {
           "200": {
-            "description": "Webhook payload received, verified, and queued for processing.",
-            "headers": {
-              "X-API-Version": { "$ref": "#/components/headers/X-API-Version" },
-              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimit-Limit" }
-            },
+            "description": "Webhook received and queued.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80,14 +137,17 @@
               }
             }
           },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "get": {
         "operationId": "verifyWhatsAppWebhook",
-        "summary": "Meta Webhook Subscription Handshake",
-        "description": "Echoes back hub.challenge when hub.verify_token matches the configured WHATSAPP_VERIFY_TOKEN.",
+        "summary": "Meta Webhook Verification Handshake",
+        "description": "Echoes back hub.challenge when verify token matches.",
         "tags": ["WhatsApp Inbound"],
         "parameters": [
           { "name": "hub.mode", "in": "query", "required": true, "schema": { "type": "string", "example": "subscribe" } },
@@ -96,14 +156,16 @@
         ],
         "responses": {
           "200": {
-            "description": "Challenge echoed successfully.",
+            "description": "Challenge echoed.",
             "content": {
-              "text/plain": {
-                "schema": { "type": "string" }
-              }
+              "text/plain": { "schema": { "type": "string" } }
             }
           },
-          "403": { "$ref": "#/components/responses/403Forbidden" }
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -111,23 +173,18 @@
       "get": {
         "operationId": "listHospitalAppointments",
         "summary": "List Hospital OPD Appointments",
-        "description": "Retrieves consultation appointments for a hospital tenant, filtered by date, doctor, or status.",
+        "description": "Retrieves appointments for a tenant, filtered by date, doctor, or status.",
         "tags": ["Hospital Appointments"],
         "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "parameters": [
-          { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "The tenant business UUID." },
-          { "name": "date", "in": "query", "required": false, "schema": { "type": "string", "format": "date" }, "description": "Filter by date (YYYY-MM-DD)." },
-          { "name": "doctor_name", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by doctor name." },
-          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["confirmed", "pending", "completed", "cancelled", "rescheduled"] }, "description": "Filter by visit status." }
+          { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "date", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "name": "doctor_name", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["confirmed", "pending", "completed", "cancelled", "rescheduled"] } }
         ],
         "responses": {
           "200": {
             "description": "List of appointments matching criteria.",
-            "headers": {
-              "X-API-Version": { "$ref": "#/components/headers/X-API-Version" },
-              "RateLimit-Limit": { "$ref": "#/components/headers/RateLimit-Limit" },
-              "RateLimit-Remaining": { "$ref": "#/components/headers/RateLimit-Remaining" }
-            },
             "content": {
               "application/json": {
                 "schema": {
@@ -144,14 +201,18 @@
               }
             }
           },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
         "operationId": "createHospitalAppointment",
         "summary": "Book OPD Consultation Appointment",
-        "description": "Books a new doctor consultation appointment and allocates a sequential token number.",
+        "description": "Books a new doctor consultation appointment and allocates a token.",
         "tags": ["Hospital Appointments"],
         "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "requestBody": {
@@ -162,12 +223,12 @@
                 "type": "object",
                 "required": ["business_id", "patient_name", "patient_phone", "doctor_name", "slot_time"],
                 "properties": {
-                  "business_id": { "type": "string", "format": "uuid", "description": "Tenant business UUID." },
+                  "business_id": { "type": "string", "format": "uuid" },
                   "patient_name": { "type": "string", "example": "Aarav Sharma" },
                   "patient_phone": { "type": "string", "example": "919876543210" },
                   "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
                   "department": { "type": "string", "example": "Cardiology" },
-                  "slot_time": { "type": "string", "format": "date-time", "example": "2026-09-02T10:30:00Z" },
+                  "slot_time": { "type": "string", "format": "date-time" },
                   "reason": { "type": "string", "example": "Routine checkup and ECG review" }
                 }
               }
@@ -192,13 +253,16 @@
           },
           "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "put": {
         "operationId": "updateHospitalAppointmentStatus",
         "summary": "Update Appointment Status",
-        "description": "Updates appointment status (e.g. marking completed, cancelled, or rescheduled).",
+        "description": "Updates appointment status.",
         "tags": ["Hospital Appointments"],
         "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "requestBody": {
@@ -209,9 +273,9 @@
                 "type": "object",
                 "required": ["id", "status"],
                 "properties": {
-                  "id": { "type": "string", "format": "uuid", "description": "Appointment ID." },
-                  "business_id": { "type": "string", "format": "uuid", "description": "Tenant business ID." },
-                  "status": { "type": "string", "enum": ["confirmed", "completed", "cancelled", "rescheduled"], "example": "completed" }
+                  "id": { "type": "string", "format": "uuid" },
+                  "business_id": { "type": "string", "format": "uuid" },
+                  "status": { "type": "string", "enum": ["confirmed", "completed", "cancelled", "rescheduled"] }
                 }
               }
             }
@@ -235,6 +299,9 @@
           },
           "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
@@ -243,7 +310,7 @@
       "get": {
         "operationId": "listHospitalDoctors",
         "summary": "List Doctors & OPD Schedules",
-        "description": "Lists all active hospital doctors, consultation fees, specialities, and OPD shift timings.",
+        "description": "Lists active doctors and consultation fees.",
         "tags": ["Hospital Doctors"],
         "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "parameters": [
@@ -268,7 +335,11 @@
               }
             }
           },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
@@ -277,7 +348,7 @@
       "get": {
         "operationId": "listHospitalReports",
         "summary": "List Diagnostic Lab Reports",
-        "description": "Lists patient diagnostic reports and delivery statuses.",
+        "description": "Lists patient diagnostic reports.",
         "tags": ["Hospital Lab Reports"],
         "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "parameters": [
@@ -285,7 +356,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of diagnostic reports.",
+            "description": "List of reports.",
             "content": {
               "application/json": {
                 "schema": {
@@ -302,14 +373,18 @@
               }
             }
           },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
         "operationId": "createHospitalReport",
         "summary": "Publish Diagnostic Lab Report",
-        "description": "Publishes a lab report and immediately dispatches WhatsApp PDF delivery with AI OCR summary.",
+        "description": "Publishes a lab report and dispatches WhatsApp delivery with AI OCR summary.",
         "tags": ["Hospital Lab Reports"],
         "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "requestBody": {
@@ -326,7 +401,7 @@
                   "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
                   "report_type": { "type": "string", "example": "Complete Blood Count (CBC)" },
                   "file_url": { "type": "string", "format": "uri" },
-                  "ai_summary": { "type": "string", "example": "All vitals normal." },
+                  "ai_summary": { "type": "string" },
                   "is_critical": { "type": "boolean", "default": false }
                 }
               }
@@ -351,6 +426,9 @@
           },
           "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
@@ -384,13 +462,18 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/401Unauthorized" }
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
         "operationId": "createHospitalVoiceCall",
         "summary": "Initiate AI Voice Call",
-        "description": "Dispatches an automated AI phone consultation or reminder call to a patient.",
+        "description": "Dispatches an automated AI phone consultation or reminder call.",
         "tags": ["AI Voice Calls"],
         "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
         "requestBody": {
@@ -428,7 +511,11 @@
             }
           },
           "400": { "$ref": "#/components/responses/400BadRequest" },
-          "401": { "$ref": "#/components/responses/401Unauthorized" }
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -461,7 +548,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/401Unauthorized" }
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
+          "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -491,7 +583,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "business_id": { "type": "string", "format": "uuid", "description": "Optional business ID to target single tenant." }
+                  "business_id": { "type": "string", "format": "uuid", "description": "Optional business ID." }
                 }
               }
             }
@@ -523,6 +615,9 @@
           },
           "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" },
           "500": { "$ref": "#/components/responses/500InternalError" }
         }
       }
@@ -575,14 +670,19 @@
         "type": "object",
         "required": ["success", "error"],
         "properties": {
+          "type": { "type": "string", "format": "uri", "example": "https://orderagentapp.webcorestudio.dev/errors/unauthorized", "description": "RFC 9457 problem type URI." },
+          "title": { "type": "string", "example": "Unauthorized", "description": "RFC 9457 short summary." },
+          "status": { "type": "integer", "example": 401, "description": "HTTP status code." },
+          "detail": { "type": "string", "example": "Authentication required. Please log in or provide valid API credentials.", "description": "RFC 9457 human-readable detail." },
+          "instance": { "type": "string", "example": "/api/hospital/appointments", "description": "RFC 9457 request URI." },
           "success": { "type": "boolean", "example": false },
           "error": {
             "type": "object",
             "required": ["code", "message"],
             "properties": {
               "code": { "type": "string", "example": "UNAUTHORIZED", "description": "Machine-readable error code." },
-              "message": { "type": "string", "example": "Authentication required. Please provide valid credentials.", "description": "Human-readable explanation." },
-              "hint": { "type": "string", "example": "Refer to https://orderagentapp.webcorestudio.dev/api-docs for documentation.", "description": "Resolution guidance for developers and autonomous agents." },
+              "message": { "type": "string", "example": "Authentication required. Please log in or provide valid API credentials.", "description": "Human-readable explanation." },
+              "hint": { "type": "string", "example": "Include Authorization: Bearer <TOKEN> or x-business-id: <UUID> header in your request.", "description": "Resolution guidance for developers and autonomous agents." },
               "details": { "type": "object", "description": "Optional validation error details." }
             }
           }
@@ -666,86 +766,48 @@
     },
     "responses": {
       "400BadRequest": {
-        "description": "Bad Request: Missing or invalid parameters.",
+        "description": "Bad Request: Missing or invalid parameters (RFC 9457 Problem Details).",
         "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-            "example": {
-              "success": false,
-              "error": {
-                "code": "BAD_REQUEST",
-                "message": "Missing required fields or invalid slot format.",
-                "hint": "Check required fields in OpenAPI specification at https://orderagentapp.webcorestudio.dev/openapi.json."
-              }
-            }
-          }
+          "application/problem+json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } },
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
         }
       },
       "401Unauthorized": {
-        "description": "Unauthorized: Invalid credentials or missing tenant session.",
+        "description": "Unauthorized: Authentication required (RFC 9457 Problem Details).",
         "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-            "example": {
-              "success": false,
-              "error": {
-                "code": "UNAUTHORIZED",
-                "message": "Authentication required. Provide valid Bearer token or x-business-id header.",
-                "hint": "Pass Authorization: Bearer <TOKEN> or x-business-id: <UUID> header."
-              }
-            }
-          }
+          "application/problem+json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } },
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
         }
       },
       "403Forbidden": {
-        "description": "Forbidden: Permission denied.",
+        "description": "Forbidden: Permission denied (RFC 9457 Problem Details).",
         "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-            "example": {
-              "success": false,
-              "error": {
-                "code": "FORBIDDEN",
-                "message": "Access forbidden: insufficient permissions.",
-                "hint": "Ensure your account has access to the requested business tenant."
-              }
-            }
-          }
+          "application/problem+json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } },
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+        }
+      },
+      "404NotFound": {
+        "description": "Resource Not Found: Endpoint or entity does not exist (RFC 9457 Problem Details).",
+        "content": {
+          "application/problem+json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } },
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
         }
       },
       "429TooManyRequests": {
-        "description": "Rate limit exceeded.",
+        "description": "Rate limit exceeded (RFC 9457 Problem Details).",
         "headers": {
           "Retry-After": { "$ref": "#/components/headers/Retry-After" }
         },
         "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-            "example": {
-              "success": false,
-              "error": {
-                "code": "RATE_LIMIT_EXCEEDED",
-                "message": "Rate limit exceeded (120 requests per minute).",
-                "hint": "Throttle requests and retry after the duration specified in the Retry-After header."
-              }
-            }
-          }
+          "application/problem+json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } },
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
         }
       },
       "500InternalError": {
-        "description": "Internal server error.",
+        "description": "Internal Server Error (RFC 9457 Problem Details).",
         "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-            "example": {
-              "success": false,
-              "error": {
-                "code": "INTERNAL_SERVER_ERROR",
-                "message": "An unexpected server error occurred.",
-                "hint": "Contact support@webcorestudios.in with request ID if issue persists."
-              }
-            }
-          }
+          "application/problem+json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } },
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
         }
       }
     }
