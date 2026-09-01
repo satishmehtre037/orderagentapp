@@ -150,8 +150,10 @@
           "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
           "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "get": {
@@ -174,8 +176,10 @@
           "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
           "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -216,7 +220,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
@@ -266,7 +271,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "put": {
@@ -312,7 +318,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -350,7 +357,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -388,7 +396,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
@@ -439,7 +448,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -477,7 +487,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       },
       "post": {
@@ -525,7 +536,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -563,7 +575,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     },
@@ -628,7 +641,8 @@
           "403": { "$ref": "#/components/responses/403Forbidden" },
           "404": { "$ref": "#/components/responses/404NotFound" },
           "429": { "$ref": "#/components/responses/429TooManyRequests" },
-          "500": { "$ref": "#/components/responses/500InternalError" }
+          "500": { "$ref": "#/components/responses/500InternalError" },
+          "default": { "$ref": "#/components/responses/500InternalError" }
         }
       }
     }

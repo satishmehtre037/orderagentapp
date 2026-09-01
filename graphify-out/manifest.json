@@ -1350,9 +1350,9 @@
     "semantic_hash": ""
   },
   "src/middleware.ts": {
-    "mtime": 1788270986.117187,
-    "seen": 1788271109.4653862,
-    "ast_hash": "1bd28345a52c7384c5ef919b77880d18",
+    "mtime": 1788271824.5307913,
+    "seen": 1788271943.6049862,
+    "ast_hash": "b05078f03308f272109d7f278659067b",
     "semantic_hash": ""
   },
   "src/routes/billing.ts": {
@@ -3912,9 +3912,9 @@
     "semantic_hash": ""
   },
   "public/openapi.json": {
-    "mtime": 1788270533.696605,
-    "seen": 1788270599.0302746,
-    "ast_hash": "04c71ff791091df9876c2932d0175e50",
+    "mtime": 1788271886.110145,
+    "seen": 1788271943.5751293,
+    "ast_hash": "b0c8d2462c19914621a76b9142bf5677",
     "semantic_hash": ""
   },
   "src/app/about/page.tsx": {
@@ -4077,6 +4077,12 @@
     "mtime": 1788271381.9828768,
     "seen": 1788271524.4292126,
     "ast_hash": "b6233f98a7d2f38ebb4a657b3114aac4",
+    "semantic_hash": ""
+  },
+  "src/app/api/mcp/route.ts": {
+    "mtime": 1788271808.7607586,
+    "seen": 1788271943.5843828,
+    "ast_hash": "feee5148291c4c91337c2c2ea448d4e5",
     "semantic_hash": ""
   }
 }

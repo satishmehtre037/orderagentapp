@@ -2,19 +2,32 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "agento-ai-mcp",
   "version": "1.0.0",
-  "description": "Agento AI by WebCore Studio Model Context Protocol (MCP) Server for autonomous agents.",
+  "description": "Agento AI by WebCore Studio Model Context Protocol (MCP) Server for autonomous AI agents.",
   "vendor": {
     "name": "WebCore Studio",
     "url": "https://orderagentapp.webcorestudio.dev"
   },
   "documentation": "https://orderagentapp.webcorestudio.dev/mcp",
-  "command": "npx",
-  "args": ["-y", "@webcorestudio/agento-cli", "mcp"],
+  "transport": {
+    "type": "http",
+    "url": "https://orderagentapp.webcorestudio.dev/api/mcp",
+    "sseUrl": "https://orderagentapp.webcorestudio.dev/api/mcp"
+  },
+  "endpoints": {
+    "mcp": "https://orderagentapp.webcorestudio.dev/api/mcp",
+    "sse": "https://orderagentapp.webcorestudio.dev/api/mcp"
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "prompts": true,
+    "logging": true
+  },
   "tools": [
     {
       "name": "list_hospital_appointments",
       "description": "Lists active OPD consultation appointments for a business tenant.",
-      "parameters": {
+      "inputSchema": {
         "type": "object",
         "required": ["business_id"],
         "properties": {
@@ -27,7 +40,7 @@
     {
       "name": "book_hospital_appointment",
       "description": "Books an OPD appointment slot and allocates an appointment token.",
-      "parameters": {
+      "inputSchema": {
         "type": "object",
         "required": ["business_id", "patient_name", "patient_phone", "doctor_name", "slot_time"],
         "properties": {
@@ -43,7 +56,7 @@
     {
       "name": "trigger_cron_scanner",
       "description": "Triggers automated background scans for visit reminders or feedback surveys.",
-      "parameters": {
+      "inputSchema": {
         "type": "object",
         "required": ["job"],
         "properties": {
