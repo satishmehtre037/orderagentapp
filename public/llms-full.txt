@@ -4,12 +4,17 @@
 Agento AI is a production-grade multi-tenant AI Business Operating System engineered by WebCore Studio. It connects Meta's WhatsApp Cloud Business API directly to low-latency LLM models (Claude 3.5 Sonnet / Groq Llama 3) and custom business workflow engines.
 
 - Canonical Domain: https://orderagentapp.webcorestudio.dev
+- Developer Portal: https://orderagentapp.webcorestudio.dev/developers
+- REST API Guide: https://orderagentapp.webcorestudio.dev/api-docs
 - OpenAPI 3.1 Spec: https://orderagentapp.webcorestudio.dev/openapi.json
-- Developer Guide: https://orderagentapp.webcorestudio.dev/api-docs
+- Authentication Guide: https://orderagentapp.webcorestudio.dev/auth-docs
+- MCP Server Spec: https://orderagentapp.webcorestudio.dev/mcp
+- CLI Tool Guide: https://orderagentapp.webcorestudio.dev/cli
 - Deprecation Policy: https://orderagentapp.webcorestudio.dev/deprecation
-- CLI Guide: https://orderagentapp.webcorestudio.dev/cli
+- Brand & Corporate NAP: https://orderagentapp.webcorestudio.dev/brand
 - XML Sitemap: https://orderagentapp.webcorestudio.dev/sitemap.xml
 - Agent Protocol: https://orderagentapp.webcorestudio.dev/.well-known/agent.json
+- MCP Manifest: https://orderagentapp.webcorestudio.dev/.well-known/mcp.json
 
 ---
 

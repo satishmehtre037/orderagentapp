@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "agento-ai-mcp",
+  "version": "1.0.0",
+  "description": "Agento AI by WebCore Studio Model Context Protocol (MCP) Server for autonomous agents.",
+  "vendor": {
+    "name": "WebCore Studio",
+    "url": "https://orderagentapp.webcorestudio.dev"
+  },
+  "documentation": "https://orderagentapp.webcorestudio.dev/mcp",
+  "command": "npx",
+  "args": ["-y", "@webcorestudio/agento-cli", "mcp"],
+  "tools": [
+    {
+      "name": "list_hospital_appointments",
+      "description": "Lists active OPD consultation appointments for a business tenant.",
+      "parameters": {
+        "type": "object",
+        "required": ["business_id"],
+        "properties": {
+          "business_id": { "type": "string", "description": "Tenant business UUID" },
+          "date": { "type": "string", "description": "Filter by date (YYYY-MM-DD)" },
+          "doctor_name": { "type": "string", "description": "Filter by doctor name" }
+        }
+      }
+    },
+    {
+      "name": "book_hospital_appointment",
+      "description": "Books an OPD appointment slot and allocates an appointment token.",
+      "parameters": {
+        "type": "object",
+        "required": ["business_id", "patient_name", "patient_phone", "doctor_name", "slot_time"],
+        "properties": {
+          "business_id": { "type": "string" },
+          "patient_name": { "type": "string" },
+          "patient_phone": { "type": "string" },
+          "doctor_name": { "type": "string" },
+          "slot_time": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "trigger_cron_scanner",
+      "description": "Triggers automated background scans for visit reminders or feedback surveys.",
+      "parameters": {
+        "type": "object",
+        "required": ["job"],
+        "properties": {
+          "job": { "type": "string", "enum": ["reminders", "feedback_surveys", "all"] },
+          "business_id": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

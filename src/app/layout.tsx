@@ -35,10 +35,14 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://orderagentapp.webcorestudio.dev'),
-  title: 'Agento AI | 24/7 Autonomous WhatsApp AI Staff & Business OS',
+  title: {
+    default: 'Agento AI by WebCore Studio | 24/7 Autonomous WhatsApp AI Staff & Business OS',
+    template: '%s | Agento AI by WebCore Studio',
+  },
   description:
-    'Agento AI by WebCore Studio: Autonomous WhatsApp AI agents for Hospital OPD appointments, CA Firm compliance, E-commerce ordering, and Customer Support.',
+    'Agento AI by WebCore Studio: Autonomous 24/7 WhatsApp AI Business OS for hospital OPD bookings, CA tax compliance chasing, and e-commerce orders.',
   keywords: [
+    'Agento AI by WebCore Studio',
     'Agento AI',
     'WebCore Studio',
     'WhatsApp AI Agent',
@@ -46,6 +50,9 @@ export const metadata: Metadata = {
     'Hospital OPD Booking AI',
     'CA Firm WhatsApp Automation',
     'Autonomous Business OS',
+    'Developer API',
+    'OpenAPI 3.1',
+    'MCP Server',
   ],
   authors: [{ name: 'WebCore Studio', url: 'https://orderagentapp.webcorestudio.dev' }],
   creator: 'WebCore Studio',
@@ -53,12 +60,23 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://orderagentapp.webcorestudio.dev',
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://orderagentapp.webcorestudio.dev',
     siteName: 'Agento AI by WebCore Studio',
-    title: 'Agento AI | 24/7 Autonomous WhatsApp AI Staff & Business OS',
+    title: 'Agento AI by WebCore Studio | 24/7 Autonomous WhatsApp AI Staff & Business OS',
     description:
       'Deploy autonomous WhatsApp AI staff for appointments, customer care, lead follow-ups, and live orders in 60 seconds.',
     images: [
@@ -72,7 +90,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Agento AI | 24/7 Autonomous WhatsApp AI Staff & Business OS',
+    title: 'Agento AI by WebCore Studio | 24/7 Autonomous WhatsApp AI Staff & Business OS',
     description:
       'Deploy autonomous WhatsApp AI staff for appointments, customer care, lead follow-ups, and live orders in 60 seconds.',
     images: ['https://orderagentapp.webcorestudio.dev/logo.png'],

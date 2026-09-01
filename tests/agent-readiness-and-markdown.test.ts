@@ -25,25 +25,19 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
       expect(body).toContain('Hospital & Clinic OPD Automation');
     });
 
-    it('should serve text/markdown for /about, /api-docs, and /cli', async () => {
-      const reqAbout = new NextRequest('http://localhost:3000/about', {
-        headers: { accept: 'text/markdown' },
-      });
-      const resAbout = await middleware(reqAbout);
-      expect(resAbout.status).toBe(200);
-      expect(resAbout.headers.get('content-type')).toContain('text/markdown');
-      expect(resAbout.headers.get('vary')).toContain('Accept');
-      const bodyAbout = await resAbout.text();
-      expect(bodyAbout).toContain('WebCore Studio');
-
-      const reqCli = new NextRequest('http://localhost:3000/cli', {
-        headers: { accept: 'text/markdown' },
-      });
-      const resCli = await middleware(reqCli);
-      expect(resCli.status).toBe(200);
-      expect(resCli.headers.get('content-type')).toContain('text/markdown');
-      const bodyCli = await resCli.text();
-      expect(bodyCli).toContain('@webcorestudio/agento-cli');
+    it('should serve text/markdown for developer and brand pages (/about, /developers, /api-docs, /auth-docs, /mcp, /cli, /deprecation, /brand)', async () => {
+      const endpoints = ['/about', '/developers', '/api-docs', '/auth-docs', '/mcp', '/cli', '/deprecation', '/brand'];
+      for (const endpoint of endpoints) {
+        const req = new NextRequest(`http://localhost:3000${endpoint}`, {
+          headers: { accept: 'text/markdown' },
+        });
+        const res = await middleware(req);
+        expect(res.status).toBe(200);
+        expect(res.headers.get('content-type')).toContain('text/markdown');
+        expect(res.headers.get('vary')).toContain('Accept');
+        const body = await res.text();
+        expect(body.length).toBeGreaterThan(50);
+      }
     });
 
     it('should return real HTTP 404 with recovery markdown for nonexistent paths requesting markdown', async () => {

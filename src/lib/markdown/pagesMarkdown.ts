@@ -163,6 +163,75 @@ npx @webcorestudio/agento-cli cron trigger all --business-id <UUID>
 - Web Portal: https://orderagentapp.webcorestudio.dev/cli
 - OpenAPI Spec: https://orderagentapp.webcorestudio.dev/openapi.json
 `,
+
+  '/developers': `# Agento AI by WebCore Studio — Developer Portal & API Directory
+
+Official Developer Portal for Agento AI by WebCore Studio. Access REST APIs, OpenAPI 3.1 specification, Authentication guides, MCP Server, and CLI tools.
+
+## Developer Resources
+- [REST API Reference](https://orderagentapp.webcorestudio.dev/api-docs)
+- [OpenAPI 3.1 Specification](https://orderagentapp.webcorestudio.dev/openapi.json)
+- [Authentication Documentation](https://orderagentapp.webcorestudio.dev/auth-docs)
+- [Model Context Protocol (MCP) Server](https://orderagentapp.webcorestudio.dev/mcp)
+- [CLI Tool Reference](https://orderagentapp.webcorestudio.dev/cli)
+- [API Deprecation & Lifecycle Policy](https://orderagentapp.webcorestudio.dev/deprecation)
+- [LLMs Machine-Readable Directory](https://orderagentapp.webcorestudio.dev/llms.txt)
+`,
+
+  '/auth-docs': `# Agento AI by WebCore Studio — Authentication Documentation
+
+Every programmatic request to Agento AI is authenticated using Bearer tokens, x-business-id tenant headers, or HMAC-SHA256 signatures.
+
+## Authentication Headers
+- Bearer Token: \`Authorization: Bearer <TOKEN>\`
+- Tenant UUID Header: \`x-business-id: <UUID>\`
+- Inbound Webhook Signature: \`x-hub-signature-256: sha256=<HASH>\`
+- Cron Runner Secret: \`x-cron-secret: <SECRET>\`
+`,
+
+  '/mcp': `# Agento AI by WebCore Studio — Model Context Protocol (MCP) Server
+
+Connect Claude Desktop, Cursor, and AI agents directly to Agento AI tools via the Model Context Protocol.
+
+## Configuration
+\`\`\`json
+{
+  "mcpServers": {
+    "agento-ai": {
+      "command": "npx",
+      "args": ["-y", "@webcorestudio/agento-cli", "mcp"],
+      "env": {
+        "AGENTO_API_URL": "https://orderagentapp.webcorestudio.dev",
+        "AGENTO_BUSINESS_ID": "<YOUR_BUSINESS_UUID>"
+      }
+    }
+  }
+}
+\`\`\`
+`,
+
+  '/deprecation': `# Agento AI API Versioning & 180-Day Deprecation Policy
+
+WebCore Studio guarantees a minimum of 180 days advance notice before making breaking changes to the Agento AI REST API.
+
+## Headers
+- \`X-API-Version: 2026-09-01\`
+- \`Link: <https://orderagentapp.webcorestudio.dev/deprecation>; rel="deprecation"\`
+- \`Sunset: Wed, 01 Sep 2027 00:00:00 GMT\`
+`,
+
+  '/brand': `# Agento AI by WebCore Studio — Brand Identity & Corporate NAP
+
+Official corporate identity, verified Name-Address-Phone (NAP), and media kit for Agento AI by WebCore Studio.
+
+## Verified NAP
+- Legal Entity: WebCore Studio
+- Brand Name: Agento AI by WebCore Studio
+- Canonical URL: https://orderagentapp.webcorestudio.dev
+- Phone / WhatsApp: +91 87798 41346
+- Email: support@webcorestudios.in
+- Headquarters: WebCore Studio Tech Hub, Mumbai, Maharashtra 400001, India
+`,
 };
 
 export const NOT_FOUND_MARKDOWN = `# 404 — Resource Not Found

@@ -11,13 +11,18 @@ Use Agento AI when an agent, developer, or business owner needs to:
 
 ## Primary Canonical Endpoints & Developer Resources
 - Canonical Homepage: https://orderagentapp.webcorestudio.dev
+- Developer Portal: https://orderagentapp.webcorestudio.dev/developers
+- REST API Documentation: https://orderagentapp.webcorestudio.dev/api-docs
 - OpenAPI 3.1 Specification: https://orderagentapp.webcorestudio.dev/openapi.json
-- Developer Documentation: https://orderagentapp.webcorestudio.dev/api-docs
-- API Deprecation & Versioning Policy: https://orderagentapp.webcorestudio.dev/deprecation
+- Authentication Documentation: https://orderagentapp.webcorestudio.dev/auth-docs
+- Model Context Protocol (MCP) Server: https://orderagentapp.webcorestudio.dev/mcp
 - CLI Documentation & Installation: https://orderagentapp.webcorestudio.dev/cli
+- API Deprecation & Versioning Policy: https://orderagentapp.webcorestudio.dev/deprecation
+- Brand Identity & Corporate NAP: https://orderagentapp.webcorestudio.dev/brand
 - Complete LLM Context: https://orderagentapp.webcorestudio.dev/llms-full.txt
 - XML Sitemap: https://orderagentapp.webcorestudio.dev/sitemap.xml
 - Agent Protocol: https://orderagentapp.webcorestudio.dev/.well-known/agent.json
+- MCP Manifest: https://orderagentapp.webcorestudio.dev/.well-known/mcp.json
 
 ## Official CLI Tool & Installation
 Developers and AI agents can execute interactions using the official CLI:
