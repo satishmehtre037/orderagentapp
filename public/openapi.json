@@ -326,7 +326,7 @@
                   "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
                   "report_type": { "type": "string", "example": "Complete Blood Count (CBC)" },
                   "file_url": { "type": "string", "format": "uri" },
-                  "ai_summary": { "type": "string", "example": "All vitals normal. Hemoglobin: 14.2 g/dL." },
+                  "ai_summary": { "type": "string", "example": "All vitals normal." },
                   "is_critical": { "type": "boolean", "default": false }
                 }
               }
@@ -352,6 +352,116 @@
           "400": { "$ref": "#/components/responses/400BadRequest" },
           "401": { "$ref": "#/components/responses/401Unauthorized" },
           "500": { "$ref": "#/components/responses/500InternalError" }
+        }
+      }
+    },
+    "/api/hospital/voice-calls": {
+      "get": {
+        "operationId": "listHospitalVoiceCalls",
+        "summary": "List AI Voice Calls",
+        "description": "Retrieves logs of automated AI voice reminder and check-in calls.",
+        "tags": ["AI Voice Calls"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
+        "parameters": [
+          { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of voice call records.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "calls"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "calls": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/VoiceCallRecord" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      },
+      "post": {
+        "operationId": "createHospitalVoiceCall",
+        "summary": "Initiate AI Voice Call",
+        "description": "Dispatches an automated AI phone consultation or reminder call to a patient.",
+        "tags": ["AI Voice Calls"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["patient_name", "patient_phone"],
+                "properties": {
+                  "patient_name": { "type": "string", "example": "Vikram Singh" },
+                  "patient_phone": { "type": "string", "example": "919876543210" },
+                  "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
+                  "call_type": { "type": "string", "example": "appointment_reminder" },
+                  "reason": { "type": "string", "example": "Tomorrow 10 AM Cardiology consultation reminder" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Voice call dispatched successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "callId"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "callId": { "type": "string", "example": "call_90123" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      }
+    },
+    "/api/hospital/feedback": {
+      "get": {
+        "operationId": "listHospitalFeedback",
+        "summary": "List Patient Feedback & Ratings",
+        "description": "Lists patient 1-5 star ratings and review feedback.",
+        "tags": ["Patient Feedback"],
+        "security": [{ "BusinessHeader": [] }, { "BearerAuth": [] }],
+        "parameters": [
+          { "name": "business_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of feedback entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "feedback"],
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "feedback": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HospitalFeedback" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
         }
       }
     },
@@ -522,6 +632,34 @@
           "ai_summary": { "type": "string", "example": "All vitals normal." },
           "is_critical": { "type": "boolean", "example": false },
           "status": { "type": "string", "example": "delivered" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "VoiceCallRecord": {
+        "type": "object",
+        "required": ["id", "business_id", "patient_name", "patient_phone", "status"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "business_id": { "type": "string", "format": "uuid" },
+          "patient_name": { "type": "string", "example": "Vikram Singh" },
+          "patient_phone": { "type": "string", "example": "919876543210" },
+          "doctor_name": { "type": "string", "example": "Dr. Sarah Jenkins" },
+          "call_type": { "type": "string", "example": "appointment_reminder" },
+          "status": { "type": "string", "example": "completed" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HospitalFeedback": {
+        "type": "object",
+        "required": ["id", "business_id", "patient_name", "patient_phone", "rating"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "business_id": { "type": "string", "format": "uuid" },
+          "patient_name": { "type": "string", "example": "Pooja Patel" },
+          "patient_phone": { "type": "string", "example": "919876543210" },
+          "rating": { "type": "integer", "minimum": 1, "maximum": 5, "example": 5 },
+          "comment": { "type": "string", "example": "Excellent consultation" },
+          "status": { "type": "string", "example": "responded" },
           "created_at": { "type": "string", "format": "date-time" }
         }
       }
