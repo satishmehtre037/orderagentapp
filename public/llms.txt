@@ -9,30 +9,42 @@ Use Agento AI when an agent, developer, or business owner needs to:
 - **Retail & Commerce Automation**: Manage product catalogs; answer WhatsApp customer inquiries; generate Razorpay payment links; verify UPI payments; and track order dispatch in real-time.
 - **AI Voice Assistance**: Place automated outbound reminder calls and handle inbound patient/customer voice notes transcribed via Whisper.
 
-## Primary Canonical Endpoints
+## Primary Canonical Endpoints & Developer Resources
 - Canonical Homepage: https://orderagentapp.webcorestudio.dev
 - OpenAPI 3.1 Specification: https://orderagentapp.webcorestudio.dev/openapi.json
 - Developer Documentation: https://orderagentapp.webcorestudio.dev/api-docs
+- API Deprecation & Versioning Policy: https://orderagentapp.webcorestudio.dev/deprecation
+- CLI Documentation & Installation: https://orderagentapp.webcorestudio.dev/cli
 - Complete LLM Context: https://orderagentapp.webcorestudio.dev/llms-full.txt
 - XML Sitemap: https://orderagentapp.webcorestudio.dev/sitemap.xml
 - Agent Protocol: https://orderagentapp.webcorestudio.dev/.well-known/agent.json
 
-## CLI Tool & Automation
-Developers and AI agents can interact with Agento AI using the official npm CLI runner:
+## Official CLI Tool & Installation
+Developers and AI agents can execute interactions using the official CLI:
 ```bash
-# Query OPD appointments
-npx @webcorestudio/agento-cli appointments list --business-id <UUID>
-
-# Trigger automation scanner
-npx @webcorestudio/agento-cli cron trigger all --business-id <UUID>
-
-# Check system status
+# Instant execution with npx
 npx @webcorestudio/agento-cli status
+
+# Install globally via npm
+npm install -g @webcorestudio/agento-cli
+
+# Install via Homebrew
+brew tap webcorestudio/tap && brew install agento
+
+# Install via Curl installer
+curl -sSL https://orderagentapp.webcorestudio.dev/install.sh | bash
+
+# Query OPD appointments
+agento appointments list --business-id <UUID>
+
+# Trigger background automation scanners
+agento cron trigger all --business-id <UUID>
 ```
 
-## API Versioning & Deprecation Policy
+## API Versioning & 180-Day Sunset Deprecation Policy
 - **Versioning Strategy**: Path-based versioning via `/api/v1/...` and request/response header `X-API-Version: 2026-09-01`.
-- **Deprecation Policy**: Breaking changes are accompanied by a minimum 180-day sunset period signaled via standard HTTP `Sunset` and `Deprecation` headers (RFC 8594).
+- **Deprecation Policy**: Minimum 180-day advance sunset notice signaled via standard HTTP `Sunset`, `Deprecation`, and `Link: <https://orderagentapp.webcorestudio.dev/deprecation>; rel="deprecation"` headers (RFC 8594).
+- **Policy URL**: https://orderagentapp.webcorestudio.dev/deprecation
 
 ## Rate Limiting Standards
 Agento AI implements IETF standard rate limiting headers:
@@ -42,10 +54,15 @@ Agento AI implements IETF standard rate limiting headers:
 - `RateLimit-Policy`: `120;w=60`
 - `Retry-After`: Seconds to wait when receiving HTTP 429
 
-## Structured Error Model
-All error responses adhere to RFC 9457 structured JSON:
+## Structured Error Model (RFC 9457)
+All error responses adhere to RFC 9457 structured JSON (`application/problem+json` & `application/json`):
 ```json
 {
+  "type": "https://orderagentapp.webcorestudio.dev/errors/unauthorized",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Authentication required. Please provide valid credentials.",
+  "instance": "/api/hospital/appointments",
   "success": false,
   "error": {
     "code": "UNAUTHORIZED",
@@ -68,11 +85,14 @@ All error responses adhere to RFC 9457 structured JSON:
 - `GET /api/hospital/doctors` (`operationId: listHospitalDoctors`): Retrieve active hospital doctors, specialities, consultation fees, and OPD timings.
 - `GET /api/hospital/reports` (`operationId: listHospitalReports`): List diagnostic lab reports and delivery statuses.
 - `POST /api/hospital/reports` (`operationId: createHospitalReport`): Publish and deliver PDF lab reports via WhatsApp with AI summaries.
+- `GET /api/hospital/voice-calls` (`operationId: listHospitalVoiceCalls`): List AI voice call logs.
+- `POST /api/hospital/voice-calls` (`operationId: createHospitalVoiceCall`): Trigger outbound AI voice consultation call.
+- `GET /api/hospital/feedback` (`operationId: listHospitalFeedback`): List patient feedback & ratings.
 - `POST /api/hospital/cron/trigger/{jobName}` (`operationId: triggerHospitalCronJob`): Run automated reminder scanners (`reminders`, `feedback_surveys`, `missed_followups`, `all`).
 
 ## Company & Brand Information
 - Brand: Agento AI
-- Parent Company: WebCore Studio
+- Legal Entity: WebCore Studio
 - Support Email: support@webcorestudios.in
 - Phone / WhatsApp: +91 87798 41346
 - Headquarters: WebCore Studio Tech Hub, Mumbai, Maharashtra 400001, India

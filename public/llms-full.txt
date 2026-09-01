@@ -6,33 +6,50 @@ Agento AI is a production-grade multi-tenant AI Business Operating System engine
 - Canonical Domain: https://orderagentapp.webcorestudio.dev
 - OpenAPI 3.1 Spec: https://orderagentapp.webcorestudio.dev/openapi.json
 - Developer Guide: https://orderagentapp.webcorestudio.dev/api-docs
+- Deprecation Policy: https://orderagentapp.webcorestudio.dev/deprecation
+- CLI Guide: https://orderagentapp.webcorestudio.dev/cli
 - XML Sitemap: https://orderagentapp.webcorestudio.dev/sitemap.xml
 - Agent Protocol: https://orderagentapp.webcorestudio.dev/.well-known/agent.json
 
 ---
 
-## Official CLI Tool
-Developers and autonomous AI agents can invoke Agento AI directly from terminal environments:
+## Official CLI Tool & Installation
+Developers and autonomous AI agents can interact with Agento AI using multiple package distributions:
 ```bash
+# Instant runner via npx
+npx @webcorestudio/agento-cli status
+
+# Global installation via npm
+npm install -g @webcorestudio/agento-cli
+
+# macOS / Linux via Homebrew
+brew tap webcorestudio/tap && brew install agento
+
+# Linux / Unix automated shell installer
+curl -sSL https://orderagentapp.webcorestudio.dev/install.sh | bash
+
 # Query appointments
-npx @webcorestudio/agento-cli appointments list --business-id <UUID>
+agento appointments list --business-id <UUID>
 
 # Trigger background automations
-npx @webcorestudio/agento-cli cron trigger all --business-id <UUID>
-
-# Diagnostic health check
-npx @webcorestudio/agento-cli status
+agento cron trigger all --business-id <UUID>
 ```
 
 ---
 
-## API Standards, Versioning & Rate Limiting
+## API Standards, Versioning & Deprecation Lifecycle
 
-### Versioning Policy
-- Current Version: `2026-09-01`
+### Versioning Strategy
+- Current Contract Version: `2026-09-01`
 - Path-based routing: `/api/v1/...` (rewritten transparently to core API)
 - Response Header: `X-API-Version: 2026-09-01`
-- Deprecation Policy: 180-day advance notice signaled via `Sunset` and `Deprecation` HTTP headers (RFC 8594).
+
+### 180-Day Deprecation & Sunset Guarantee
+Breaking changes are subject to a mandatory 180-day advance notice period communicated via:
+- HTTP Response Header: `Sunset: <DATE>`
+- HTTP Response Header: `Deprecation: <TIMESTAMP>`
+- HTTP Response Header: `Link: <https://orderagentapp.webcorestudio.dev/deprecation>; rel="deprecation"`
+- Policy URL: https://orderagentapp.webcorestudio.dev/deprecation
 
 ### Rate Limiting Headers (IETF RFC)
 - `RateLimit-Limit`: `120`
@@ -45,6 +62,11 @@ npx @webcorestudio/agento-cli status
 All error responses return structured JSON:
 ```json
 {
+  "type": "https://orderagentapp.webcorestudio.dev/errors/unauthorized",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Authentication required. Please provide valid credentials.",
+  "instance": "/api/hospital/appointments",
   "success": false,
   "error": {
     "code": "UNAUTHORIZED",

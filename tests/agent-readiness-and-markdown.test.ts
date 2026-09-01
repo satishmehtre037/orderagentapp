@@ -91,19 +91,21 @@ describe('Is Agentic Readiness & acceptmarkdown.com Standards', () => {
   });
 
   describe('Rate Limiting & Versioning Headers via Middleware', () => {
-    it('should attach RateLimit and X-API-Version headers on /api/ endpoints', async () => {
+    it('should attach RateLimit, X-API-Version, and Deprecation Link headers on /api/ endpoints', async () => {
       const reqApi = new NextRequest('http://localhost:3000/api/hospital/appointments?business_id=6f1a3fde-f8fc-4ff0-b9ae-05969d2594e9');
       const resApi = await middleware(reqApi);
       expect(resApi.headers.get('x-api-version')).toBe('2026-09-01');
+      expect(resApi.headers.get('link')).toContain('rel="deprecation"');
       expect(resApi.headers.get('ratelimit-limit')).toBe('120');
       expect(resApi.headers.get('ratelimit-remaining')).toBe('119');
       expect(resApi.headers.get('ratelimit-reset')).toBe('60');
     });
 
-    it('should rewrite /api/v1/* requests and maintain version headers', async () => {
+    it('should rewrite /api/v1/* requests and maintain version & deprecation headers', async () => {
       const reqV1 = new NextRequest('http://localhost:3000/api/v1/hospital/appointments?business_id=6f1a3fde-f8fc-4ff0-b9ae-05969d2594e9');
       const resV1 = await middleware(reqV1);
       expect(resV1.headers.get('x-api-version')).toBe('2026-09-01');
+      expect(resV1.headers.get('link')).toContain('rel="deprecation"');
       expect(resV1.headers.get('ratelimit-limit')).toBe('120');
     });
   });

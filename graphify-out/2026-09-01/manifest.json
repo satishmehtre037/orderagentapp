@@ -858,9 +858,9 @@
     "semantic_hash": ""
   },
   "src/app/page.tsx": {
-    "mtime": 1788268847.628802,
-    "seen": 1788269151.4013824,
-    "ast_hash": "aa6378fb614fa43b0eea4e332f969dc8",
+    "mtime": 1788270516.870145,
+    "seen": 1788270599.0467308,
+    "ast_hash": "1535f289eac6470c6d481694dc3f048e",
     "semantic_hash": ""
   },
   "src/app/privacy-policy/page.tsx": {
@@ -3912,9 +3912,9 @@
     "semantic_hash": ""
   },
   "public/openapi.json": {
-    "mtime": 1788270157.9281213,
-    "seen": 1788270285.7506177,
-    "ast_hash": "34d2a0928592b811c5af18f0a587805d",
+    "mtime": 1788270533.696605,
+    "seen": 1788270599.0302746,
+    "ast_hash": "04c71ff791091df9876c2932d0175e50",
     "semantic_hash": ""
   },
   "src/app/about/page.tsx": {
@@ -3924,9 +3924,9 @@
     "semantic_hash": ""
   },
   "src/app/api-docs/page.tsx": {
-    "mtime": 1788268874.5742142,
-    "seen": 1788269151.3916073,
-    "ast_hash": "3ea81ccd4b675c85b852a9e9ade8678d",
+    "mtime": 1788270497.3481114,
+    "seen": 1788270599.0311086,
+    "ast_hash": "122bb374ec326c24d4b63836c597b925",
     "semantic_hash": ""
   },
   "src/app/docs/page.tsx": {
@@ -4035,6 +4035,12 @@
     "mtime": 1788270130.3031034,
     "seen": 1788270285.7625139,
     "ast_hash": "0729bdf81e8db33c68c6eed748c2282d",
+    "semantic_hash": ""
+  },
+  "public/install.sh": {
+    "mtime": 1788270483.3201349,
+    "seen": 1788270599.0302677,
+    "ast_hash": "2be42aa81c5f879c3138397cc720d7fd",
     "semantic_hash": ""
   }
 }

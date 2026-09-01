@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
     rewriteUrl.pathname = unversionedPath;
     const response = NextResponse.rewrite(rewriteUrl);
     response.headers.set("X-API-Version", "2026-09-01");
+    response.headers.set("Link", '<https://orderagentapp.webcorestudio.dev/deprecation>; rel="deprecation"');
     response.headers.set("RateLimit-Limit", "120");
     response.headers.set("RateLimit-Remaining", "119");
     response.headers.set("RateLimit-Reset", "60");
@@ -58,6 +59,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/api/")) {
     response.headers.set("X-API-Version", "2026-09-01");
+    response.headers.set("Link", '<https://orderagentapp.webcorestudio.dev/deprecation>; rel="deprecation"');
     response.headers.set("RateLimit-Limit", "120");
     response.headers.set("RateLimit-Remaining", "119");
     response.headers.set("RateLimit-Reset", "60");
